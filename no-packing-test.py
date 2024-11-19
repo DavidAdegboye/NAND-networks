@@ -4,10 +4,13 @@ import optax # type: ignore
 import random
 import typing
 from typing import List, Tuple, Set
+from functools import partial
 
 # in some sense a neuron is a list of layers also, which 
 # can cause some logical bugs. For example, f is calculating
 # values over a layer
+
+# want neuron to be an array of arrays
 Neuron = List[jnp.ndarray]
 Layer = List[Neuron]
 Network = List[Layer]
@@ -16,6 +19,7 @@ Network = List[Layer]
 
 inputs = [[0,0],[0,1],[1,0],[1,1]]
 inputs = [jnp.array(x) for x in inputs] # type: ignore
+inputs = jnp.array(inputs) # type: ignore
 output = jnp.array([jnp.array([0,0]), jnp.array([0,1]), jnp.array([0,1]), jnp.array([1,0])])
 arch = [2,1,2,2]
 
@@ -29,16 +33,6 @@ def f_disc(x : jnp.ndarray, w : jnp.ndarray) -> float:
     return jnp.prod(jnp.where(w>0, x, 1)) # type: ignore
 f_disc = jax.jit(f_disc)
 
-## maybe later for efficiency, remove class
-
-def flatten(weights : Neuron) -> List[float]:
-    flat = []
-    for layer in weights:
-        for connection in layer:
-            flat.append(connection)
-    return flat
-flatten = jax.jit(flatten)
-
 def shape(weights : Neuron) -> List[int]:
     return [len(layer) for layer in weights]
 shape = jax.jit(shape)
@@ -46,7 +40,7 @@ shape = jax.jit(shape)
 def forward(weights : Neuron, xs : List[jnp.ndarray]) -> float:
     # the forward pass for an arbitrary neuron. 1 - the product of all the fs
     # to use vmap, I would have to include some padding that doesn't affect the value.
-    # main candidate would be x=1, w=1, since f(1,1)=1, so it wouldn't affect the result
+    # main candidate would be x=1, w=0, since f(1,0)=1, so it wouldn't affect the result
     # after the product.
     # return 1 - jnp.prod(jax.vmap(f, in_axes=(0,0))(xs, weights))
     return 1 - jnp.prod(jnp.array([f(xi,wi) for xi,wi in zip(xs, weights)])) # type: ignore
@@ -97,20 +91,19 @@ def output_circuit(neurons: Network, verbose=False) -> List[str]:
         [print(k,v) for k,v in c2i.items()]
         print(neuron)
         print(connected)
-    print(circuits[-1])
     return circuits[-arch[-1]:]
 ##output_circuit = jax.jit(output_circuit)
 
-def feed_forward(inputs : List[int], neurons : Network) -> jnp.ndarray:
-    xs = [jnp.array(inputs)]
+def feed_forward(inputs : jnp.ndarray, neurons : Network) -> jnp.ndarray:
+    xs = [inputs]
     for layer in neurons:
         layer_outputs = jnp.array([forward(weights, xs) for weights in layer])
         xs.append(layer_outputs)
     return xs[-1]
 feed_forward = jax.jit(feed_forward)
 
-def feed_forward_disc(inputs : List[int], neurons : Network) -> jnp.ndarray:
-    xs = [jnp.array(inputs)]
+def feed_forward_disc(inputs : jnp.ndarray, neurons : Network) -> jnp.ndarray:
+    xs = [inputs]
     for layer in neurons:
         layer_outputs = jnp.array([forward_disc(weights, xs) for weights in layer])
         xs.append(layer_outputs)
@@ -156,14 +149,9 @@ get_l2 = jax.jit(get_l2)
 epsilon = 1e-8
 l2_coeff = 0.01
 def loss(neurons : Network) -> float:
-    pred = []
-    for inp in inputs:
-        act = feed_forward(inp, neurons)
-        act = jnp.clip(act, epsilon, 1-epsilon)
-        pred.append(act)
-    pred = jnp.array(pred) # type: ignore
-    pred_logits = jnp.log(pred) - jnp.log(1-pred) # type: ignore
-    l1 = jnp.mean(optax.sigmoid_binary_cross_entropy(pred_logits, output)) # type: ignore
+    pred = jax.vmap(feed_forward, in_axes=(0, None))(inputs, neurons) # type: ignore
+    pred_logits = jnp.log(pred) - jnp.log(1-pred)
+    l1 = jnp.mean(optax.sigmoid_binary_cross_entropy(pred_logits, output))
     l2 = get_l2(neurons)
     return l1 + l2_coeff * l2 # type: ignore
 loss = jax.jit(loss)
@@ -195,13 +183,21 @@ old_losses = []
 for index in range(n):
     old_losses.append(round(float(loss(neuronss[index])),3)) # type: ignore
 print("Losses:", old_losses)
+grad = jax.grad(loss)
 iters = 0
+
+def update_fun(opt_state, neurons):
+    updates, new_state = solver.update(grad(neurons), opt_state, neurons)
+    new_neurons = optax.apply_updates(neurons, updates)
+    return new_state, new_neurons
+
 while cont:
     iters += 1
     for _ in range(10):
+        # opt_states, neuronss = jax.vmap(update_fun)(opt_states, neuronss)
+        # opt_states, neuronss = jax.lax.fori_loop(0, n, update_fun, (opt_states, neuronss))
         for index in range(n):
-            grad = jax.grad(loss)(neuronss[index])
-            updates, opt_states[index] = solver.update(grad, opt_states[index], neuronss[index])
+            updates, opt_states[index] = solver.update(grad(neuronss[index]), opt_states[index], neuronss[index])
             neuronss[index] = optax.apply_updates(neuronss[index], updates)
     for index, neurons in enumerate(neuronss):
         if test(neurons):
@@ -226,4 +222,4 @@ while cont:
             print("Losses:", new_losses)
             iters = 0
 print("Learnt:", output, "with arch:", arch)
-output_circuit(neuronss[final_index])
+print(output_circuit(neuronss[final_index]))
