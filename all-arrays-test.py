@@ -19,13 +19,13 @@ Network = List[Layer]
 ##jax.config.update("jax_traceback_filtering", "off")
 
 bits = 4
-def denary_to_binary_array(number: int, bits: int=bits) -> jnp.ndarray:
+def denary_to_binary_array(number: jnp.ndarray, bits: int=bits) -> jnp.ndarray:
     return jnp.array([(jnp.right_shift(number, bits - 1 - i) & 1) for i in range(bits)], dtype=jnp.int32)
 
 def output_size(bits: int=bits) -> int:
     return math.ceil(math.log2(bits+1))
 
-def get_output(number: int) -> jnp.ndarray:
+def get_output(number: jnp.ndarray) -> jnp.ndarray:
     return denary_to_binary_array(jnp.sum(denary_to_binary_array(number)), bits=output_size())
 
 inputs = jax.vmap(denary_to_binary_array)(jnp.arange(2**bits))
@@ -106,41 +106,44 @@ def feed_forward(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
     return jax.vmap(forward, in_axes=(0, None))(neurons[i_1-1], xs)[:len(output[0])]
 feed_forward = jax.jit(feed_forward)
 
-def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray, debug=False) -> jnp.ndarray:
+def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
     xs = jnp.ones((i_3,i_4))
     xs = xs.at[0].set(jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1))
-    if debug:
-        jax.debug.print("inputs:{}", inputs)
-        jax.debug.print("{}", xs)
     for layer_i in range(i_1-1):
         xs = xs.at[layer_i+1, :arch[layer_i+1]].set(jax.vmap(forward_disc, in_axes=(0, None))(neurons[layer_i], xs)[:arch[layer_i+1]])
-        if debug:
-            jax.debug.print("{}", xs)
-    if debug:
-        jax.debug.print("{}", jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:len(output[0])])
     return jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:len(output[0])]
 feed_forward_disc = jax.jit(feed_forward_disc)
 
-def get_weights(layer: int, arch: List[int]) -> jnp.ndarray:
+def feed_forward_disc_print(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
+    xs = jnp.ones((i_3,i_4))
+    xs = xs.at[0].set(jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1))
+    jax.debug.print("inputs:{}", inputs)
+    jax.debug.print("{}", xs)
+    for layer_i in range(i_1-1):
+        xs = xs.at[layer_i+1, :arch[layer_i+1]].set(jax.vmap(forward_disc, in_axes=(0, None))(neurons[layer_i], xs)[:arch[layer_i+1]])
+        jax.debug.print("{}", xs)
+    jax.debug.print("{}", jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:len(output[0])])
+    return jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:len(output[0])]
+
+def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
     global key
     weights = jnp.ones((i_3,i_4)) * -jnp.inf
     # layer lists, each with arch[i] elements
     # so this is a 2D list of floats
     # or a 1D list of jnp arrays
     n = sum(arch[:layer])
-    mu = -2*jnp.log(n-1)
-    sigma = 3
+    mu = -jnp.log(n-1)/k
     for i in range(layer):
         inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu #type: ignore
         weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[i]), mode="constant", constant_values=-jnp.inf))
         key = random.randint(0, 10000)
     return weights
 
-def initialise(arch: List[int]) -> jnp.ndarray:
+def initialise(arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
     neurons = jnp.ones((i_1, i_2, i_3, i_4))
     for i1 in range(1, len(arch)):
         for i2 in range(arch[i1]):
-            neurons = neurons.at[i1-1,i2].set(get_weights(i1, arch))
+            neurons = neurons.at[i1-1,i2].set(get_weights(i1, arch, sigma, k))
         for i2 in range(arch[i1], i_2):
             neurons = neurons.at[i1-1,i2].set(-jnp.inf * jnp.ones((i_3,i_4)))
     return neurons
@@ -182,8 +185,12 @@ i_2 = max(arch[1:])
 i_3 = i_1
 i_4 = max(arch)
 shapes, total = get_shapes(arch)
-n = 10
-neuronss = jnp.array([initialise(arch) for _ in range(n)])
+sigmas = jnp.array([0.01, 0.1, 0.25, 0.3, 0.4, 0.45, 0.5, 0.53, 0.6, 0.62, 0.7, 0.75, 0.8, 1.0, 2.0, 3.0, 5.0, 10.0])
+#some extra sigmas: 2.0, 3.0, 5.0, 10.0
+ks = jnp.array([1.0, 1.0, 0.99, 0.98, 0.97, 0.96, 0.955, 0.95, 0.94, 0.93, 0.92, 0.91, 0.9, 0.85, 0.65, 0.5, 0.32, 0.17])
+#some extra ks: 0.65, 0.5, 0.32, 0.17
+n = sigmas.shape[0]
+neuronss = jnp.array([initialise(arch, sigmas[i], ks[i]) for i in range(n)])
 solver = optax.adam(learning_rate=0.003)
 opt_states = jax.vmap(solver.init)(neuronss)
 # print(opt_states[0])
@@ -206,7 +213,7 @@ while cont:
         if test(neurons):
             print(index)
             jax.debug.print("neurons:{}", neurons)
-            print(jax.vmap(feed_forward_disc, in_axes=(0, None, None))(inputs, neuronss[index], True))
+            print(jax.vmap(feed_forward_disc_print, in_axes=(0, None, None))(inputs, neuronss[index]))
             final_index = index
             cont = False
     if cont:
@@ -216,7 +223,7 @@ while cont:
                 print("Restarting", i, "with new random weights, stuck in local minima", new_losses[i], old_losses[i])
                 print(output_circuit(neuronss[i]))
                 print(jax.vmap(feed_forward_disc, in_axes=(0, None))(inputs, neuronss[i]))
-                neuronss = neuronss.at[i].set(initialise(arch)) 
+                neuronss = neuronss.at[i].set(initialise(arch, sigmas[i], ks[i])) 
                 # print(opt_states[0])
                 count = opt_states[0].count.at[i].set(0)
                 mu = opt_states[0].mu.at[i].set(solver.init(neuronss[i])[0].mu)
