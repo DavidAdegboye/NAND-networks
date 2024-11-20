@@ -2,6 +2,7 @@ import jax
 import jax.numpy as jnp
 import optax #type: ignore
 import random
+import math
 import typing
 from typing import List, Tuple, Set
 from functools import partial
@@ -17,12 +18,20 @@ Network = List[Layer]
 
 ##jax.config.update("jax_traceback_filtering", "off")
 
-inputs = jnp.array([jnp.array([0,0]),
-                    jnp.array([0,1]),
-                    jnp.array([1,0]),
-                    jnp.array([1,1]),]) 
-output = jnp.array([jnp.array([0,0]), jnp.array([0,1]), jnp.array([0,1]), jnp.array([1,0])])
-arch = [2,1,2,2]
+bits = 4
+def denary_to_binary_array(number: int, bits: int=bits) -> jnp.ndarray:
+    return jnp.array([(jnp.right_shift(number, bits - 1 - i) & 1) for i in range(bits)], dtype=jnp.int32)
+
+def output_size(bits: int=bits) -> int:
+    return math.ceil(math.log2(bits+1))
+
+def get_output(number: int) -> jnp.ndarray:
+    return denary_to_binary_array(jnp.sum(denary_to_binary_array(number)), bits=output_size())
+
+inputs = jax.vmap(denary_to_binary_array)(jnp.arange(2**bits))
+output = jax.vmap(get_output)(jnp.arange(2**bits))
+arch = [4,19,15,10,7,5,3]
+# arch = [3,2,1,1,2,2]
 
 def f(x: jnp.ndarray, w: jnp.ndarray) -> jnp.ndarray:
     # x would be all of the inputs coming in from a certain layer
@@ -97,11 +106,18 @@ def feed_forward(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
     return jax.vmap(forward, in_axes=(0, None))(neurons[i_1-1], xs)[:len(output[0])]
 feed_forward = jax.jit(feed_forward)
 
-def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
+def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray, debug=False) -> jnp.ndarray:
     xs = jnp.ones((i_3,i_4))
     xs = xs.at[0].set(jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1))
+    if debug:
+        jax.debug.print("inputs:{}", inputs)
+        jax.debug.print("{}", xs)
     for layer_i in range(i_1-1):
         xs = xs.at[layer_i+1, :arch[layer_i+1]].set(jax.vmap(forward_disc, in_axes=(0, None))(neurons[layer_i], xs)[:arch[layer_i+1]])
+        if debug:
+            jax.debug.print("{}", xs)
+    if debug:
+        jax.debug.print("{}", jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:len(output[0])])
     return jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:len(output[0])]
 feed_forward_disc = jax.jit(feed_forward_disc)
 
@@ -166,7 +182,7 @@ i_2 = max(arch[1:])
 i_3 = i_1
 i_4 = max(arch)
 shapes, total = get_shapes(arch)
-n = 5
+n = 10
 neuronss = jnp.array([initialise(arch) for _ in range(n)])
 solver = optax.adam(learning_rate=0.003)
 opt_states = jax.vmap(solver.init)(neuronss)
@@ -189,7 +205,8 @@ while cont:
     for index, neurons in enumerate(neuronss):
         if test(neurons):
             print(index)
-            # print(neurons)
+            jax.debug.print("neurons:{}", neurons)
+            print(jax.vmap(feed_forward_disc, in_axes=(0, None, None))(inputs, neuronss[index], True))
             final_index = index
             cont = False
     if cont:
@@ -212,4 +229,4 @@ while cont:
             print("Losses:", new_losses)
             iters = 0
 print("Learnt:", output, "with arch:", arch)
-print(output_circuit(neuronss[final_index]))
+print(output_circuit(neuronss[final_index], verbose=True))
