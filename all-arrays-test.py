@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import optax #type: ignore
 import random
 import math
-from typing import List, Tuple, Set
+from typing import List, Tuple, Set, Union
 
 # in some sense a neuron is a list of layers also, which 
 # can cause some logical bugs. For example, f is calculating
@@ -57,7 +57,7 @@ forward_disc = jax.jit(forward_disc)
 
 def output_circuit(neurons: jnp.ndarray, verbose=False) -> List[str]:
     circuits = [chr(ord('A')+i) for i in range(arch[0])]
-    gates = [[[] for _ in range(arch[0])]]
+    gates:List[List[List[Union[str,Tuple[int,int]]]]] = [[[] for _ in range(arch[0])]]
     c2i = dict([(x,i) for i,x in enumerate(circuits)])
     indices = dict([(i,i) for i in range(arch[0])])
     index2gate = dict([(i, (0,i)) for i in range(arch[0])])
