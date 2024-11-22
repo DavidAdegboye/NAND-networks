@@ -3,9 +3,7 @@ import jax.numpy as jnp
 import optax #type: ignore
 import random
 import math
-import typing
 from typing import List, Tuple, Set
-from functools import partial
 
 # in some sense a neuron is a list of layers also, which 
 # can cause some logical bugs. For example, f is calculating
@@ -18,7 +16,7 @@ Network = List[Layer]
 
 ##jax.config.update("jax_traceback_filtering", "off")
 
-bits = 4
+bits = 6
 def denary_to_binary_array(number: jnp.ndarray, bits: int=bits) -> jnp.ndarray:
     return jnp.array([(jnp.right_shift(number, bits - 1 - i) & 1) for i in range(bits)], dtype=jnp.int32)
 
@@ -30,8 +28,10 @@ def get_output(number: jnp.ndarray) -> jnp.ndarray:
 
 inputs = jax.vmap(denary_to_binary_array)(jnp.arange(2**bits))
 output = jax.vmap(get_output)(jnp.arange(2**bits))
-arch = [4,19,15,10,7,5,3]
-# arch = [3,2,1,1,2,2]
+# arch = [4,19,15,10,7,5,3]
+# arch = [3,4,3,3,3,2]
+# arch = [2,1,2,2]
+arch = [6, 35, 30, 25, 20, 15, 10, 5, 3]
 
 def f(x: jnp.ndarray, w: jnp.ndarray) -> jnp.ndarray:
     # x would be all of the inputs coming in from a certain layer
@@ -57,11 +57,16 @@ forward_disc = jax.jit(forward_disc)
 
 def output_circuit(neurons: jnp.ndarray, verbose=False) -> List[str]:
     circuits = [chr(ord('A')+i) for i in range(arch[0])]
-    c2i = dict({(x,i) for i,x in enumerate(circuits)})
-    indices = dict({(i,i) for i in range(arch[0])})
+    gates = [[[] for _ in range(arch[0])]]
+    c2i = dict([(x,i) for i,x in enumerate(circuits)])
+    indices = dict([(i,i) for i in range(arch[0])])
+    index2gate = dict([(i, (0,i)) for i in range(arch[0])])
     empties = []
     added = arch[0] - 1
     for layer_i in range(i_1):
+        gates.append([])
+        gate_i1 = layer_i+1
+        gate_i2 = 0
         for neuron_i in range(len(shapes[layer_i])):
             i = 0
             connected: Set[Tuple[int, str]] = set()
@@ -85,16 +90,26 @@ def output_circuit(neurons: jnp.ndarray, verbose=False) -> List[str]:
                 else:
                     node = '¬(' + '.'.join([element[1] for element in connected]) + ')'
                 if node in c2i.keys():
-                    circuits.append('_')
+                    if layer_i == i_1-1:
+                        circuits.append(node)
+                        gates[-1].append(["=", index2gate[c2i[node]]])
+                        index2gate[added] = (gate_i1, gate_i2)
+                        gate_i2 += 1
+                    else:
+                        circuits.append('_')
                     indices[added] = c2i[node]
                 else:
-                    circuits.append(node)
+                    circuits.append(node)                    
                     c2i[node] = added
                     indices[added] = added
+                    gates[-1].append([index2gate[element[0]] for element in connected])
+                    index2gate[added] = (gate_i1, gate_i2)
+                    gate_i2 += 1
     if verbose:
-        print(i)
-        [print(k,v) for k,v in c2i.items()]
-        print(connected)
+        print(c2i)
+        print(indices)
+        print(circuits)
+        print(gates)
     return circuits[-arch[-1]:]
 ##output_circuit = jax.jit(output_circuit)
 
@@ -177,6 +192,9 @@ def test(neurons: jnp.ndarray) -> jnp.ndarray:
 ## every n iterations, discretize the circuit, test and potentially stop if 100% accurate
 ## try on adders, other 2 bit logic gates.
 
+def solver_init(neurons: jnp.ndarray, opt_state, pass_through=False):
+    return jax.lax.cond(pass_through, lambda _:opt_state, lambda _:solver.init(neurons), operand=None)
+
 print("Learning:", output, "with arch:", arch)
 key = random.randint(0, 10000)
 
@@ -213,23 +231,21 @@ while cont:
         if test(neurons):
             print(index)
             jax.debug.print("neurons:{}", neurons)
-            print(jax.vmap(feed_forward_disc_print, in_axes=(0, None, None))(inputs, neuronss[index]))
+            print(jax.vmap(feed_forward_disc_print, in_axes=(0, None))(inputs, neuronss[index]))
             final_index = index
             cont = False
     if cont:
         new_losses = [round(float(loss(neuronss[index])),3) for index in range(n)]
         for i in range(n):
-            if new_losses[i] >= old_losses[i]:
+            if new_losses[i] >= old_losses[i] or math.isnan(new_losses[i]):
                 print("Restarting", i, "with new random weights, stuck in local minima", new_losses[i], old_losses[i])
-                print(output_circuit(neuronss[i]))
-                print(jax.vmap(feed_forward_disc, in_axes=(0, None))(inputs, neuronss[i]))
+                # print(output_circuit(neuronss[i]))
+                # print(jax.vmap(feed_forward_disc, in_axes=(0, None))(inputs, neuronss[i]))
                 neuronss = neuronss.at[i].set(initialise(arch, sigmas[i], ks[i])) 
-                # print(opt_states[0])
-                count = opt_states[0].count.at[i].set(0)
-                mu = opt_states[0].mu.at[i].set(solver.init(neuronss[i])[0].mu)
-                opt_states = (opt_states[0]._replace(mu=mu, count=count), opt_states[1])
+                opt_states = jax.vmap(solver_init)(neuronss, opt_states, jnp.arange(n) == i)
                 new_losses[i] = round(float(loss(neuronss[index])),3) 
                 old_losses[i] = 100
+                print(new_losses[i], old_losses[i])
             else:
                 old_losses[i] = new_losses[i]
         if iters == 10:
