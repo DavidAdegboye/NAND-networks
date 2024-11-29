@@ -11,3 +11,9 @@ In practice all that matters is that the initialisation is good enough. But it s
 my assumptions. One of these assumptions is sigma = 3, which was chosen arbitrarily. By allowing sigma to be a parameter, I can more
 easily try different initialisations, and even try some different initialisations in parallel.
 One of such assumptions is even that we should use a normal. This assumption was mainly because it made things easier to model.
+
+make layers wider, scale up
+potentially include other gates for better optimisation
+4+4 bit adder, vary intialisation, gates, layer sizes
+measure loss curves, and training times.
+lower priority: different loss functions and optimisers
