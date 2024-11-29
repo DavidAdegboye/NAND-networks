@@ -17,3 +17,4 @@ potentially include other gates for better optimisation
 4+4 bit adder, vary intialisation, gates, layer sizes
 measure loss curves, and training times.
 lower priority: different loss functions and optimisers
+also how they vary with adder size
