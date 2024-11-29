@@ -12,7 +12,8 @@ make layers wider, scale up
 potentially include other gates for better optimisation
 4+4 bit adder, vary intialisation, gates, layer sizes
 measure loss curves, and training times.
-# include logging of losses and training times
+
+include logging of losses and training times
 lower priority: different loss functions and optimisers
 also how they vary with adder size
 test different shapes - flat, increasing, decreasing
