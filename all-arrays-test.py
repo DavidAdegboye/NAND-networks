@@ -17,21 +17,18 @@ Network = List[Layer]
 ##jax.config.update("jax_traceback_filtering", "off")
 
 bits = 6
-def denary_to_binary_array(number: jnp.ndarray, bits: int=bits) -> jnp.ndarray:
+def denary_to_binary_array(number: jnp.ndarray, bits: int=bits*2) -> jnp.ndarray:
     return jnp.array([(jnp.right_shift(number, bits - 1 - i) & 1) for i in range(bits)], dtype=jnp.int32)
 
-def output_size(bits: int=bits) -> int:
-    return math.ceil(math.log2(bits+1))
-
 def get_output(number: jnp.ndarray) -> jnp.ndarray:
-    return denary_to_binary_array(jnp.sum(denary_to_binary_array(number)), bits=output_size())
+    return denary_to_binary_array(number//(2**bits) + number%(2**bits), bits=bits+1)
 
-inputs = jax.vmap(denary_to_binary_array)(jnp.arange(2**bits))
-output = jax.vmap(get_output)(jnp.arange(2**bits))
+inputs = jax.vmap(denary_to_binary_array)(jnp.arange(2**(bits*2)))
+output = jax.vmap(get_output)(jnp.arange(2**(bits*2)))
 # arch = [4,19,15,10,7,5,3]
 # arch = [3,4,3,3,3,2]
 # arch = [2,1,2,2]
-arch = [6, 35, 30, 25, 20, 15, 10, 5, 3]
+arch = [bits*2, 50, 50, 50, 50, 50, 50, 50, bits+1]
 
 def f(x: jnp.ndarray, w: jnp.ndarray) -> jnp.ndarray:
     # x would be all of the inputs coming in from a certain layer
