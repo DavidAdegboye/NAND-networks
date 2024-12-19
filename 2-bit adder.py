@@ -2,25 +2,36 @@ import jax
 import jax.numpy as jnp
 import optax
 import random
+import typing
+from typing import List, Tuple
+
+# in some sense a neuron is a list of layers also, which 
+# can cause some logical bugs. For example, f is calculating
+# values over a layer
+Neuron = List[jnp.ndarray]
+Layer = List[Neuron]
+Network = List[Layer]
 
 ##jax.config.update("jax_traceback_filtering", "off")
 
-inputs = [[0,0],[0,1],[1,0],[1,1]]
-inputs = [jnp.array(x) for x in inputs]
+ins = [[0,0],[0,1],[1,0],[1,1]]
+inputs = [jnp.array(x) for x in ins]
 output = jnp.array([jnp.array([0,0]), jnp.array([0,1]), jnp.array([0,1]), jnp.array([1,0])])
 arch = [2,1,2,2]
 
-def f2(x, w):
+def f(x : jnp.ndarray, w : jnp.ndarray) -> float:
+    # x would be all of the inputs coming in from a certain layer
+    # w would be all of the weights for inputs to that layer to a given NAND gate
     return jnp.prod(1 + jnp.multiply(x, jax.nn.sigmoid(w)) - jax.nn.sigmoid(w))
-f2 = jax.jit(f2)
+f = jax.jit(f)
 
-def f_disc(x, w):
+def f_disc(x : jnp.ndarray, w : jnp.ndarray) -> float:
     return jnp.prod(jnp.where(w>0, x, 1))
 f_disc = jax.jit(f_disc)
 
 ## maybe later for efficiency, remove class
 
-def flatten(weights):
+def flatten(weights : Neuron) -> List[float]:
     flat = []
     for layer in weights:
         for connection in layer:
@@ -28,28 +39,33 @@ def flatten(weights):
     return flat
 flatten = jax.jit(flatten)
 
-def shape(weights):
+def shape(weights : Neuron) -> List[int]:
     return [len(layer) for layer in weights]
 shape = jax.jit(shape)
 
-def update_weights(weights, new_weights):
+def update_weights(weights : Neuron, new_weights : jnp.ndarray) -> Neuron:
     i = 0
     for layer, count in enumerate(shape(weights)):
         weights[layer] = jax.lax.slice_in_dim(new_weights,i,i+count)
         i += count
     return weights
-##update_weights = jax.jit(update_weights)
+# update_weights = jax.jit(update_weights)
 # to "jitify" need to remove slicing
 
-def forward(weights, xs):
-    return 1 - jnp.prod(jnp.array([f2(xi,wi) for xi,wi in zip(xs, weights)]))
+def forward(weights : Neuron, xs : List[jnp.ndarray]) -> float:
+    # the forward pass for an arbitrary neuron. 1 - the product of all the fs
+    # to use vmap, I would have to include some padding that doesn't affect the value.
+    # main candidate would be x=1, w=1, since f(1,1)=1, so it wouldn't affect the result
+    # after the product.
+    # return 1 - jnp.prod(jax.vmap(f, in_axes=(0,0))(xs, weights))
+    return 1 - jnp.prod(jnp.array([f(xi,wi) for xi,wi in zip(xs, weights)]))
 forward = jax.jit(forward)
 
-def forward_disc(weights, xs):
+def forward_disc(weights: Neuron, xs : List[jnp.ndarray]) -> float:
     return 1 - jnp.prod(jnp.array([f_disc(xi,wi) for xi,wi in zip(xs, weights)]))
 forward_disc = jax.jit(forward_disc)
 
-def unpack_weights(neurons):
+def unpack_weights(neurons : Network) -> jnp.ndarray:
     weights = []
     for layer in neurons:
         for neuron in layer:
@@ -59,7 +75,7 @@ def unpack_weights(neurons):
     return jnp.array(weights)
 unpack_weights = jax.jit(unpack_weights)
 
-def pack_weights(weights, neurons):
+def pack_weights(weights : jnp.ndarray, neurons : Network) -> Network:
     i = 0
     ws_seen = 0
     for layer in neurons:
@@ -73,7 +89,7 @@ def pack_weights(weights, neurons):
 # to "jitify" need to remove slicing
 # could pass indices as inputs, but update_weights uses jax.lax_slice_in_dim, which is incompatible with jit.
 
-def output_weights(weights, neurons):
+def output_weights(weights : jnp.ndarray, neurons : Network) -> List[jnp.ndarray]:
     output = []
     i = 0
     ws_seen = 0
@@ -125,7 +141,7 @@ def output_circuit(neurons):
     return circuits[-arch[-1]:]
 ##output_circuit = jax.jit(output_circuit)
 
-def feed_forward(inputs, neurons):
+def feed_forward(inputs : List[int], neurons : Network) -> jnp.ndarray:
     xs = [jnp.array(inputs)]
     for layer in neurons:
         layer_outputs = jnp.array([forward(weights, xs) for weights in layer])
@@ -133,7 +149,7 @@ def feed_forward(inputs, neurons):
     return xs[-1]
 feed_forward = jax.jit(feed_forward)
 
-def feed_forward_disc(inputs, neurons):
+def feed_forward_disc(inputs : List[int], neurons : Network) -> jnp.ndarray:
     xs = [jnp.array(inputs)]
     for layer in neurons:
         layer_outputs = jnp.array([forward_disc(weights, xs) for weights in layer])
@@ -141,9 +157,12 @@ def feed_forward_disc(inputs, neurons):
     return xs[-1]
 feed_forward_disc = jax.jit(feed_forward_disc)
 
-def get_weights(layer, arch):
+def get_weights(layer : int, arch : List[int]) -> Neuron:
     global key
     weights = []
+    # layer lists, each with arch[i] elements
+    # so this is a 2D list of floats
+    # or a 1D list of jnp arrays
     n = sum(arch[:layer])
     mu = -2*jnp.log(n-1)
     sigma = 3
@@ -152,12 +171,12 @@ def get_weights(layer, arch):
         key += 1
     return weights
 
-def initialise(arch):
-    neurons = []
+def initialise(arch : List[int]) -> Tuple[Network, List[int]]:
+    neurons : Network = []
     weight_counts = []
     for i in range(1, len(arch)):
         neurons.append([])
-        for j in range(arch[i]):
+        for _ in range(arch[i]):
             weights = get_weights(i, arch)
             neurons[-1].append(weights)
             weight_counts.append(sum(shape(weights)))
@@ -165,19 +184,7 @@ def initialise(arch):
 
 epsilon = 1e-8
 l2_coeff = 0.01
-def jit_loss(weights, neurons):
-    # calculating the output for each input.
-    pred = jax.vmap(feed_forward, in_axes=(0, None))(inputs, neurons)
-    pred = jnp.clip(pred, epsilon, 1-epsilon)
-    pred_logits = jnp.log(pred) - jnp.log(1-pred)
-    l1 = jnp.mean(optax.sigmoid_binary_cross_entropy(pred_logits, output))
-    l2 = jnp.mean(1-jax.nn.sigmoid(jnp.absolute(weights)))
-    return l1 + l2_coeff * l2
-jit_loss = jax.jit(jit_loss)
-
-epsilon = 1e-8
-l2_coeff = 0.01
-def loss(weights):
+def loss(weights : jnp.ndarray) -> float:
     neuronss[index] = pack_weights(weights, neuronss[index])
     pred = []
     for inp in inputs:
@@ -191,7 +198,7 @@ def loss(weights):
     return l1 + l2_coeff * l2
 ##    loss = jax.jit(loss)
 
-def test(weights):
+def test(weights : jnp.ndarray) -> bool:
     neuronss[index] = pack_weights(weights, neuronss[index])
     pred = []
     for inp in inputs:

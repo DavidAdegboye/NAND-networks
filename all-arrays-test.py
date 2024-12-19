@@ -16,6 +16,8 @@ Network = List[Layer]
 
 ##jax.config.update("jax_traceback_filtering", "off")
 
+width = 30
+hidden = 4
 bits = 6
 def denary_to_binary_array(number: jnp.ndarray, bits: int=bits*2) -> jnp.ndarray:
     return jnp.array([(jnp.right_shift(number, bits - 1 - i) & 1) for i in range(bits)], dtype=jnp.int32)
@@ -28,7 +30,7 @@ output = jax.vmap(get_output)(jnp.arange(2**(bits*2)))
 # arch = [4,19,15,10,7,5,3]
 # arch = [3,4,3,3,3,2]
 # arch = [2,1,2,2]
-arch = [bits*2, 50, 50, 50, 50, 50, 50, 50, bits+1]
+arch = [bits*2] + [width] * hidden + [bits+1]
 
 def f(x: jnp.ndarray, w: jnp.ndarray) -> jnp.ndarray:
     # x would be all of the inputs coming in from a certain layer
@@ -42,8 +44,8 @@ f_disc = jax.jit(f_disc)
 
 def forward(weights: jnp.ndarray, xs: jnp.ndarray) -> jnp.ndarray:
     # the forward pass for an arbitrary neuron. 1 - the product of all the fs
-    # to use vmap, I would have to include some padding that doesn't affect the value.
-    # main candidate would be x=1, w=0, since f(1,0)=1, so it wouldn't affect the result
+    # to use vmap, I include some padding that doesn't affect the value.
+    # x=1, w=0, since f(1,0)=1, so it wouldn't affect the result
     # after the product.
     return 1 - jnp.prod(jax.vmap(f)(xs, weights))
 forward = jax.jit(forward)

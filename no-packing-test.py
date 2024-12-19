@@ -17,32 +17,35 @@ Network = List[Layer]
 
 ##jax.config.update("jax_traceback_filtering", "off")
 
-inputs = [[0,0],[0,1],[1,0],[1,1]]
-inputs = [jnp.array(x) for x in inputs] # type: ignore
-inputs = jnp.array(inputs) # type: ignore
-output = jnp.array([jnp.array([0,0]), jnp.array([0,1]), jnp.array([0,1]), jnp.array([1,0])])
-arch = [2,1,2,2]
+width = 30
+hidden = 4
+bits = 6
+def denary_to_binary_array(number: jnp.ndarray, bits: int=bits*2) -> jnp.ndarray:
+    return jnp.array([(jnp.right_shift(number, bits - 1 - i) & 1) for i in range(bits)], dtype=jnp.int32)
 
-def f(x : jnp.ndarray, w : jnp.ndarray) -> float:
+def get_output(number: jnp.ndarray) -> jnp.ndarray:
+    return denary_to_binary_array(number//(2**bits) + number%(2**bits), bits=bits+1)
+
+inputs = jax.vmap(denary_to_binary_array)(jnp.arange(2**(bits*2)))
+output = jax.vmap(get_output)(jnp.arange(2**(bits*2)))
+# arch = [4,19,15,10,7,5,3]
+# arch = [3,4,3,3,3,2]
+# arch = [2,1,2,2]
+arch = [bits*2] + [width] * hidden + [bits+1]
+
+def f(x : jnp.ndarray, w : jnp.ndarray) -> jnp.ndarray:
     # x would be all of the inputs coming in from a certain layer
     # w would be all of the weights for inputs to that layer to a given NAND gate
     return jnp.prod(1 + jnp.multiply(x, jax.nn.sigmoid(w)) - jax.nn.sigmoid(w)) # type: ignore
 f = jax.jit(f)
 
-def f_disc(x : jnp.ndarray, w : jnp.ndarray) -> float:
+def f_disc(x : jnp.ndarray, w : jnp.ndarray) -> jnp.ndarray:
     return jnp.prod(jnp.where(w>0, x, 1)) # type: ignore
 f_disc = jax.jit(f_disc)
 
-def shape(weights : Neuron) -> List[int]:
-    return [len(layer) for layer in weights]
-shape = jax.jit(shape)
-
 def forward(weights : Neuron, xs : List[jnp.ndarray]) -> float:
-    # the forward pass for an arbitrary neuron. 1 - the product of all the fs
-    # to use vmap, I would have to include some padding that doesn't affect the value.
-    # main candidate would be x=1, w=0, since f(1,0)=1, so it wouldn't affect the result
-    # after the product.
-    # return 1 - jnp.prod(jax.vmap(f, in_axes=(0,0))(xs, weights))
+    # weights is a List of jnp arrays of different sizes
+    # because these jnp arrays have different sizes, it can't be a jnp array
     return 1 - jnp.prod(jnp.array([f(xi,wi) for xi,wi in zip(xs, weights)])) # type: ignore
 forward = jax.jit(forward)
 
@@ -124,16 +127,14 @@ def get_weights(layer : int, arch : List[int]) -> Neuron:
         key += 1
     return weights
 
-def initialise(arch : List[int]) -> Tuple[Network, List[int]]:
+def initialise(arch : List[int]) -> Network:
     neurons : Network = []
-    weight_counts = []
     for i in range(1, len(arch)):
         neurons.append([])
         for _ in range(arch[i]):
             weights = get_weights(i, arch)
             neurons[-1].append(weights)
-            weight_counts.append(sum(shape(weights)))
-    return neurons, weight_counts
+    return neurons
 
 def get_l2(neurons: Network) -> float:
     n = 0
@@ -174,7 +175,7 @@ key = random.randint(0, 10000)
 n = 5
 neuronss = []
 for _ in range(n):
-    ne, weight_counts = initialise(arch)
+    ne = initialise(arch)
     neuronss.append(ne)
 solver = optax.adam(learning_rate=0.003)
 opt_states = [solver.init(neurons) for neurons in neuronss]
