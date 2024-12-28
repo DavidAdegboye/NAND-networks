@@ -213,9 +213,9 @@ while cont:
         for i in range(n):
             if new_losses[i] >= old_losses[i]:
                 print("Restarting", i, "with new random weights, stuck in local minima", new_losses[i], old_losses[i])
-                neuronss[i], _ = initialise(arch) # type: ignore
+                neuronss[i] = initialise(arch) # type: ignore
                 opt_states[i] = solver.init(neuronss[i])
-                new_losses[i] = round(float(loss(neuronss[index])),3) # type: ignore
+                new_losses[i] = round(float(loss(neuronss[i])),3) # type: ignore
                 old_losses[i] = 100
             else:
                 old_losses[i] = new_losses[i]
