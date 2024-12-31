@@ -16,8 +16,12 @@ Network = List[Layer]
 
 ##jax.config.update("jax_traceback_filtering", "off")
 
-taper = 2/3
-bits = 3
+print(jax.devices())
+taper = float(input("Input taper ratio:\n"))
+bits = int(input("Input bits:\n"))
+start_i = int(input("Input starting index:\n"))
+end_i = int(input("Input ending index (max 30):\n"))
+
 def denary_to_binary_array(number: jnp.ndarray, bits: int=bits*2) -> jnp.ndarray:
     return jnp.array([(jnp.right_shift(number, bits - 1 - i) & 1) for i in range(bits)], dtype=jnp.int32)
 
@@ -31,11 +35,11 @@ output = jax.vmap(get_output)(jnp.arange(2**(bits*2)))
 # arch = [2,1,2,2]
 ins = bits*2
 layer2 = 2**ins - ins - 1
-width = layer2//2
+
 arch = [ins, layer2]
 next_layer = layer2
 while next_layer > bits+1:
-    next_layer = int(next_layer*taper)
+    next_layer = round(next_layer*taper)
     arch.append(next_layer)
 if arch[-1] != bits+1:
     arch.append(bits+1)
@@ -221,11 +225,12 @@ def get_shapes(arch: List[int]) -> Tuple[Network, int]:
             total += sum(arch[:layer])
     return shapes, total
 
-epsilon = 1e-8
+epsilon = 1e-7
 l2_coeff = 0.01
 @jax.jit
 def loss(neurons: jnp.ndarray) -> jnp.ndarray:
-    pred = jax.vmap(feed_forward, in_axes=(0, None))(inputs, neurons) 
+    pred = jax.vmap(feed_forward, in_axes=(0, None))(inputs, neurons)
+    pred = jnp.clip(pred, epsilon, 1-epsilon)
     pred_logits = jnp.log(pred) - jnp.log(1-pred)
     l1 = jnp.mean(optax.sigmoid_binary_cross_entropy(pred_logits, output))
     l2 = jnp.sum(1-jax.nn.sigmoid(jnp.absolute(neurons))) / total
@@ -251,12 +256,10 @@ i_2 = max(arch[1:])
 i_3 = i_1
 i_4 = max(arch)
 shapes, total = get_shapes(arch)
-sigmas = jnp.array([3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 20.0, 25.0])
-# sigmas = jnp.array([0.01, 0.1, 0.25, 0.3, 0.4, 0.45, 0.5, 0.53, 0.6, 0.62, 0.7, 0.75, 0.8, 1.0, 2.0])
-# other sigmas 0.01, 0.1, 0.25, 0.3, 0.4, 0.45, 0.5, 0.53, 0.6, 0.62, 0.7, 0.75, 0.8, 1.0, 2.0, 
-ks = jnp.array([0.5, 0.39, 0.32, 0.27, 0.23, 0.205, 0.18, 0.17, 0.155, 0.14, 0.13, 0.12, 0.11, 0.082, 0.068])
-# ks = jnp.array([1.0, 1.0, 0.99, 0.98, 0.97, 0.96, 0.955, 0.95, 0.94, 0.93, 0.92, 0.91, 0.9, 0.85, 0.65])
-# other ks 1.0, 1.0, 0.99, 0.98, 0.97, 0.96, 0.955, 0.95, 0.94, 0.93, 0.92, 0.91, 0.9, 0.85, 0.65, 
+sigmas = jnp.array([0.01, 0.1, 0.25, 0.3, 0.4, 0.45, 0.5, 0.53, 0.6, 0.62, 0.7, 0.75, 0.8, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 20.0, 25.0])
+ks = jnp.array([1.0, 1.0, 0.99, 0.98, 0.97, 0.96, 0.955, 0.95, 0.94, 0.93, 0.92, 0.91, 0.9, 0.85, 0.65, 0.5, 0.39, 0.32, 0.27, 0.23, 0.205, 0.18, 0.17, 0.155, 0.14, 0.13, 0.12, 0.11, 0.082, 0.068])
+sigmas = sigmas[start_i:end_i]
+ks = ks[start_i:end_i]
 n = sigmas.shape[0]
 solver = optax.adam(learning_rate=0.003)
 neuronss = jnp.array([initialise(arch, sigmas[i], ks[i]) for i in range(n)])
@@ -271,7 +274,7 @@ opt_states = jax.vmap(solver.init)(neuronss)
 # print(opt_states[1])
 # print(opt_states)
 print("Losses:")
-print([round(float(old_loss),3) for old_loss in old_losses])
+print([round(float(old_loss),5) for old_loss in old_losses])
 grad = jax.jit(jax.grad(loss))
 iters = 0
 found_nan = False
@@ -296,31 +299,32 @@ while cont:
         # if found_nan:
         #     print(new_losses)
         new_losses = [loss(neuronss[index]) for index in range(n)]
+        old_losses = new_losses.copy()
         # if found_nan:
         #     print(new_losses)
-        for i in range(n):
-            if math.isnan(new_losses[i]):
-                if not restart_mask[i]:
-                    print("Run", i, "is now stuck.")
-                    print(jnp.any(jnp.isnan(neuronss[i])))
-                    print(jnp.any(jnp.isnan(opt_states[0].mu[i])))
-                    restart_mask[i] = True
-                if all(restart_mask):
-                    print("Restarting all runs, they all got stuck")
-                    neuronss = jnp.array([initialise(arch, sigmas[i], ks[i]) for i in range(n)])
-                    old_losses = [loss(neuronss[index]) for index in range(n)]
-                    while any([math.isnan(old_loss) for old_loss in old_losses]):
-                        neuronss = jnp.array([initialise(arch, sigmas[i], ks[i]) for i in range(n)])
-                        old_losses = [loss(neuronss[index]) for index in range(n)]
-                    restart_mask = [False] * n
-                    opt_states = jax.vmap(solver.init)(neuronss)
-                    print("Losses:")
-                    print([round(float(old_loss),3) for old_loss in old_losses])
-            else:
-                old_losses[i] = new_losses[i]
+        # for i in range(n):
+            # if math.isnan(new_losses[i]):
+            #     if not restart_mask[i]:
+            #         print("Run", i, "is now stuck.")
+            #         print(jnp.any(jnp.isnan(neuronss[i])))
+            #         print(jnp.any(jnp.isnan(opt_states[0].mu[i])))
+            #         restart_mask[i] = True
+            #     if all(restart_mask):
+            #         print("Restarting all runs, they all got stuck")
+            #         neuronss = jnp.array([initialise(arch, sigmas[i], ks[i]) for i in range(n)])
+            #         old_losses = [loss(neuronss[index]) for index in range(n)]
+            #         while any([math.isnan(old_loss) for old_loss in old_losses]):
+            #             neuronss = jnp.array([initialise(arch, sigmas[i], ks[i]) for i in range(n)])
+            #             old_losses = [loss(neuronss[index]) for index in range(n)]
+            #         restart_mask = [False] * n
+            #         opt_states = jax.vmap(solver.init)(neuronss)
+            #         print("Losses:")
+            #         print([round(float(old_loss),5) for old_loss in old_losses])
+            # else:
+            #     old_losses[i] = new_losses[i]
         if iters == 10:
             print("Losses:")
-            print([round(float(new_loss),3) for new_loss in new_losses])
+            print([round(float(new_loss),5) for new_loss in new_losses])
             iters = 0
 print("Learnt:", output, "with arch:", arch)
 print(output_circuit(neuronss[final_index]))

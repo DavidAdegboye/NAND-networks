@@ -147,10 +147,11 @@ def get_l2(neurons: Network) -> float:
     return total/n
 get_l2 = jax.jit(get_l2)
 
-epsilon = 1e-8
+epsilon = 1e-7
 l2_coeff = 0.01
 def loss(neurons : Network) -> float:
     pred = jax.vmap(feed_forward, in_axes=(0, None))(inputs, neurons) # type: ignore
+    pred = jnp.clip(pred, epsilon, 1-epsilon)
     pred_logits = jnp.log(pred) - jnp.log(1-pred)
     l1 = jnp.mean(optax.sigmoid_binary_cross_entropy(pred_logits, output))
     l2 = get_l2(neurons)
