@@ -2,8 +2,11 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import jax
 import jax.numpy as jnp
+import os
 from skimage.transform import resize
 from typing import List, Tuple
+
+Conv = Tuple[int, int, bool]
 
 # loading the MNIST numbers dataset
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
@@ -22,6 +25,7 @@ def preprocess_image(image, size=(size, size), threshold=0.5):
 n = int(input("How many output neurons per number?\n"))
 
 # turning the output label from a number to n hot encoding
+@jax.jit
 def preprocess_test(value: int) -> jnp.ndarray:
     output = jnp.zeros(10 * n)
     output = jax.lax.dynamic_update_slice(output, jnp.ones(n), (value * n,))
@@ -77,7 +81,7 @@ def add_convolution(input_image: jnp.ndarray, width: int, stride: int, min_max: 
     output_image = jnp.squeeze(output)
     return output_image
 
-def conv_help(inputs: jnp.ndarray) -> Tuple[jnp.ndarray, int, Tuple[int, int, bool], str]:
+def conv_help(inputs: jnp.ndarray) -> Tuple[jnp.ndarray, int, Conv, str]:
     add_conv_help = input("Add extra convolutional layer? Yes(y) or no(n)\n")
     if add_conv_help == 'y':
         width = int(input("What's the width of the filter?\n"))
@@ -87,7 +91,7 @@ def conv_help(inputs: jnp.ndarray) -> Tuple[jnp.ndarray, int, Tuple[int, int, bo
         return output, output.shape[1]**2, (width, stride, min_max=="max"), add_conv_help
     return None, None, None, add_conv_help
 
-def prep_in(inputs: jnp.ndarray) -> Tuple[jnp.ndarray, List[int], List[Tuple[int, int, bool]]]:
+def prep_in(inputs: jnp.ndarray) -> Tuple[jnp.ndarray, List[int], List[Conv]]:
     in_list = [inputs]
     true_arch = [inputs.shape[1]**2]
     convs = []
@@ -105,7 +109,7 @@ def prep_in(inputs: jnp.ndarray) -> Tuple[jnp.ndarray, List[int], List[Tuple[int
     return flattened_result, true_arch, convs
 
 # adds the same helper bits to the testing data that we added to the training data
-def prep_test(inputs: jnp.ndarray, convs: List[Tuple[int, int, bool]]) -> jnp.ndarray:
+def prep_test(inputs: jnp.ndarray, convs: List[Conv]) -> jnp.ndarray:
     in_list = [inputs]
     for width, stride, min_max in convs:
         in_list.append(jax.vmap(add_convolution, in_axes=(0, None, None, None))(in_list[-1], width, stride, min_max))
@@ -113,7 +117,32 @@ def prep_test(inputs: jnp.ndarray, convs: List[Tuple[int, int, bool]]) -> jnp.nd
     return jnp.concatenate(flattened_matrices, axis=1)
 
 # finds the most likely output based on how many neurons are "hot"
+@jax.jit
 def eval(output: jnp.ndarray, answer: int) -> jnp.ndarray:
     new_output = output.reshape(10, -1)
     pred = jnp.argmax(jnp.sum(new_output, axis=1))
     return pred == answer
+
+def save(neurons: List[jnp.ndarray], convs: List[Conv], acc: str, i: int=-1) -> int:
+    if i == -1:
+        i = 1
+        while os.path.exists(f"weights{i}.txt"):
+            i += 1
+    with open(f"weights{i}.txt", "w") as f:
+        f.write(f"Size:\n{size}\n")
+        f.write(f"Convolution layers (width, stride, min/max):\n{convs}\n")
+        f.write(f"Accuracy: {acc}\n")
+        f.write("Neurons:\n")
+        for layer in neurons:
+            f.write(f"{jnp.sign(layer).tolist()}\n")
+    return i
+
+def load(name: str) -> Tuple[int, List[Conv], List[jnp.ndarray]]:
+    with open(name, "r") as f:
+        lines = f.readlines()
+    s = eval(lines[1].strip())
+    convs = eval(lines[3].strip())
+    neurons = []
+    for line in lines[6:]:
+        neurons.append(jnp.array(eval(line.strip())))
+    return s, convs, neurons

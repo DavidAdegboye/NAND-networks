@@ -230,7 +230,7 @@ def output_circuit(neurons: Network, verbose=False) -> List[str]:
             sorted_connected = sorted(list(connected))
             connecteds.append([node[0] for node in sorted_connected])
             i = len(connecteds)-1
-            # print(i, connecteds[i])
+            print(i, connecteds[i])
             if not sorted_connected:
                 empties.append(added)
                 indices[added] = added
@@ -255,7 +255,7 @@ def output_circuit(neurons: Network, verbose=False) -> List[str]:
                         circuits.append('_')
                     indices[added] = c2i[node]
                 else:
-                    circuits.append(node)                    
+                    circuits.append(node)
                     c2i[node] = added
                     indices[added] = added
                     gates[-1].append([index2gate[element[0]] for element in sorted_connected])
@@ -280,7 +280,14 @@ def output_circuit(neurons: Network, verbose=False) -> List[str]:
         print(gates)
     # print(nodes)
     used_list: List[int] = sorted(list(used))
-    print("used:\n", get_used(used_list, arch), "\nout of:\n", arch)
+    print(used_list)
+    learnt_arch = get_used(used_list, arch)
+    fan_ins = []
+    for node_index in used_list:
+        if node_index >= learnt_arch[0]:
+            fan_ins.append(len(connecteds[node_index]))
+    print("used:\n", learnt_arch, "\nout of:\n", arch)
+    print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
     return circuits[-arch[-1]:]
 
 @jax.jit
@@ -385,7 +392,8 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
         l1 = jnp.mean(optax.sigmoid_binary_cross_entropy(pred_logits, output))
     if l2_coeff != 0:
         l2 = get_l2(neurons)
-    return l1 + l2_coeff * l2
+        return l1 + l2_coeff * l2
+    return l1
 
 @jax.jit
 def test(neurons: Network) -> jnp.ndarray:
@@ -447,6 +455,7 @@ print([round(float(old_loss),5) for old_loss in old_losses])
 grad = jax.jit(jax.grad(loss))
 iters = 0
 popped = 0
+file_i = -1
 
 while cont:
     iters += 1
@@ -454,7 +463,7 @@ while cont:
         for i in range(n-popped):
             for batch in range(batches):
                 if weigh_even == 'y':
-                    updates, opt_states[i] = solver.update(grad(neuronss[i], inputs[batch*batch_size:(batch+1)*batch_size], output[batch*batch_size:(batch+1)*batch_size], accuracies[i][1], accuracies[i][2]), opt_states[i], neuronss[i])
+                    updates, opt_states[i] = solver.update(grad(neuronss[i], inputs[batch*batch_size:(batch+1)*batch_size], output[batch*batch_size:(batch+1)*batch_size], accuracies[i][1][batch*batch_size:(batch+1)*batch_size], accuracies[i][2][batch*batch_size:(batch+1)*batch_size]), opt_states[i], neuronss[i])
                     neuronss[i] = optax.apply_updates(neuronss[i], updates)
                     
                 else:
@@ -481,7 +490,8 @@ while cont:
                     print("Done training!")
                     print("Testing on testing data...")
                     accuracy = acc(neuronss[i])
-                    print(str(round(float(100*accuracy[0]),1))+"%% accuracy on the testing data")
+                    print(str(round(float(100*accuracy[0]),2))+"%% accuracy on the testing data")
+                    image_class.save(neuronss[i], convs, str(round(float(100*accuracy[0]),2))+'%', file_i)
                 elif weigh_even == 'n':
                     print("Now weighing wrong more")
                     weigh_even = 'y'
@@ -581,6 +591,9 @@ while cont:
             print([str(round(100*float(accuracy[0]),2))+'%' for accuracy in accuracies])
             print("Losses:")
             print([round(float(old_loss),5) for old_loss in old_losses])
+            i = old_losses.index(min(old_losses))
+            if add_or_img == 'i':
+                file_i = image_class.save(neuronss[i], convs, str(round(float(100*accuracies[i][0]),2))+'%', file_i)
             iters = 0
 end_time = time.time()
 print("Took", end_time-init_time, "seconds to train.")
