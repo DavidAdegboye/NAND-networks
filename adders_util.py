@@ -5,24 +5,64 @@ from typing import List, Tuple
 # sets up parameters for learning an n-bit adder
 bits = int(input("Input bits:\n"))
 def set_up_adders() -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]:
+    """
+   sets up a run to learn an adder
+
+    Returns
+    inputs - 2D jnp array of inputs
+    output - 2D jnp array of the outputs we're trying to learn
+    ins - the number of bits in the input
+    outs - the number of bits in the output
+    num_ins - the number of samples we have (this would be both inputs.shape[0] and output.shape[0])
+    """
     # if it's a n-bit adder, we need 2n inputs, n for each number 
     ins = bits*2
     num_ins = 2**ins
     inputs = jax.vmap(denary_to_binary_array)(jnp.arange(num_ins))
-    output = jax.vmap(get_output)(jnp.arange(num_ins))
-    outs = bits+1
-    return inputs, output, ins, outs, num_ins
+    out_bits = int(input(f"How many output bits do you want to learn? (max {bits+1})\n"))
+    output = jax.vmap(get_output)(jnp.arange(num_ins))[:,:out_bits]
+    print(output.shape)
+    return inputs, output, ins, out_bits, num_ins
 
 # function to convert a denary number to a a jnp array of bits
-def denary_to_binary_array(number: jnp.ndarray, bits: int=bits*2) -> jnp.ndarray:
+def denary_to_binary_array(number: int, bits: int=bits*2) -> jnp.ndarray:
+    """
+    Converts a denary number to a jnp array of the bits
+
+    Parameters
+    number - an integer
+    bits - the number of bits in the binary representation (this would also be the length of the output array)
+    
+    Returns
+    binary list
+    """
     return jnp.array([(jnp.right_shift(number, bits - 1 - i) & 1) for i in range(bits)], dtype=jnp.int32)
 
 # the number it gets as input is two numbers, and so it does binary addition by doing denary addition on those numbers
 def get_output(number: jnp.ndarray) -> jnp.ndarray:
+    """
+    Converts a denary number which encodes to numbers, to the binary representation of the sum of those numbers
+
+    Parameters
+    number - an integer
+    
+    Returns
+    binary list
+    """
     return denary_to_binary_array(number//(2**bits) + number%(2**bits), bits=bits+1)
 
 # adding some extra bits to the inputs that may be more helpful for learning an adder
 def help_adder(input: jnp.ndarray, nots: bool) -> jnp.ndarray:
+    """
+    Returns the result of adding some extra helping bits for an adder
+
+    Parameters
+    input - a 1D jnp array, representing a single input
+    nots - a boolean representing if we've added a complement helper (from add_second_layer)
+
+    Returns
+    new_input - the result, another jnp array
+    """
     new_input = list(input)
     for i in range(bits):
         new_input.append(1-new_input[i]*new_input[i+bits])
@@ -34,6 +74,19 @@ def help_adder(input: jnp.ndarray, nots: bool) -> jnp.ndarray:
     return jnp.array(new_input)
 
 def adder_help(inputs: jnp.ndarray, true_arch: List[int]) -> Tuple[jnp.ndarray, List[int], str, str|None]:
+    """
+    Function to wrap taking user input, and adding the adder help
+
+    Parameters
+    inputs - a 2D array of inputs
+    true_arch - a list representing the extra neurons added thus far
+
+    Returns
+    inputs - the updated inputs
+    true_arch - the updated true_arch
+    add_adder_help - a string telling us if we actually used the adder help
+    with_nots - a string telling us if we used a complement layer (from add_second_layer)
+    """
     add_adder_help = input("Add extra help for learning an adder? Yes(y) or no(n)\n")
     with_nots = None
     if add_adder_help == 'y':
@@ -46,6 +99,19 @@ def adder_help(inputs: jnp.ndarray, true_arch: List[int]) -> Tuple[jnp.ndarray, 
 
 # ensuring those extra bits are reflected in the output circuits function in main
 def update_circuits(add_adder_help: str, circuits: List[str], with_nots: str|None, connecteds: List[List[int]]) -> Tuple[List[str], List[List[int]]]:
+    """
+    Function to update and ensure the extra adder bits are represented when we output the circuit
+
+    Parameters
+    add_adder_help - a string telling us if we actually used the adder help
+    circuits - a list of the circuits before the adder layer (so the actual inputs, and anything from add_second_layer)
+    with_nots - a string telling us if we used a complement layer (from add_second_layer)
+    connecteds - a list for each NAND gate, which tells us whatever before it that's connected
+
+    Returns
+    circuits - updated list of the circuits with the adder layer
+    connecteds - updated list for each NAND gate, which tells us whatever before it that's connected
+    """
     if add_adder_help == 'y':
         for i in range(bits):
             circuits.append("¬(" + chr(ord('A')+i) + "." + chr(ord('A')+i+bits) + ")")

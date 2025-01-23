@@ -6,6 +6,27 @@ import itertools
 from typing import List, Tuple, Set, Union
 import time
 
+import sys
+import os
+if os.name == 'nt':  # Windows
+    import msvcrt
+else:  # Unix-like systems
+    import select
+
+def get_optional_input_non_blocking():
+    if os.name == 'nt':  # Windows
+        if msvcrt.kbhit():
+            user_input = msvcrt.getch().decode('utf-8').strip()
+            if "s" in user_input:
+                return True
+    else:  # Unix-like systems
+        input_ready, _, _ = select.select([sys.stdin], [], [], 0)  # Non-blocking select
+        if input_ready:
+            user_input = sys.stdin.readline().strip()
+            if "s" in user_input:
+                return True
+    return False
+
 # defining some types
 Network = List[jnp.ndarray]
 NeuronShape = List[int]
@@ -29,6 +50,18 @@ else:
     outs = output.shape[1]
 
 def add_second_layers(input: jnp.ndarray, min_fan: int, max_fan: int) -> jnp.ndarray:
+    """
+    adds extra bits to the input to help aid in training. These extra bits are produced by putting the current input into
+    NAND gates.
+
+    Parameters
+    input - an individual input
+    min_fan - the minimum fan-in of each NAND gate
+    max_fan - the maximum fan-in of each NAND gate
+    
+    Returns
+    output - the input, plus those extra bits
+    """
     # giving the network the second layer for free. Can hypothetically do this n times, although its cost grows exponentially.
     output = list(input)
     unchanged = output.copy()
@@ -42,29 +75,34 @@ if add_or_img == 'i':
     # for images, we're adding some copies of the inputs with convolution masks applied
     inputs, true_arch, convs = image_class.prep_in(inputs)
     x_test = image_class.prep_test(x_test, convs)
+    ins = true_arch[0]
+    new_ins = sum(true_arch)
 else:
-    # for adders and arbitrary combinational logic circuits, we're first adding extra layers
-    extra_layers = []
     true_arch = []
-    add_extra = input("Add extra layer? Yes(y) or no(n)\n")
-    while add_extra == 'y':
-        min_fan = int(input("Min fan-in of this layer:\n"))
-        min_fan = max(min_fan, 1)
-        max_fan = int(input("Max fan-in of this layer:\n"))
-        max_fan = min(max_fan, inputs.shape[1])
-        extra_layers.append((min_fan, max_fan))
-        old_ins = inputs.shape[1]
-        inputs = jax.vmap(add_second_layers, in_axes=(0, None, None))(inputs, min_fan, max_fan)
+# for adders and arbitrary combinational logic circuits, we're first adding extra layers
+extra_layers = []
+add_extra = input("Add extra layer? Yes(y) or no(n)\n")
+while add_extra == 'y':
+    min_fan = int(input("Min fan-in of this layer:\n"))
+    min_fan = max(min_fan, 1)
+    max_fan = int(input("Max fan-in of this layer:\n"))
+    max_fan = min(max_fan, inputs.shape[1])
+    extra_layers.append((min_fan, max_fan))
+    old_ins = inputs.shape[1]
+    inputs = jax.vmap(add_second_layers, in_axes=(0, None, None))(inputs, min_fan, max_fan)
+    if add_or_img == 'i':
+        x_test = jax.vmap(add_second_layers, in_axes=(0, None, None))(x_test, min_fan, max_fan)
+    else:
         mask = jnp.sum(inputs, axis=0) < 2**ins
         inputs = inputs[:, mask]
-        print(inputs)
-        new_ins = inputs.shape[1]
-        true_arch.append(new_ins - old_ins)
-        add_extra = input("Add another extra layer? Yes(y) or no(n)\n")
-    # and then if it's an adder, we're also adding extra help for adders
-    if add_or_img == 'a':
-        inputs, true_arch, add_adder_help, with_nots = adders_util.adder_help(inputs, true_arch)
-    print(true_arch)
+    print(inputs)
+    new_ins = inputs.shape[1]
+    true_arch.append(new_ins - old_ins)
+    add_extra = input("Add another extra layer? Yes(y) or no(n)\n")
+# and then if it's an adder, we're also adding extra help for adders
+if add_or_img == 'a':
+    inputs, true_arch, add_adder_help, with_nots = adders_util.adder_help(inputs, true_arch)
+print(true_arch)
 
 new_ins = inputs.shape[1]
 
@@ -77,8 +115,8 @@ if add_or_img == 'i':
     num = 1
 else:
     global_weights = input("Global weights(g) or local(l)?\n")
-    start_i = int(input("Input starting index (recommend 1 for local, 10 for global):\n"))
-    end_i = int(input("Input ending index (max 24, recommend 8 for local, 11 for global):\n"))
+    start_i = int(input("Input starting index (recommend 4 for local, 10 for global):\n"))
+    end_i = int(input("Input ending index (max 24, recommend 5 for local, 11 for global):\n"))
     num = int(input("How many copies?\n"))
 
 # I've found linear works the best for adders, although there may be a different way to taper down I've not tried.
@@ -116,6 +154,8 @@ else:
 # l2 pushes the weights towards +- infinity, I typically use 0 for this. I've found that the regular
 # loss function without l2 works just fine.
 l2_coeff = float(input("l2 coefficient:\n"))
+l3_coeff = float(input("l3 coefficient:\n"))
+max_fan_in = int(input("What should the max fan-in of the whole network be?:\n"))
 
 # for adders and arbitrary combinational logic circuits, where we're aiming for 100% accuracy, if we're stuck
 # in the high nineties at a local minima, I've added this to give a little nudge. It makes the losses of the
@@ -124,19 +164,50 @@ weigh_even = 'n'
 
 batches = int(input("How many batches?\n"))
 batch_size = num_ins//batches
+some_or_less = input("Some arrays(s) or less arrays(l)?\n")
 
 @jax.jit
-def f(x: jnp.ndarray, w: jnp.ndarray) -> jnp.ndarray:
+def f(x: jnp.ndarray, w: jnp.ndarray) -> float:
+    """
+    More of a helper function for forward, but it calculates the continuous effective input a neuron receives from a specific previous layer
+
+    Parameters
+    x - could be inputs, could be outputs from a previous NAND gate, importantly it's a 1D jnp array all from the same layer
+    w - the weights of those wires connecting x to the NAND gate
+    
+    Returns
+    the continuous effective input from that layer for the NAND gate
+    """
     # x would be all of the inputs coming in from a certain layer
     # w would be all of the weights for inputs to that layer to a given NAND gate
     return jnp.prod(1 + jnp.multiply(x, jax.nn.sigmoid(w)) - jax.nn.sigmoid(w))
 
 @jax.jit
-def f_disc(x: jnp.ndarray, w: jnp.ndarray) -> jnp.ndarray:
+def f_disc(x: jnp.ndarray, w: jnp.ndarray) -> int:
+    """
+    More of a helper function for forward_disc, but it calculates the discrete effective input a neuron receives from a specific previous layer
+
+    Parameters
+    x - could be inputs, could be outputs from a previous NAND gate, importantly it's a 1D jnp array all from the same layer
+    w - the weights of those wires connecting x to the NAND gate
+    
+    Returns
+    the discrete effective input from that layer for the NAND gate
+    """
     return jnp.prod(jnp.where(w>0, x, 1)) 
 
 @jax.jit
-def forward(weights: jnp.ndarray, xs: jnp.ndarray) -> jnp.ndarray:
+def forward(weights: jnp.ndarray, xs: jnp.ndarray) -> float:
+    """
+    The continuous forward pass for a neuron
+
+    Parameters
+    weights - a 2d jnp array of all the wires going into it
+    xs - a 2d jnp array of all the values on those wires
+    
+    Returns
+    the continuous effective output for that NAND gate
+    """
     # the forward pass for an arbitrary neuron. 1 - the product of all the fs
     # to use vmap, I include some padding that doesn't affect the value.
     # x=1, w=0, since f(1,0)=1, so it wouldn't affect the result
@@ -144,10 +215,30 @@ def forward(weights: jnp.ndarray, xs: jnp.ndarray) -> jnp.ndarray:
     return 1 - jnp.prod(jax.vmap(f)(xs, weights))
 
 @jax.jit
-def forward_disc(weights: jnp.ndarray, xs: jnp.ndarray) -> jnp.ndarray:
+def forward_disc(weights: jnp.ndarray, xs: jnp.ndarray) -> int:
+    """
+    The discrete forward pass for a neuron
+
+    Parameters
+    weights - a 2d jnp array of all the wires going into it
+    xs - a 2d jnp array of all the values on those wires
+    
+    Returns
+    the discrete effective output for that NAND gate
+    """
     return 1 - jnp.prod(jax.vmap(f_disc)(xs, weights))
 
-def get_used(used: List[int], arch: List[int]) -> List[int]:
+def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
+    """
+    Finds the number of neurons actually used by the network in each layer
+
+    Parameters
+    used - a list of the indices of all the neurons used by the network
+    arch - the number of neurons in each layer of the network
+    
+    Returns
+    the number of neurons in each layer of the network that are being used
+    """
     # finds which how many neurons are actually being used in each layer
     output = []
     current = 0
@@ -159,7 +250,8 @@ def get_used(used: List[int], arch: List[int]) -> List[int]:
         eff_arch = [ins] + true_arch + eff_arch
     else:
         eff_arch = arch.copy()
-    print(eff_arch)
+    if verbose:
+        print(eff_arch)
     current_h = eff_arch[0]
     # counting the number of nodes in each layer.
     for node in used:
@@ -174,17 +266,26 @@ def get_used(used: List[int], arch: List[int]) -> List[int]:
                 current_h = current_l + eff_arch[layer_i]
             current += 1
     output.append(current)
-    output += [0] * (len(output) - len(eff_arch) - 1)
+    output += [0] * (len(output) - len(eff_arch))
     output.append(outs)
     return output
 
-def output_circuit(neurons: Network, verbose=False) -> List[str]:
+def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[str]:
+    """
+    Outputs the learnt circuit, and also prints some useful data about the network
+    
+    Parameters
+    neurons - the internal representation of the circuit as learnt
+    verbose - a flag for printing extra info
+    
+    Returns
+    circuits[-arch[-1]:] - a list of the circuit learnt for each output neuron
+    """
     # outputs the learnt circuit
     connecteds: List[List[int]] = [[] for _ in range(ins)]
     if extra_layers:
         circuits = [chr(ord('A')+i) for i in range(ins)]
         for layer in extra_layers:
-            print(layer)
             if layer[0] == 1:
                 extras = ["¬"+circ for circ in circuits]
                 connecteds += [[i] for i in range(len(connecteds))]
@@ -230,7 +331,8 @@ def output_circuit(neurons: Network, verbose=False) -> List[str]:
             sorted_connected = sorted(list(connected))
             connecteds.append([node[0] for node in sorted_connected])
             i = len(connecteds)-1
-            print(i, connecteds[i])
+            if super_verbose:
+                print(i, connecteds[i])
             if not sorted_connected:
                 empties.append(added)
                 indices[added] = added
@@ -273,15 +375,11 @@ def output_circuit(neurons: Network, verbose=False) -> List[str]:
             if node_2 not in used:
                 queue.append(node_2)
                 used.add(node_2)
-    if verbose:
-        print(c2i)
-        print(indices)
-        print(circuits)
-        print(gates)
     # print(nodes)
     used_list: List[int] = sorted(list(used))
-    print(used_list)
-    learnt_arch = get_used(used_list, arch)
+    if verbose:
+        print(used_list)
+    learnt_arch = get_used(used_list, arch, verbose)
     fan_ins = []
     for node_index in used_list:
         if node_index >= learnt_arch[0]:
@@ -290,65 +388,240 @@ def output_circuit(neurons: Network, verbose=False) -> List[str]:
     print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
     return circuits[-arch[-1]:]
 
-@jax.jit
-def feed_forward(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
-    # does a forwards pass on a set of inputs
-    xs = jnp.array([jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
-    for layer_i in range(i_1-1):
-        next = jax.vmap(forward, in_axes=(0, None))(neurons[layer_i], xs)
-        next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
-        xs = jnp.vstack([xs, next])
-    return jax.vmap(forward, in_axes=(0, None))(neurons[i_1-1], xs)[:len(output[0])]
+# if some_or_less == 's':
+#     with open("some_arrays.txt", 'r') as file:
+#         exec(file.read())
+# else:
+#     with open("less_arrays.txt", 'r') as file:
+#         exec(file.read())
 
-@jax.jit
-def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
-    xs = jnp.array([jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
-    for layer_i in range(i_1-1):
-        next = jax.vmap(forward_disc, in_axes=(0, None))(neurons[layer_i], xs)
-        next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
-        xs = jnp.vstack([xs, next])
-    return jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:len(output[0])]
+if some_or_less == 's':
+    @jax.jit
+    def feed_forward(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
+        """
+        Calculates the continous output of the network
 
-def feed_forward_disc_print(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
-    xs = jnp.array([jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
-    jax.debug.print("inputs:{}", inputs)
-    jax.debug.print("{}", xs)
-    for layer_i in range(i_1-1):
-        next = jax.vmap(forward_disc, in_axes=(0, None))(neurons[layer_i], xs)
-        next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
-        xs = jnp.vstack([xs, next])
+        Parameters
+        inputs - the input data
+        neurons - the network
+        
+        Returns
+        the continuous output
+        """
+        xs = jnp.ones((i_3,i_4))
+        xs = xs.at[0].set(jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1))
+        for layer_i in range(i_1-1):
+            xs = xs.at[layer_i+1, :arch[layer_i+1]].set(jax.vmap(forward, in_axes=(0, None))(neurons[layer_i], xs)[:arch[layer_i+1]])
+        return jax.vmap(forward, in_axes=(0, None))(neurons[i_1-1], xs)[:outs]
+
+    @jax.jit
+    def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
+        """
+        Calculates the discrete output of the network
+
+        Parameters
+        inputs - the input data
+        neurons - the network
+        
+        Returns
+        the discrete output
+        """
+        xs = jnp.ones((i_3,i_4))
+        xs = xs.at[0].set(jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1))
+        for layer_i in range(i_1-1):
+            xs = xs.at[layer_i+1, :arch[layer_i+1]].set(jax.vmap(forward_disc, in_axes=(0, None))(neurons[layer_i], xs)[:arch[layer_i+1]])
+        return jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:outs]
+
+    def feed_forward_disc_print(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
+        """
+        Calculates the discrete output of the network, whilst outputting useful debugging data
+
+        Parameters
+        inputs - the input data
+        neurons - the network
+        
+        Returns
+        the discrete output
+        """
+        xs = jnp.ones((i_3,i_4))
+        xs = xs.at[0].set(jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1))
+        jax.debug.print("inputs:{}", inputs)
         jax.debug.print("{}", xs)
-    jax.debug.print("{}", jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:len(output[0])])
-    return jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:len(output[0])]
+        for layer_i in range(i_1-1):
+            xs = xs.at[layer_i+1, :arch[layer_i+1]].set(jax.vmap(forward_disc, in_axes=(0, None))(neurons[layer_i], xs)[:arch[layer_i+1]])
+            jax.debug.print("{}", xs)
+        jax.debug.print("{}", jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:outs])
+        return jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:outs]
 
-def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
-    global key
-    weights = jnp.ones((layer,i_4)) * -jnp.inf
-    # layer lists, each with arch[i] elements
-    # so this is a 2D list of floats
-    # or a 1D list of jnp arrays
-    if global_weights == 'g':
-        n = global_n
-    else:
-        n = sum(arch[:layer])
-    mu = -jnp.log(n-1)/k
-    for i in range(layer):
-        inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu
-        weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[i]), mode="constant", constant_values=-jnp.inf))
-        key = random.randint(0, 10000)
-    return weights
+    def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
+        """
+        Returns the weights of a given neuron
 
-def initialise(arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> Network:
-    # creates the initial NAND network
-    neurons = []
-    for i1 in range(1, len(arch)):
-        layer = jnp.ones((arch[i1], i1, i_4))
-        for i2 in range(arch[i1]):
-            layer = layer.at[i2].set(get_weights(i1, arch, sigma, k))
-        neurons.append(layer)
-    return neurons
+        Parameters
+        layer - the layer that the neuron is in
+        arch - a list representing the architecture
+        sigma - the standard deviation of the normal distribution
+        k - a rescaling factor (it's dependent on sigma, but the mathematical relation isn't clear, so I pass it in separately)
+        
+        Returns
+        a 2d jnp array of the weights, which represents the wires going into a certain neuron
+        """
+        global key
+        weights = jnp.ones((i_3,i_4)) * -jnp.inf
+        # layer lists, each with arch[i] elements
+        # so this is a 2D list of floats
+        # or a 1D list of jnp arrays
+        if global_weights == 'g':
+            n = global_n
+        else:
+            n = sum(arch[:layer])
+        mu = -jnp.log(n-1)/k
+        for i in range(layer):
+            inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu #type: ignore
+            weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[i]), mode="constant", constant_values=-jnp.inf))
+            key = random.randint(0, 10000)
+        return weights
+
+    def initialise(arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> List[jnp.ndarray]:
+        """
+        initialises the network
+
+        Parameters
+        arch - a list representing the architecture
+        sigma - the standard deviation of the normal distribution
+        k - a rescaling factor (it's dependent on sigma, but the mathematical relation isn't clear, so I pass it in separately)
+        
+        Returns
+        the network
+        """
+        neurons = []
+        for i1 in range(1, len(arch)):
+            layer = jnp.ones((arch[i1], i_3, i_4))
+            for i2 in range(arch[i1]):
+                layer = layer.at[i2].set(get_weights(i1, arch, sigma, k))
+            neurons.append(layer)
+        return neurons
+else:
+    @jax.jit
+    def feed_forward(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
+        """
+        Calculates the continous output of the network
+
+        Parameters
+        inputs - the input data
+        neurons - the network
+        
+        Returns
+        the continuous output
+        """
+        xs = jnp.array([jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
+        for layer_i in range(i_1-1):
+            next = jax.vmap(forward, in_axes=(0, None))(neurons[layer_i], xs)
+            next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
+            xs = jnp.vstack([xs, next])
+        return jax.vmap(forward, in_axes=(0, None))(neurons[i_1-1], xs)[:outs]
+
+    @jax.jit
+    def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
+        """
+        Calculates the discrete output of the network
+
+        Parameters
+        inputs - the input data
+        neurons - the network
+        
+        Returns
+        the discrete output
+        """
+        xs = jnp.array([jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
+        for layer_i in range(i_1-1):
+            next = jax.vmap(forward_disc, in_axes=(0, None))(neurons[layer_i], xs)
+            next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
+            xs = jnp.vstack([xs, next])
+        return jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:outs]
+
+    def feed_forward_disc_print(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
+        """
+        Calculates the discrete output of the network, whilst outputting useful debugging data
+
+        Parameters
+        inputs - the input data
+        neurons - the network
+        
+        Returns
+        the discrete output
+        """
+        xs = jnp.array([jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
+        jax.debug.print("inputs:{}", inputs)
+        jax.debug.print("{}", xs)
+        for layer_i in range(i_1-1):
+            next = jax.vmap(forward_disc, in_axes=(0, None))(neurons[layer_i], xs)
+            next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
+            xs = jnp.vstack([xs, next])
+            jax.debug.print("{}", xs)
+        jax.debug.print("{}", jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:outs])
+        return jax.vmap(forward_disc, in_axes=(0, None))(neurons[i_1-1], xs)[:outs]
+
+    def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
+        """
+        Returns the weights of a given neuron
+
+        Parameters
+        layer - the layer that the neuron is in
+        arch - a list representing the architecture
+        sigma - the standard deviation of the normal distribution
+        k - a rescaling factor (it's dependent on sigma, but the mathematical relation isn't clear, so I pass it in separately)
+        
+        Returns
+        a 2d jnp array of the weights, which represents the wires going into a certain neuron
+        """
+        global key
+        weights = jnp.ones((layer,i_4)) * -jnp.inf
+        # layer lists, each with arch[i] elements
+        # so this is a 2D list of floats
+        # or a 1D list of jnp arrays
+        if global_weights == 'g':
+            n = global_n
+        else:
+            n = sum(arch[:layer])
+        mu = -jnp.log(n-1)/k
+        for i in range(layer):
+            inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu
+            weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[i]), mode="constant", constant_values=-jnp.inf))
+            key = random.randint(0, 10000)
+        return weights
+
+    def initialise(arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> List[jnp.ndarray]:
+        """
+        initialises the network
+
+        Parameters
+        arch - a list representing the architecture
+        sigma - the standard deviation of the normal distribution
+        k - a rescaling factor (it's dependent on sigma, but the mathematical relation isn't clear, so I pass it in separately)
+        
+        Returns
+        the network
+        """
+        neurons = []
+        for i1 in range(1, len(arch)):
+            layer = jnp.ones((arch[i1], i1, i_4))
+            for i2 in range(arch[i1]):
+                layer = layer.at[i2].set(get_weights(i1, arch, sigma, k))
+            neurons.append(layer)
+        return neurons
 
 def get_shapes(arch: List[int]) -> Tuple[NetworkShape, int]:
+    """
+    returns a data structure which tells you the exact shape of the input wires for each NAND gate
+
+    Parameters
+    arch - a list representing the architecture
+    
+    Returns
+    shapes - the data structure
+    total - the total number of wires in the network
+    """
     # gets the shape of the network based on the architecture
     shapes: NetworkShape = []
     total = 0
@@ -360,7 +633,33 @@ def get_shapes(arch: List[int]) -> Tuple[NetworkShape, int]:
     return shapes, total
 
 @jax.jit
+def get_l3(neurons: Network) -> float:
+    """
+    calculates l3, which is minimised for any maximum fan-in under or equal to "max_fan_in"
+
+    Parameters
+    neurons - the network
+    
+    Returns
+    l3
+    """
+    l3s = jnp.array([])
+    for layer in neurons:
+        l3s = jnp.concatenate((l3s, jax.vmap(lambda x:jnp.sum(jax.nn.sigmoid(x)))(layer)))
+    raw = jnp.sum(jax.nn.softmax(l3s)*l3s)
+    return jax.nn.relu(raw-max_fan_in+1)
+
+@jax.jit
 def get_l2(neurons: Network) -> float:
+    """
+    calculates l2, which is minimised for extreme weights (close to +-inf)
+
+    Parameters
+    neurons - the network
+    
+    Returns
+    s/total - l2
+    """
     s = 0
     for layer in neurons:
         s += jnp.sum(1-jax.nn.sigmoid(jnp.absolute(layer)))
@@ -369,6 +668,19 @@ def get_l2(neurons: Network) -> float:
 epsilon = 1e-7
 @jax.jit
 def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.ndarray, mask2:jnp.ndarray) -> float:
+    """
+    calculates loss
+
+    Parameters
+    neurons - the network
+    inputs - all of the inputs (training xs)
+    output - all of the outputs (training labels or ys)
+    mask1 - a mask for samples we got right
+    mask2 - a mask for the samples we got wrong
+    
+    Returns
+    loss
+    """
     pred = jax.vmap(feed_forward, in_axes=(0, None))(inputs, neurons)
     pred = jnp.clip(pred, epsilon, 1-epsilon)
     pred_logits = jnp.log(pred) - jnp.log(1-pred)
@@ -390,23 +702,74 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
         l1 = (c1*l11 + c2*l12)/2
     else:
         l1 = jnp.mean(optax.sigmoid_binary_cross_entropy(pred_logits, output))
-    if l2_coeff != 0:
+    if l2_coeff:
         l2 = get_l2(neurons)
-        return l1 + l2_coeff * l2
-    return l1
+    else:
+        l2 = 0
+    if l3_coeff:
+        l3 = get_l3(neurons)
+    else:
+        l3 = 0
+    return l1 + l2_coeff*l2 + l3_coeff*l3
 
 @jax.jit
-def test(neurons: Network) -> jnp.ndarray:
-    # is true if the network is 100% accurate
+def test(neurons: Network) -> bool:
+    """
+    is true iff the network is 100% accurate
+
+    Parameters
+    neurons - the network
+    
+    Returns
+    if the network was 100% accurate
+    """
     pred = jax.vmap(feed_forward_disc, in_axes=(0, None))(inputs, neurons)
     return jnp.all(pred==output)
 
+current_max_fan_in = -1
+def test_fan_in(neurons: Network) -> bool:
+    global current_max_fan_in
+    """
+    is true iff the max fan-in is less than what the user specified
+
+    Parameters
+    neurons - the network
+    
+    Returns
+    if the max fan-in is less than what the user specified
+    """
+    temp = 0
+    for layer in neurons:
+        # this can include gates that aren't used and have a fan-in greater
+        # so if the circuit printed is better, we can stop the search anyway
+        fan_ins = jax.vmap(lambda x:jnp.sum(jnp.where(x>0, 1, 0)))(layer)
+        temp = max(temp, jnp.max(fan_ins))
+    if temp > max_fan_in:
+        if (temp < current_max_fan_in or current_max_fan_in == -1):
+            print(temp, max_fan_in)
+            [print(circ) for circ in (output_circuit(neurons, False, False))]
+            print("Max fan-in not good enough")
+            current_max_fan_in = temp
+        return False
+    return True
+
 # @jax.jit
-def acc(neurons: Network) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+def acc(neurons: Network) -> Tuple[float, jnp.ndarray, jnp.ndarray]:
+    """
+    calculates the accuracy, and also the masks used in the loss function
+
+    Parameters
+    neurons - the network
+    
+    Returns
+    accuracy - the accuracy (may be specifically the testing accuracy)
+    mask1 - the mask of the samples it got right
+    mask2 - the mask of the samples it got wrong
+    """
     # returns the accuracy
     if add_or_img == 'i':
         pred = jax.vmap(feed_forward_disc, in_axes=(0, None))(x_test, neurons)
-        result = jax.vmap(image_class.eval)(pred, y_test)
+        result = jax.vmap(image_class.evaluate)(pred, y_test)
         return jnp.sum(result)/result.size, jnp.zeros(0), jnp.zeros(0)
     else:
         pred = jax.vmap(feed_forward_disc, in_axes=(0, None))(inputs, neurons)
@@ -418,11 +781,8 @@ def acc(neurons: Network) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
             return jnp.sum(pred)/((2**(ins))*(outs)), trues[0], falses[0]
         return jnp.sum(pred)/((2**(ins))*(outs)), jnp.zeros(0), jnp.zeros(0)
 
-print("Learning:\n", output, "\nwith arch:", arch)
-key = random.randint(0, 10000)
-
 i_1 = len(arch) - 1
-i_2 = max(arch[1:])
+# i_2 = max(arch[1:])
 i_3 = i_1
 i_4 = max(arch)
 shapes, total = get_shapes(arch)
@@ -433,6 +793,9 @@ all_ks = [1.0, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91, 0.9, 0.85, 0.75, 0.65,
 sigmas = jnp.array(all_sigmas[start_i:end_i] * num)
 ks = jnp.array(all_ks[start_i:end_i] * num)
 n = sigmas.shape[0]
+
+print("Learning:\n", output, "\nwith arch:", arch)
+key = random.randint(0, 10000)
 start_time = time.time()
 neuronss = [initialise(arch, sigmas[i], ks[i]) for i in range(n)]
 solver = optax.adam(learning_rate=0.003)
@@ -471,7 +834,7 @@ while cont:
                     neuronss[i] = optax.apply_updates(neuronss[i], updates)
                 accuracies = [acc(neurons) for neurons in neuronss]
     for index, neurons in enumerate(neuronss):
-        if test(neurons):
+        if test(neurons) and (l3_coeff==0 or test_fan_in(neurons)):
             print(index)
             # jax.debug.print("neurons:{}", neurons)
             # print(jax.vmap(feed_forward_disc_print, in_axes=(0, None))(inputs, neuronss[index]))
@@ -483,7 +846,7 @@ while cont:
         else:
             new_losses = [loss(neuronss[index], inputs, output, jnp.array([]), jnp.array([])) for index in range(n-popped)]
         for i in range(n-popped):
-            if old_losses[i] == new_losses[i]:
+            if old_losses[i] == new_losses[i] or get_optional_input_non_blocking():
                 old_losses[i] = new_losses[i]
                 if add_or_img == 'i':
                     cont = False
@@ -560,7 +923,7 @@ while cont:
             print("Losses:")
             print([round(float(old_loss),5) for old_loss in old_losses])
             print("Took", init_time-end_time, "seconds to initialise.")
-        if iters == max(100//batches, 1):
+        if iters == max(10//batches, 1):
             for i in range(len(new_losses)-1, -1, -1):
                 if restart_mask[i]:
                     popped += 1
@@ -593,7 +956,7 @@ while cont:
             print([round(float(old_loss),5) for old_loss in old_losses])
             i = old_losses.index(min(old_losses))
             if add_or_img == 'i':
-                file_i = image_class.save(neuronss[i], convs, str(round(float(100*accuracies[i][0]),2))+'%', file_i)
+                file_i = image_class.save(extra_layers, arch, some_or_less, neuronss[i], convs, str(round(float(100*accuracies[i][0]),2))+'%', file_i)
             iters = 0
 end_time = time.time()
 print("Took", end_time-init_time, "seconds to train.")
