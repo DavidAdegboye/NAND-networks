@@ -17,15 +17,19 @@ def get_optional_input_non_blocking():
     if os.name == 'nt':  # Windows
         if msvcrt.kbhit():
             user_input = msvcrt.getch().decode('utf-8').strip()
-            if "s" in user_input:
-                return True
+            if 's' in user_input:
+                return 1
+            if 'd' in user_input:
+                return 2
     else:  # Unix-like systems
         input_ready, _, _ = select.select([sys.stdin], [], [], 0)  # Non-blocking select
         if input_ready:
             user_input = sys.stdin.readline().strip()
-            if "s" in user_input:
-                return True
-    return False
+            if 's' in user_input:
+                return 1
+            if 'd' in user_input:
+                return 2
+    return 0
 
 # defining some types
 Network = List[jnp.ndarray]
@@ -384,6 +388,11 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
     for node_index in used_list:
         if node_index >= learnt_arch[0]:
             fan_ins.append(len(connecteds[node_index]))
+    with open(f"circuit.txt", "w") as f:
+        f.write(f"used:\n{learnt_arch}\nout of:\n{arch}\n")
+        f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}\n")
+        for circ in circuits[-arch[-1]:]:
+            f.write(f"{circ}\n")
     print("used:\n", learnt_arch, "\nout of:\n", arch)
     print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
     return circuits[-arch[-1]:]
@@ -834,7 +843,7 @@ while cont:
                     neuronss[i] = optax.apply_updates(neuronss[i], updates)
                 accuracies = [acc(neurons) for neurons in neuronss]
     for index, neurons in enumerate(neuronss):
-        if test(neurons) and (l3_coeff==0 or test_fan_in(neurons)):
+        if test(neurons) and (l3_coeff==0 or test_fan_in(neurons)) or get_optional_input_non_blocking() == 2:
             print(index)
             # jax.debug.print("neurons:{}", neurons)
             # print(jax.vmap(feed_forward_disc_print, in_axes=(0, None))(inputs, neuronss[index]))
@@ -846,7 +855,7 @@ while cont:
         else:
             new_losses = [loss(neuronss[index], inputs, output, jnp.array([]), jnp.array([])) for index in range(n-popped)]
         for i in range(n-popped):
-            if old_losses[i] == new_losses[i] or get_optional_input_non_blocking():
+            if get_optional_input_non_blocking() == 1:
                 old_losses[i] = new_losses[i]
                 if add_or_img == 'i':
                     cont = False
