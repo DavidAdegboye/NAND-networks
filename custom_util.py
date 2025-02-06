@@ -3,7 +3,6 @@ import jax.numpy as jnp
 from typing import Tuple
 
 # function to convert a denary number to a a jnp array of bits
-@jax.jit
 def denary_to_binary_array(number: int, bits: int) -> jnp.ndarray:
     """
     Converts a denary number to a jnp array of the bits

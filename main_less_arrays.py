@@ -63,6 +63,8 @@ elif add_or_img == 'a':
 else:
     import image_class
     inputs, x_test, output, y_test, num_ins = image_class.set_up_img()
+    inputs = jnp.expand_dims(inputs, axis=1)
+    x_test = jnp.expand_dims(x_test, axis=1)
     outs = output.shape[1]
 
 def add_second_layers(input: jnp.ndarray, min_fan: int, max_fan: int) -> jnp.ndarray:
@@ -90,9 +92,10 @@ def add_second_layers(input: jnp.ndarray, min_fan: int, max_fan: int) -> jnp.nda
 if add_or_img == 'i':
     # for images, this is convolutional layers
     convs, true_arch = image_class.add_real_conv()
-    conv_layers = int(input(f"How many of the convolutional layers do you want to use? max ({len(true_arch)})\n"))
-    new_ins = sum(true_arch[-conv_layers:])
-    filter_w = convs[0][0]
+    if convs:
+        new_ins = convs[-1][2] * convs[-1][3]**2
+    else:
+        new_ins = true_arch[0]
     add_comp = input("Add a complement layer? yes(y) or no(n)\n")
     if add_comp == 'y':
         new_ins *= 2
@@ -177,7 +180,7 @@ max_gates = int(input("What should the max number of gates in network be?:\n"))
 weigh_even = 'n'
 
 batches = num_ins
-batches = int(input("How many batches?\n"))
+# batches = int(input("How many batches?\n"))
 batch_size = num_ins//batches
 
 @jax.jit
@@ -419,10 +422,11 @@ def feed_forward(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
     Returns
     the continuous output
     """
-    xs = jnp.ones((i_3,i_4))
-    xs = xs.at[0].set(jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1))
+    xs = jnp.array([jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
     for layer_i in range(i_1-1):
-        xs = xs.at[layer_i+1, :arch[layer_i+1]].set(jax.vmap(forward, in_axes=(None, 0))(xs, neurons[layer_i])[:arch[layer_i+1]])
+        next = jax.vmap(forward, in_axes=(None, 0))(xs, neurons[layer_i])
+        next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
+        xs = jnp.vstack([xs, next])
     return jax.vmap(forward, in_axes=(None, 0))(xs, neurons[i_1-1])[:outs]
 
 @jax.jit
@@ -437,14 +441,39 @@ def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
     Returns
     the discrete output
     """
-    xs = jnp.ones((i_3,i_4))
-    xs = xs.at[0].set(jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1))
+    xs = jnp.array([jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
     for layer_i in range(i_1-1):
-        xs = xs.at[layer_i+1, :arch[layer_i+1]].set(jax.vmap(forward_disc, in_axes=(None, 0))(xs, neurons[layer_i])[:arch[layer_i+1]])
+        next = jax.vmap(forward_disc, in_axes=(None, 0))(xs, neurons[layer_i])
+        next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
+        xs = jnp.vstack([xs, next])
     return jax.vmap(forward_disc, in_axes=(None, 0))(xs, neurons[i_1-1])[:outs]
 
 @jax.jit
-def forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, s: int) -> jnp.ndarray:
+def forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> jnp.ndarray:
+    """
+    Applies a filter of width `w` and stride `s` to the input array `xs`.
+    
+    Parameters:
+    weights - an array of shape (channels, new_n, new_n, old_channels, w, w), containing the filter weights
+    xs - an array of shape (old_channels, n, n), the input data
+    s - the stride of the filter
+    
+    Returns:
+    An array of shape (new_n, new_n), the result of applying the filter.
+    """
+    w = weights.shape[2]
+    old_channels = xs.shape[0]
+    channels = jnp.arange(weights.shape[0])
+    return jax.vmap(
+        lambda c: jax.vmap(
+            lambda i: jax.vmap(
+                lambda j: f(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
+            )(jnp.arange(n.shape[0]))
+        )(jnp.arange(n.shape[0]))
+    )(channels)
+
+@jax.jit
+def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> jnp.ndarray:
     """
     Applies a filter of width `w` and stride `s` to the input array `xs`.
     
@@ -456,37 +485,19 @@ def forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, s: int) -> jnp.ndarray:
     Returns:
     An array of shape (new_n, new_n), the result of applying the filter.
     """
-    new_n = weights.shape[0]
-    indices = jnp.arange(new_n)
+    w = weights.shape[2]
+    old_channels = xs.shape[0]
+    channels = jnp.arange(weights.shape[0])
     return jax.vmap(
-        lambda i: jax.vmap(
-            lambda j: f(jax.lax.dynamic_slice(xs, (i*s, j*s), (filter_w, filter_w)), weights[i,j])
-        )(indices)
-    )(indices)
+        lambda c: jax.vmap(
+            lambda i: jax.vmap(
+                lambda j: f_disc(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
+            )(jnp.arange(n.shape[0]))
+        )(jnp.arange(n.shape[0]))
+    )(channels)
 
 @jax.jit
-def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int) -> jnp.ndarray:
-    """
-    Applies a filter of width `w` and stride `s` to the input array `xs`.
-    
-    Parameters:
-    weights - an array of shape (new_n, new_n, w, w), containing the filter weights
-    xs - an array of shape (n, n), the input data
-    s - the stride of the filter
-    
-    Returns:
-    An array of shape (new_n, new_n), the result of applying the filter.
-    """
-    new_n = weights.shape[0]
-    indices = jnp.arange(new_n)
-    return jax.vmap(
-        lambda i: jax.vmap(
-            lambda j: f_disc(jax.lax.dynamic_slice(xs, (i*s, j*s), (filter_w, filter_w)), weights[i,j])
-        )(indices)
-    )(indices)
-
-@jax.jit
-def feed_forward_conv(xs: List[jnp.ndarray], weights:jnp.ndarray) -> jnp.ndarray:
+def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray) -> jnp.ndarray:
     """
     Applies all of the convolutional layers to the input
     
@@ -497,10 +508,9 @@ def feed_forward_conv(xs: List[jnp.ndarray], weights:jnp.ndarray) -> jnp.ndarray
     Returns:
     The result of applying the convolutional layers
     """
-    output = [xs]
-    for ws, (_,s) in zip(weights, convs):
-        output.append(forward_conv(output[-1], ws, s))
-    return output[-conv_layers:]
+    for ws, (_,_,s,n) in zip(weights, convs):
+        xs = forward_conv(xs, ws, s, jnp.zeros(n))
+    return xs
 
 @jax.jit
 def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray) -> jnp.ndarray:
@@ -514,12 +524,11 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray) -> jnp.ndarray:
     Returns:
     The result of applying the convolutional layers
     """
-    output = [xs]
-    for ws, (w,s) in zip(weights, convs):
-        output.append(forward_conv_disc(output[-1], ws, s))
-    return output[-conv_layers:]
+    for ws, (_,_,s,n) in zip(weights, convs):
+        xs = forward_conv_disc(xs, ws, s, jnp.zeros(n))
+    return xs
 
-def get_weights_conv(w: int, s: int, n: int, sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
+def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
     """
     Returns the weights of a given neuron
 
@@ -533,14 +542,13 @@ def get_weights_conv(w: int, s: int, n: int, sigma: jnp.ndarray, k: jnp.ndarray)
     a 2d jnp array of the weights, which represents the wires going into a certain neuron
     """
     global key
-    new_n = int(jnp.ceil((n-w+1) / s))
     # layer lists, each with arch[i] elements
     # so this is a 2D list of floats
     # or a 1D list of jnp arrays
-    mu = -jnp.log(w**2-1)/k
-    return sigma * jax.random.normal(jax.random.key(key), shape=(new_n, new_n, w, w)) + mu #type: ignore
+    mu = -jnp.log(old_c*w**2-1)/k
+    return sigma * jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
 
-def initialise_conv(convs: List[Tuple[int, int]], sigma: jnp.ndarray, k: jnp.ndarray) -> Network:
+def initialise_conv(convs: List[Tuple[int, int, int, int]], sigma: jnp.ndarray, k: jnp.ndarray) -> Network:
     """
     initialises the network
 
@@ -553,11 +561,11 @@ def initialise_conv(convs: List[Tuple[int, int]], sigma: jnp.ndarray, k: jnp.nda
     the network
     """
     neurons = []
-    current_n = inputs.shape[1]
-    for w,s in convs:
-        weights = get_weights_conv(w, s, current_n, sigma, k)
+    current_c = 1
+    for w,_,c,_ in convs:
+        weights = get_weights_conv(w, c, current_c, sigma, k)
         neurons.append(weights)
-        current_n = weights.shape[0]
+        current_c = c
     return neurons
 
 def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
@@ -574,7 +582,7 @@ def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray)
     a 2d jnp array of the weights, which represents the wires going into a certain neuron
     """
     global key
-    weights = jnp.ones((i_3,i_4)) * -jnp.inf
+    weights = jnp.ones((layer,i_4)) * -jnp.inf
     # layer lists, each with arch[i] elements
     # so this is a 2D list of floats
     # or a 1D list of jnp arrays
@@ -584,12 +592,12 @@ def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray)
         n = sum(arch[:layer])
     mu = -jnp.log(n-1)/k
     for i in range(layer):
-        inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu #type: ignore
+        inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu
         weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[i]), mode="constant", constant_values=-jnp.inf))
         key = random.randint(0, 10000)
     return weights
 
-def initialise(arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> Network:
+def initialise(arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> List[jnp.ndarray]:
     """
     initialises the network
 
@@ -603,7 +611,7 @@ def initialise(arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> Network:
     """
     neurons = []
     for i1 in range(1, len(arch)):
-        layer = jnp.ones((arch[i1], i_3, i_4))
+        layer = jnp.ones((arch[i1], i1, i_4))
         for i2 in range(arch[i1]):
             layer = layer.at[i2].set(get_weights(i1, arch, sigma, k))
         neurons.append(layer)
@@ -747,8 +755,7 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray) 
     loss
     """
     pred = jax.vmap(feed_forward_conv, in_axes=(0, None))(inputs, network[1])
-    pred = [jax.vmap(lambda p: p.reshape(-1))(pred[i]) for i in range(len(pred))]
-    pred = jnp.concatenate(pred, axis=1)
+    pred = pred.reshape(pred.shape[0], -1)
     if add_comp == 'y':
         pred = jnp.concatenate([pred, 1-pred], axis=1)
     pred = jax.vmap(feed_forward, in_axes=(0, None))(pred, network[0])
@@ -839,8 +846,7 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     """
     # returns the accuracy
     pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None))(x_test, neurons_conv)
-    pred = [jax.vmap(lambda p: p.reshape(-1))(pred[i]) for i in range(len(pred))]
-    pred = jnp.concatenate(pred, axis=1)
+    pred = pred.reshape(pred.shape[0], -1)
     if add_comp == 'y':
         pred = jnp.concatenate([pred, 1-pred], axis=1)
     pred = jax.vmap(feed_forward_disc, in_axes=(0, None))(pred, neurons)
@@ -867,6 +873,11 @@ schedule = optax.join_schedules(
 )
 
 solver = optax.adam(learning_rate=schedule)
+
+if add_or_img == 'i':
+    batch_schedule = [60000, 30000, 20000, 15000, 12000, 10000, 7500, 6000, 5000, 4000, 3750, 3000,
+                      2500, 2400, 2000, 1875, 1500, 1250, 1200, 1000, 800, 750, 625, 600, 500]
+    batch_i = 0
 
 print("Learning:\n", output, "\nwith arch:", arch)
 key = random.randint(0, 10000)
@@ -897,16 +908,14 @@ iters = 0
 popped = 0
 file_i = -1
 
-def batch_update(batch_inputs: jnp.ndarray, batch_outputs: jnp.ndarray, opt_state, neurons: Network, neurons_conv: Network):
-    gradients = grad_conv([neurons, neurons_conv], batch_inputs, batch_outputs)
-    update, opt_state = solver.update(gradients, opt_state, [neurons, neurons_conv])
-    neurons, neurons_conv = optax.apply_updates([neurons, neurons_conv], update)
-    return neurons, neurons_conv, opt_state
-
 restart = False
 
 while cont:
     iters += 1
+    if add_or_img == 'i':
+        batches = batch_schedule[min(len(batch_schedule)-1, int(batch_i))]
+        batch_i += 0.5
+        batch_size = num_ins // batches
     for _ in range(max(10//batches, 1)):
         if batches > 1:
             key = random.randint(0, 10000)
@@ -916,8 +925,6 @@ while cont:
             output = output[shuffled_indices]
         # batched_inputs = inputs.reshape(batches, batch_size, inputs.shape[1])
         # batched_output = output.reshape(batches, batch_size, output.shape[1])
-        # if add_or_img == 'i':
-        #     neurons, neurons_conv, opt_state = jax.vmap(batch_update)(batched_inputs, batched_output, opt_state, neurons, neurons_conv)
         for batch in range(batches):
             if add_or_img == 'i':
                 gradients = grad_conv([neurons, neurons_conv],

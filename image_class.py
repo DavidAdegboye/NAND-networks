@@ -60,6 +60,8 @@ def preprocess_test(value: int) -> jnp.ndarray:
     return output
 
 # applying preprocessing to the data
+train_n = 60000
+test_n = 10000
 train_n = int(input("How many training samples (max 60,000)\n"))
 test_n = int(input("How many testing samples (max 10,000)\n"))
 x_train_resized = jnp.array([preprocess_image(img) for img in x_train[:train_n]])
@@ -79,122 +81,24 @@ for i in range(9):
     plt.title(f"Label: {y_train[i]}")
 plt.show()
 
-# similar to adder help, adding extra bits to the input which may help for the special use case of images
-def add_convolution(input_image: jnp.ndarray, width: int, stride: int, min_max: bool) -> jnp.ndarray:
+def add_real_conv() -> Tuple[List[Tuple[int, int, int, int]], List[int]]:
     """
-    Returns the result of applying a min or max pooling convolution to the image with no padding
-
-    Parameters
-    input_image - the input image, a jnp array of 0s and 1s, its shape is (n,n) for some n
-    width - the width of the filter
-    stride - the stride of the filter
-    min_max - True if we want to do max pooling, false otherwise
-
-    Returns
-    output - the result, another jnp array, its shape is also square, precisely (n-width)//stride+1
-    """
-    # Reshape input to [N, H, W, C] format (batch size, height, width, channels)
-    # this is the format jax.lax.reduce_window wants
-    input_image = input_image[jnp.newaxis, :, :, jnp.newaxis]
-
-    # Define pooling window size and strides
-    window_shape = (1, width, width, 1)
-    window_strides = (1, stride, stride, 1)
-    padding = 'VALID'
-    if min_max:
-        output = jax.lax.reduce_window(
-            input_image,
-            init_value=0.,
-            computation=jax.lax.max,
-            window_dimensions=window_shape,
-            window_strides=window_strides,
-            padding=padding
-        )
-    else:
-        output = jax.lax.reduce_window(
-            input_image,
-            init_value=1.,
-            computation=jax.lax.min,
-            window_dimensions=window_shape,
-            window_strides=window_strides,
-            padding=padding
-        )
-    output_image = jnp.squeeze(output)
-    return output_image
-
-def conv_help(inputs: jnp.ndarray) -> Tuple[jnp.ndarray, int, Conv, str]:
-    """
-    Function to wrap taking user input, and returns a new layer. Returns the result of applying the convolution
-    the user specified, the number of pixels (or elements) in this result, the width, stride and if it was min
-    or max pooling, and a flag which is 'y' if they added a layer. If they didn't add a layer, the flag is 'n',
-    and all the other returns are None
-
-    Parameters
-    inputs - an array of images, which themselves are square matrix of 0s and 1s
-
-    Returns
-    output - the result, another array of images, whose shapes are also square
-    output.shape[1]**2 - the number of pixels in each of the output images
-    (width, stride, min_max) - a tuple describing the convolution added, also enabling the same convolution to be replicated
-    add_conv_help - a string which is 'y' if they added the convolution layer
+    Gets the width and stride of convolutional layers for learning imaes
     """
     add_conv_help = input("Add extra convolutional layer? Yes(y) or no(n)\n")
-    if add_conv_help == 'y':
-        width = int(input("What's the width of the filter?\n"))
-        stride = int(input("What's the stride?\n"))
-        min_max = input("Max pool(max) or min pool(min)?\n")
-        output = jax.vmap(add_convolution, in_axes=(0, None, None, None))(inputs, width, stride, min_max=="max")
-        return output, output.shape[1]**2, (width, stride, min_max=="max"), add_conv_help
-    return None, None, None, add_conv_help
-
-def prep_in(inputs: jnp.ndarray) -> Tuple[jnp.ndarray, List[int], List[Conv]]:
-    """
-    Function to prepare the input layer of the NN. Takes the array of original resized and binarized image, and adds
-    as many convolution layers as the user wants. Returns a tuple of the new array, flattened, along with information
-    about what convolutions were added, so they can be replicated
-
-    Parameters
-    inputs - an array of images, which themselves are square matrix of 0s and 1s
-
-    Returns
-    flattened_result - all of the layers concatenated into a flat array
-    true_arch - a list describing how many pixels are in each layer
-    convs - a list storing the parameters of the convolutions we did
-    """
-    in_list = [inputs]
-    true_arch = [inputs.shape[1]**2]
     convs = []
-    add_conv_help = 'y'
+    true_arch = [size**2]
+    current_size = size
     while add_conv_help == 'y':
-        result = conv_help(in_list[-1])
-        add_conv_help = result[3]
-        if add_conv_help == 'y':
-            in_list.append(result[0])
-            true_arch.append(result[1])
-            convs.append(result[2])
-    print(true_arch)
-    flattened_matrices = [matrix.reshape(train_n, -1) for matrix in in_list]
-    flattened_result = jnp.concatenate(flattened_matrices, axis=1)
-    return flattened_result, true_arch, convs
-
-# adds the same helper bits to the testing data that we added to the training data
-def prep_test(inputs: jnp.ndarray, convs: List[Conv], samples=test_n) -> jnp.ndarray:
-    """
-    Function to prepare the testing data to match the training data. Returns the testing data, with the same
-    extra convolutions applied that we applied to the training data.
-
-    Parameters
-    inputs - an array of images, which themselves are square matrix of 0s and 1s
-    convs - a list describing the convolutions applied to training data
-
-    Returns
-    flattened_matrices - an array, containing the testing images with the convolutions applied
-    """
-    in_list = [inputs]
-    for width, stride, min_max in convs:
-        in_list.append(jax.vmap(add_convolution, in_axes=(0, None, None, None))(in_list[-1], width, stride, min_max))
-    flattened_matrices = [matrix.reshape(samples, -1) for matrix in in_list]
-    return jnp.concatenate(flattened_matrices, axis=1)
+        width = int(input("What's the width of the filters?\n"))
+        stride = int(input("What's the stride?\n"))
+        channels = int(input("How many channels?\n"))
+        add_conv_help = input("Add another layer? yes(y) or no(n)\n")
+        current_size = int(jnp.ceil((current_size-width+1) / stride))
+        print(current_size)
+        true_arch.append(current_size**2)
+        convs.append((width, stride, channels, current_size))
+    return convs, true_arch
 
 # finds the most likely output based on how many neurons are "hot"
 @jax.jit
@@ -213,7 +117,7 @@ def evaluate(output: jnp.ndarray, answer: int) -> bool:
     pred = jnp.argmax(jnp.sum(new_output, axis=1))
     return pred == answer
 
-def save(extra_layers: List[Tuple[int,int]], arch: List[int], some_or_less: str, neurons: List[jnp.ndarray], convs: List[Conv], acc: str, i: int=-1) -> int:
+def save(arch: List[int], neurons_conv: List[jnp.ndarray], neurons: List[jnp.ndarray], convs: List[Conv], acc: str, i: int=-1) -> int:
     """
     Creates or overwrites a file with the information learnt by the network
 
@@ -234,21 +138,19 @@ def save(extra_layers: List[Tuple[int,int]], arch: List[int], some_or_less: str,
         while os.path.exists(f"weights{i}.txt"):
             i += 1
     with open(f"weights{i}.txt", "w") as f:
-        if some_or_less == 's':
-            f.write(f"Using some_arrays\n")
-        else:
-            f.write(f"Using less_arrays\n")
         f.write(f"Size: {size}\n")
-        f.write(f"Convolution layers (width, stride, min/max):\n{convs}\n")
+        f.write(f"Convolution layers (width, stride, channels, n):\n{convs}\n")
         f.write(f"With architecture:\n{arch}\n")
-        f.write(f"With extra layers:\n{extra_layers}\n")
         f.write(f"Accuracy: {acc}\n")
+        f.write(f"Convolutional layers \n")
+        for layer in neurons_conv:
+            f.write(f"{jnp.sign(layer).tolist()}\n")
         f.write("Neurons:\n")
         for layer in neurons:
             f.write(f"{jnp.sign(layer).tolist()}\n")
     return i
 
-def load(name: str) -> Tuple[List[Tuple[int, int]], List[int], str, int, List[Conv], List[jnp.ndarray]]:
+def load(name: str) -> Tuple[List[int], int, List[Tuple[int, int]], List[jnp.ndarray], List[jnp.ndarray]]:
     """
     Loads data from a saved network
 
@@ -265,15 +167,17 @@ def load(name: str) -> Tuple[List[Tuple[int, int]], List[int], str, int, List[Co
     """
     with open(name, "r") as f:
         lines = f.readlines()
-    if "some" in lines[0]:
-        some_or_less = 's'
-    else:
-        some_or_less = 'l'
-    s = int(lines[1].split()[-1])
-    convs = eval(lines[3].strip())
-    arch = eval(lines[5].strip())
-    extra_layers = eval(lines[7].strip())
-    neurons = []
-    for line in lines[10:]:
-        neurons.append(jnp.array(eval(line.strip())))
-    return extra_layers, arch, some_or_less, s, convs, neurons
+    s = int(lines[0].split()[-1])
+    convs = eval(lines[2].strip())
+    arch = eval(lines[4].strip())
+    neurons_conv = []
+    switch = False
+    for line in lines[7:]:
+        if line.strip() == "Neurons:":
+            neurons = []
+            switch = True
+        elif switch:
+            neurons.append(jnp.array(eval(line.strip())))
+        else:
+            neurons_conv.append(jnp.array(eval(line.strip())))
+    return arch, s, convs, neurons_conv, neurons
