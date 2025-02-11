@@ -74,12 +74,12 @@ def set_up_img() -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, in
     return x_train_resized, x_test_resized, y_train_new, y_test, train_n
 
 # Visualising a few samples
-for i in range(9):
-    plt.subplot(3, 3, i + 1)
-    plt.imshow(x_train_resized[i], cmap='gray')
-    plt.axis('off')
-    plt.title(f"Label: {y_train[i]}")
-plt.show()
+# for i in range(9):
+#     plt.subplot(3, 3, i + 1)
+#     plt.imshow(x_train_resized[i], cmap='gray')
+#     plt.axis('off')
+#     plt.title(f"Label: {y_train[i]}")
+# plt.show()
 
 def add_real_conv() -> Tuple[List[Tuple[int, int, int, int]], List[int]]:
     """

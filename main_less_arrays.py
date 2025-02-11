@@ -23,11 +23,6 @@ def get_optional_input_non_blocking():
                 return 1
             if 'd' in user_input:
                 return 2
-            if 'b' in user_input:
-                return 3
-            if user_input.isnumeric():
-                new_batches = int(user_input)
-                return 4
     else:  # Unix-like systems
         input_ready, _, _ = select.select([sys.stdin], [], [], 0)  # Non-blocking select
         if input_ready:
@@ -36,11 +31,6 @@ def get_optional_input_non_blocking():
                 return 1
             if 'd' in user_input:
                 return 2
-            if 'b' in user_input:
-                return 3
-            if user_input.isnumeric():
-                new_batches = int(user_input)
-                return 4
     return 0
 
 # defining some types
@@ -93,6 +83,7 @@ if add_or_img == 'i':
     # for images, this is convolutional layers
     convs, true_arch = image_class.add_real_conv()
     if convs:
+        inputs = jnp.concatenate([inputs, 1-inputs], axis=1)
         new_ins = convs[-1][2] * convs[-1][3]**2
     else:
         new_ins = true_arch[0]
@@ -157,18 +148,15 @@ elif taper_q == 'c':
 elif taper_q == 'f':
     width = int(input("Arch Width:\n"))
     hidden = int(input("No. hidden layers:\n"))
-    if add_or_img != 'i':
-        wide = input("Add width(w) or depth(d)?\n")
     arch = [new_ins] + [width] * hidden + [outs]
 else:
     starting_width = int(input("Starting Width:\n"))
     hidden = int(input("No. hidden layers:\n"))
-    if add_or_img != 'i':
-        wide = input("Add width(w) or depth(d)?\n")
     diff = starting_width - outs
     layer_diff = diff/hidden
     arch = [new_ins] + [round(starting_width-i*layer_diff) for i in range(hidden)] + [outs]
 
+temperature = float(input("Sigmoid temperature for l2 and l3 (recommend 0.2):\n"))
 l2_coeff = float(input("l2 coefficient:\n"))
 max_fan_in = int(input("What should the max fan-in of the whole network be?:\n"))
 l3_coeff = float(input("l3 coefficient:\n"))
@@ -180,7 +168,7 @@ max_gates = int(input("What should the max number of gates in network be?:\n"))
 weigh_even = 'n'
 
 batches = num_ins
-# batches = int(input("How many batches?\n"))
+batches = int(input("How many batches?\n"))
 batch_size = num_ins//batches
 
 @jax.jit
@@ -283,8 +271,6 @@ def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
                 current_h = current_l + eff_arch[layer_i]
             current += 1
     output.append(current)
-    output += [0] * (len(output) - len(eff_arch))
-    output.append(outs)
     return output
 
 def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[str]:
@@ -348,8 +334,8 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
             sorted_connected = sorted(list(connected))
             connecteds.append([node[0] for node in sorted_connected])
             i = len(connecteds)-1
-            if super_verbose:
-                print(i, connecteds[i])
+            # if super_verbose:
+            #     print(i, connecteds[i])
             if not sorted_connected:
                 empties.append(added)
                 indices[added] = added
@@ -383,6 +369,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                     if layer_i == i_1-1:
                         for prev_node in sorted_connected:
                             used.add(prev_node[0])
+                        used.add(added)
     queue = list(used)
     nodes = []
     while len(queue):
@@ -392,10 +379,136 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
             if node_2 not in used:
                 queue.append(node_2)
                 used.add(node_2)
-    # print(nodes)
     used_list: List[int] = sorted(list(used))
     if verbose:
         print(used_list)
+    if super_verbose:
+        [print(i, connecteds[i]) for i in used_list]
+    learnt_arch = get_used(used_list, arch, verbose)
+    fan_ins = []
+    for node_index in used_list:
+        if node_index >= learnt_arch[0]:
+            fan_ins.append(len(connecteds[node_index]))
+    with open(f"circuit.txt", "w") as f:
+        f.write(f"used:\n{learnt_arch}\nout of:\n{arch}\n")
+        f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}\n")
+        for circ in circuits[-arch[-1]:]:
+            f.write(f"{circ}\n")
+    print("used:\n", learnt_arch, "\nout of:\n", arch)
+    print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
+    return circuits[-arch[-1]:]
+
+def output_circuit_img(neurons: Network, verbose=True, super_verbose=False) -> List[str]:
+    """
+    Outputs the learnt circuit, and also prints some useful data about the network
+    
+    Parameters
+    neurons - the internal representation of the circuit as learnt
+    verbose - a flag for printing extra info
+    
+    Returns
+    circuits[-arch[-1]:] - a list of the circuit learnt for each output neuron
+    """
+    # outputs the learnt circuit
+    connecteds: List[List[int]] = [[] for _ in range(ins)]
+    if extra_layers:
+        circuits = [str(i) for i in range(ins)]
+        for layer in extra_layers:
+            if layer[0] == 1:
+                extras = ["¬"+circ for circ in circuits]
+                connecteds += [[i] for i in range(len(connecteds))]
+            else:
+                extras = []
+            for k in range(max(2, layer[0]), layer[1]+1):
+                for comb in itertools.combinations(circuits, k):
+                    add = True
+                    for gate in comb:
+                        if "¬"+gate in comb:
+                            add = False
+                    if add:
+                        extras.append("¬("+".".join(comb)+")")
+                        new_con = []
+                        for gate in comb:
+                            new_con.append(circuits.index(gate))
+                        connecteds.append(new_con)
+            circuits += extras
+        if add_or_img == 'a':
+            circuits, connecteds = adders_util.update_circuits(add_adder_help, circuits, with_nots, connecteds)
+    else:
+        circuits = [chr(ord('A')+i) for i in range(arch[0])]
+    gates:List[List[List[Union[str,Tuple[int,int]]]]] = [[[] for _ in range(arch[0])]]
+    c2i = dict([(x,i) for i,x in enumerate(circuits)])
+    indices = dict([(i,i) for i in range(arch[0])])
+    index2gate = dict([(i, (0,i)) for i in range(arch[0])])
+    empties = []
+    added = arch[0] - 1
+    used = set()
+    for layer_i in range(i_1):
+        gates.append([])
+        gate_i1 = layer_i+1
+        gate_i2 = 0
+        for neuron_i in range(len(shapes[layer_i])):
+            i = 0
+            connected: Set[Tuple[int, str]] = set()
+            for inner_layer_i in range(len(shapes[layer_i][neuron_i])):
+                for weight_i in range(shapes[layer_i][neuron_i][inner_layer_i]):
+                    if neurons[layer_i][neuron_i,inner_layer_i,weight_i] > 0 and indices[i] not in empties:
+                        connected.add((indices[i], circuits[indices[i]]))
+                    i += 1
+            added += 1
+            sorted_connected = sorted(list(connected))
+            connecteds.append([node[0] for node in sorted_connected])
+            i = len(connecteds)-1
+            # if super_verbose:
+            #     print(i, connecteds[i])
+            if not sorted_connected:
+                empties.append(added)
+                indices[added] = added
+                circuits.append('_')
+            else:
+                if len(sorted_connected) == 1:
+                    node = '¬' + sorted_connected[0][1]
+                    if len(node) > 2:
+                        if node[:3] == "¬¬¬":
+                            node = node[2:]
+                else:
+                    node = '¬(' + '.'.join([element[1] for element in sorted_connected]) + ')'
+                if node in c2i.keys():
+                    if layer_i == i_1-1:
+                        circuits.append(node)
+                        gates[-1].append(["=", index2gate[c2i[node]]])
+                        index2gate[added] = (gate_i1, gate_i2)
+                        gate_i2 += 1
+                        for prev_node in sorted_connected:
+                            used.add(prev_node[0])
+                    else:
+                        circuits.append('_')
+                    indices[added] = c2i[node]
+                else:
+                    circuits.append(node)
+                    c2i[node] = added
+                    indices[added] = added
+                    gates[-1].append([index2gate[element[0]] for element in sorted_connected])
+                    index2gate[added] = (gate_i1, gate_i2)
+                    gate_i2 += 1
+                    if layer_i == i_1-1:
+                        for prev_node in sorted_connected:
+                            used.add(prev_node[0])
+                        used.add(added)
+    queue = list(used)
+    nodes = []
+    while len(queue):
+        node_i = queue.pop(0)
+        nodes.append(node_i)
+        for node_2 in connecteds[node_i]:
+            if node_2 not in used:
+                queue.append(node_2)
+                used.add(node_2)
+    used_list: List[int] = sorted(list(used))
+    if verbose:
+        print(used_list)
+    if super_verbose:
+        [print(i, connecteds[i]) for i in used_list]
     learnt_arch = get_used(used_list, arch, verbose)
     fan_ins = []
     for node_index in used_list:
@@ -423,8 +536,12 @@ def feed_forward(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
     the continuous output
     """
     xs = jnp.array([jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
-    for layer_i in range(i_1-1):
-        next = jax.vmap(forward, in_axes=(None, 0))(xs, neurons[layer_i])
+    if i_1 > 1:
+        next = jax.vmap(forward, in_axes=(None, 0))(xs, neurons[0])
+        next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
+        xs = jnp.vstack([xs, next])
+    for layer_i in range(1, i_1-1):
+        next = jax.vmap(forward, in_axes=(None, 0))(xs[-2:], neurons[layer_i])
         next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
     return jax.vmap(forward, in_axes=(None, 0))(xs, neurons[i_1-1])[:outs]
@@ -442,8 +559,12 @@ def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
     the discrete output
     """
     xs = jnp.array([jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
-    for layer_i in range(i_1-1):
-        next = jax.vmap(forward_disc, in_axes=(None, 0))(xs, neurons[layer_i])
+    if i_1 > 1:
+        next = jax.vmap(forward_disc, in_axes=(None, 0))(xs, neurons[0])
+        next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
+        xs = jnp.vstack([xs, next])
+    for layer_i in range(1, i_1-1):
+        next = jax.vmap(forward_disc, in_axes=(None, 0))(xs[-2:], neurons[layer_i])
         next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
     return jax.vmap(forward_disc, in_axes=(None, 0))(xs, neurons[i_1-1])[:outs]
@@ -545,7 +666,11 @@ def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndar
     # layer lists, each with arch[i] elements
     # so this is a 2D list of floats
     # or a 1D list of jnp arrays
-    mu = -jnp.log(old_c*w**2-1)/k
+    if global_weights == 'g':
+        n = global_conv_n
+    else:
+        n = old_c*w**2
+    mu = -jnp.log(n-1)/k
     return sigma * jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
 
 def initialise_conv(convs: List[Tuple[int, int, int, int]], sigma: jnp.ndarray, k: jnp.ndarray) -> Network:
@@ -561,7 +686,7 @@ def initialise_conv(convs: List[Tuple[int, int, int, int]], sigma: jnp.ndarray, 
     the network
     """
     neurons = []
-    current_c = 1
+    current_c = 2
     for w,_,c,_ in convs:
         weights = get_weights_conv(w, c, current_c, sigma, k)
         neurons.append(weights)
@@ -582,19 +707,31 @@ def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray)
     a 2d jnp array of the weights, which represents the wires going into a certain neuron
     """
     global key
-    weights = jnp.ones((layer,i_4)) * -jnp.inf
+    if layer == 1 or layer == len(arch)-1:
+        weights = jnp.ones((layer, i_4)) * -jnp.inf
+    else:
+        weights = jnp.ones((2,i_4)) * -jnp.inf
     # layer lists, each with arch[i] elements
     # so this is a 2D list of floats
     # or a 1D list of jnp arrays
     if global_weights == 'g':
         n = global_n
     else:
-        n = sum(arch[:layer])
+        if layer == 1 or layer == len(arch)-1:
+            n = sum(arch[:layer])
+        else:
+            n = arch[layer-2] + arch[layer-1]
     mu = -jnp.log(n-1)/k
-    for i in range(layer):
-        inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu
-        weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[i]), mode="constant", constant_values=-jnp.inf))
-        key = random.randint(0, 10000)
+    if layer == 1 or layer == len(arch)-1:
+        for i in range(layer):
+            inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu
+            weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[i]), mode="constant", constant_values=-jnp.inf))
+            key = random.randint(0, 10000)
+    else:
+        for i in range(2):
+            inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[layer-2+i])) + mu
+            weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[layer-2+i]), mode="constant", constant_values=-jnp.inf))
+            key = random.randint(0, 10000)
     return weights
 
 def initialise(arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> List[jnp.ndarray]:
@@ -611,7 +748,10 @@ def initialise(arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> List[jnp.
     """
     neurons = []
     for i1 in range(1, len(arch)):
-        layer = jnp.ones((arch[i1], i1, i_4))
+        if i1 == 1 or i1 == len(arch) - 1:
+            layer = jnp.ones((arch[i1], i1, i_4))
+        else:
+            layer = jnp.ones((arch[i1], 2, i_4))
         for i2 in range(arch[i1]):
             layer = layer.at[i2].set(get_weights(i1, arch, sigma, k))
         neurons.append(layer)
@@ -633,9 +773,14 @@ def get_shapes(arch: List[int]) -> Tuple[NetworkShape, int]:
     total = 0
     for layer in range(1, len(arch)):
         shapes.append([])
-        for _ in range(arch[layer]):
-            shapes[-1].append(arch[:layer].copy())
-            total += sum(arch[:layer])
+        if layer == 1 or len(arch)-1:
+            for _ in range(arch[layer]):
+                shapes[-1].append(arch[:layer].copy())
+                total += sum(arch[:layer])
+        else:
+            for _ in range(arch[layer]):
+                shapes[-1].append(arch[layer-2:layer].copy())
+                total += (arch[layer-2] + arch[layer-1])
     return shapes, total
 
 @jax.jit
@@ -652,9 +797,27 @@ def get_l2(neurons: Network) -> float:
     """
     fan_ins = jnp.array([])
     for layer in neurons:
-        fan_ins = jnp.concatenate((fan_ins, jax.vmap(lambda x:jnp.sum(jax.nn.sigmoid(x)))(layer)))
+        fan_ins = jnp.concatenate((fan_ins, jax.vmap(lambda x:jnp.sum(jax.nn.sigmoid(x/temperature)))(layer)))
     l2s = jax.nn.relu(fan_ins-max_fan_in)
     return jnp.sum(jax.nn.softmax(l2s)*l2s)
+
+@jax.jit
+def get_l2_disc(neurons: Network) -> float:
+    """
+    calculates l2, which is minimised for any maximum fan-in under or equal to "max_fan_in"
+    this doesn't account for duplicate gates
+
+    Parameters
+    neurons - the network
+    
+    Returns
+    l2
+    """
+    fan_ins = jnp.array([])
+    for layer in neurons:
+        fan_ins = jnp.concatenate((fan_ins, jax.vmap(lambda x:jnp.sum(jnp.where(x>0, 1, 0)))(layer)))
+    l2s = jax.nn.relu(fan_ins-max_fan_in)
+    return jnp.max(l2s)
 
 @jax.jit
 def cont_or(arr: jnp.ndarray) -> float:
@@ -675,24 +838,126 @@ def get_l3(neurons: Network) -> float:
     Returns
     l3
     """
-    sig_neurons = [jax.nn.sigmoid(layer[:,1:,:]) for layer in neurons]
-    used_back = jnp.zeros(shape=(i_3, i_4))
-    used_back = used_back.at[i_3-1, :outs].set(jnp.ones(shape=outs))
+    sig_neurons = [jax.nn.sigmoid(layer/temperature) for layer in neurons]
+    # the weights excluding connections to inputs
+    used_back = jnp.zeros(shape=(len(arch), i_4))
+    used_back = used_back.at[len(arch)-1, :outs].set(jnp.ones(shape=outs))
     # outputs are used by outputs
-    used_back = used_back.at[:i_3-1].set(1-jnp.prod(1-sig_neurons[i_3-1], axis=0))
-    for layer in range(i_3-2, -1, -1):
-        temp = sig_neurons[layer][:arch[layer+1], :layer] * used_back[layer, :arch[layer+1]][:, jnp.newaxis, jnp.newaxis]
-        used_back = used_back.at[:layer].set(1-(jnp.prod(1-temp, axis=0)*(1-used_back[:layer])))
-    used_for = jnp.zeros(shape=(i_3, i_4))
-    sig_neurons = [jax.nn.sigmoid(layer) for layer in neurons]
+    used_back = used_back.at[:len(arch)-1].set(1-jnp.prod(1-sig_neurons[-1], axis=0))
+    # for the rest of the neurons, which are currently set to 0 (unused), we or with their usage from the output
+    for layer in range(len(arch)-2, 1, -1):
+        temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
+        # this is a 2D matrix, the LHS of the * is how much each neuron to the left of this neuron is used by this neuron
+        # the RHS of the * is a vector, which is how much this neuron is used by the output.
+        used_back = used_back.at[layer-2:layer].set(1-(jnp.prod(1-temp, axis=0)*(1-used_back[layer-2:layer])))
+    temp = sig_neurons[0] * used_back[1, :arch[1]][:, jnp.newaxis, jnp.newaxis]
+    temp = 1-((1-used_back[0])*jnp.prod(1-temp, axis=0))
+    used_back = used_back.at[0].set(temp[0])
+    used_for = jnp.zeros(shape=(len(arch), i_4))
+    used_for = used_for.at[0, :new_ins].set(jnp.ones(shape=new_ins))
     input_con = jax.vmap(cont_or)(sig_neurons[0][:,0][:arch[1]])
-    used_for = used_for.at[0, :arch[1]].set(input_con)
-    for layer in range(1, i_3):
-        #input_con - an array of length arch[layer+1], telling us how connected each neuron is directly to the inputs
-        input_con = jax.vmap(cont_or)(sig_neurons[layer][:,0][:arch[layer+1]])
-        temp = used_for[:layer][jnp.newaxis,:,:] * sig_neurons[layer][:,1:layer+1][:arch[layer+1], :layer]
-        used_for = used_for.at[layer, :arch[layer+1]].set(1-(jnp.prod(1-temp, axis=(1,2))*(1-input_con)))
+    used_for = used_for.at[1, :arch[1]].set(input_con)
+    # setting the first row to how connected it is to the inputs
+    for layer in range(2, len(arch)-1):
+        temp = used_for[layer-2:layer][jnp.newaxis,:,:] * sig_neurons[layer-1][:arch[layer]]
+        used_for = used_for.at[layer, :arch[layer]].set(1-(jnp.prod(1-temp, axis=(1,2))))
+        # used_for represents how much the neuron is actually connected to the inputs,
+        # whether directly or through other NAND gates
+    temp = used_for[:len(arch)-1][jnp.newaxis,:,:] * sig_neurons[len(arch)-2][:arch[i_3]]
+    used_for = used_for.at[len(arch)-1, :arch[i_3]].set(1-jnp.prod(1-temp, axis=(1,2)))
     return jax.nn.relu(jnp.sum(used_back*used_for) - max_gates)
+
+# @jax.jit
+def print_l3(neurons: Network) -> float:
+    """
+    calculates l3, which is minimised for any number of gates less than or equal to "max_gates"
+    used_back tells us if the NAND gates will be used in the outputs
+    used_for tells us if the NAND gates are connected to the inputs
+    and so their product tells us if the NAND gates are being used
+    just like l2, this doesn't account for duplicate gates (but output_circuit does)
+
+    Parameters
+    neurons - the network
+    
+    Returns
+    l3
+    """
+    sig_neurons = [jax.nn.sigmoid(layer/temperature) for layer in neurons]
+    # the weights excluding connections to inputs
+    used_back = jnp.zeros(shape=(len(arch), i_4))
+    used_back = used_back.at[len(arch)-1, :outs].set(jnp.ones(shape=outs))
+    # outputs are used by outputs
+    used_back = used_back.at[:len(arch)-1].set(1-jnp.prod(1-sig_neurons[-1], axis=0))
+    # for the rest of the neurons, which are currently set to 0 (unused), we or with their usage from the output
+    for layer in range(len(arch)-2, 1, -1):
+        temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
+        # this is a 2D matrix, the LHS of the * is how much each neuron to the left of this neuron is used by this neuron
+        # the RHS of the * is a vector, which is how much this neuron is used by the output.
+        used_back = used_back.at[layer-2:layer].set(1-(jnp.prod(1-temp, axis=0)*(1-used_back[layer-2:layer])))
+    temp = sig_neurons[0] * used_back[1, :arch[1]][:, jnp.newaxis, jnp.newaxis]
+    temp = 1-((1-used_back[0])*jnp.prod(1-temp, axis=0))
+    used_back = used_back.at[0].set(temp[0])
+    used_for = jnp.zeros(shape=(len(arch), i_4))
+    used_for = used_for.at[0, :new_ins].set(jnp.ones(shape=new_ins))
+    input_con = jax.vmap(cont_or)(sig_neurons[0][:,0][:arch[1]])
+    used_for = used_for.at[1, :arch[1]].set(input_con)
+    # setting the first row to how connected it is to the inputs
+    for layer in range(2, len(arch)-1):
+        temp = used_for[layer-2:layer][jnp.newaxis,:,:] * sig_neurons[layer-1][:arch[layer]]
+        used_for = used_for.at[layer, :arch[layer]].set(1-(jnp.prod(1-temp, axis=(1,2))))
+        # used_for represents how much the neuron is actually connected to the inputs,
+        # whether directly or through other NAND gates
+    temp = used_for[:len(arch)-1][jnp.newaxis,:,:] * sig_neurons[len(arch)-2][:arch[i_3]]
+    used_for = used_for.at[len(arch)-1, :arch[i_3]].set(1-jnp.prod(1-temp, axis=(1,2)))
+    print(jnp.sum(used_back, axis=1))
+    print(jnp.sum(used_for, axis=1))
+    return jnp.sum(used_back*used_for, axis=1)
+
+@jax.jit
+def print_l3_disc(neurons: Network) -> float:
+    """
+    calculates l3, which is minimised for any number of gates less than or equal to "max_gates"
+    used_back tells us if the NAND gates will be used in the outputs
+    used_for tells us if the NAND gates are connected to the inputs
+    and so their product tells us if the NAND gates are being used
+    just like l2, this doesn't account for duplicate gates (but output_circuit does)
+
+    Parameters
+    neurons - the network
+    
+    Returns
+    l3
+    """
+    sig_neurons = [jnp.where(layer>0,1,0) for layer in neurons]
+    # the weights excluding connections to inputs
+    used_back = jnp.zeros(shape=(len(arch), i_4))
+    used_back = used_back.at[len(arch)-1, :outs].set(jnp.ones(shape=outs))
+    # outputs are used by outputs
+    used_back = used_back.at[:len(arch)-1].set(1-jnp.prod(1-sig_neurons[-1], axis=0))
+    # for the rest of the neurons, which are currently set to 0 (unused), we or with their usage from the output
+    for layer in range(len(arch)-2, 1, -1):
+        temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
+        # this is a 2D matrix, the LHS of the * is how much each neuron to the left of this neuron is used by this neuron
+        # the RHS of the * is a vector, which is how much this neuron is used by the output.
+        used_back = used_back.at[layer-2:layer].set(1-(jnp.prod(1-temp, axis=0)*(1-used_back[layer-2:layer])))
+    temp = sig_neurons[0] * used_back[1, :arch[1]][:, jnp.newaxis, jnp.newaxis]
+    temp = 1-((1-used_back[0])*jnp.prod(1-temp, axis=0))
+    used_back = used_back.at[0].set(temp[0])
+    used_for = jnp.zeros(shape=(len(arch), i_4))
+    used_for = used_for.at[0, :new_ins].set(jnp.ones(shape=new_ins))
+    input_con = jax.vmap(cont_or)(sig_neurons[0][:,0][:arch[1]])
+    used_for = used_for.at[1, :arch[1]].set(input_con)
+    # setting the first row to how connected it is to the inputs
+    for layer in range(2, len(arch)-1):
+        temp = used_for[layer-2:layer][jnp.newaxis,:,:] * sig_neurons[layer-1][:arch[layer]]
+        used_for = used_for.at[layer, :arch[layer]].set(1-(jnp.prod(1-temp, axis=(1,2))))
+        # used_for represents how much the neuron is actually connected to the inputs,
+        # whether directly or through other NAND gates
+    temp = used_for[:len(arch)-1][jnp.newaxis,:,:] * sig_neurons[len(arch)-2][:arch[i_3]]
+    used_for = used_for.at[len(arch)-1, :arch[i_3]].set(1-jnp.prod(1-temp, axis=(1,2)))
+    # print(jnp.sum(used_back, axis=1))
+    # print(jnp.sum(used_for, axis=1))
+    return jnp.sum(used_back*used_for, axis=1)
 
 epsilon = 1e-7
 @jax.jit
@@ -742,7 +1007,7 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
     return l1 + l2_coeff*l2 + l3*l3_coeff
 
 @jax.jit
-def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray) -> float:
+def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, alpha=1) -> float:
     """
     calculates loss
 
@@ -761,7 +1026,9 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray) 
     pred = jax.vmap(feed_forward, in_axes=(0, None))(pred, network[0])
     pred = jnp.clip(pred, epsilon, 1-epsilon)
     pred_logits = jnp.log(pred) - jnp.log(1-pred)
-    l1 = jnp.mean(optax.sigmoid_binary_cross_entropy(pred_logits, output))
+    sbce = optax.sigmoid_binary_cross_entropy(pred_logits, output)
+    weighted_sbce = alpha * output * sbce + (1-output) * sbce
+    l1 = jnp.mean(weighted_sbce)
     if l2_coeff:
         l2 = get_l2(network[0])
     else:
@@ -803,7 +1070,7 @@ def test_fan_in(neurons: Network) -> bool:
     if temp > max_fan_in:
         if (temp < current_max_fan_in or current_max_fan_in == -1):
             print(temp, max_fan_in)
-            [print(circ) for circ in (output_circuit(neurons, False, False))]
+            [print(circ) for circ in (output_circuit(neurons, True, True))]
             print("Max fan-in not good enough")
             current_max_fan_in = temp
         return False
@@ -832,7 +1099,7 @@ def acc(neurons: Network) -> Tuple[float, jnp.ndarray, jnp.ndarray]:
         return jnp.sum(pred)/((2**(ins))*(outs)), trues[0], falses[0]
     return jnp.sum(pred)/((2**(ins))*(outs)), jnp.zeros(0), jnp.zeros(0)
 
-@jax.jit
+# @jax.jit
 def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     """
     calculates the accuracy, and also the masks used in the loss function
@@ -847,6 +1114,7 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     # returns the accuracy
     pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None))(x_test, neurons_conv)
     pred = pred.reshape(pred.shape[0], -1)
+    print(jnp.sum(pred))
     if add_comp == 'y':
         pred = jnp.concatenate([pred, 1-pred], axis=1)
     pred = jax.vmap(feed_forward_disc, in_axes=(0, None))(pred, neurons)
@@ -858,26 +1126,42 @@ i_1 = len(arch) - 1
 i_3 = i_1
 i_4 = max(arch)
 shapes, total = get_shapes(arch)
-global_n = sum([arch[layer]*sum(arch[:layer]) for layer in range(1, len(arch))])/sum(arch)
+if add_or_img == 'i' and convs:
+    neurons_conv_shape = []
+    old_c = 2
+    for w,_,c,_ in convs:
+        neurons_conv_shape.append((c, old_c, w))
+        old_c = c
+    global_conv_n = sum([x[1]*x[2]**2*new_n**2 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)])/sum([x[0]*new_n**2 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)])
+    print(global_conv_n)
+global_n = (arch[1]*arch[0] + arch[-1]*sum(arch[:-1]) + sum([arch[layer]*(arch[layer-1]+arch[layer-2]) for layer in range(2, len(arch)-1)]))/sum(arch)
 print(global_n)
+if add_or_img == 'i' and convs:
+    global_n = (sum([x[1]*x[2]**2*new_n**0 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)])
+            + arch[1]*arch[0] + arch[-1]*sum(arch[:-1])
+            + sum([arch[layer]*(arch[layer-1]+arch[layer-2]) for layer in range(2, len(arch)-1)])) / (
+                sum([x[0]*new_n**0 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)]) + sum(arch))
+    global_conv_n = global_n
+    print(global_n)
 all_sigmas = [0.1, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0]
 all_ks = [1.0, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91, 0.9, 0.85, 0.75, 0.65, 0.5, 0.39, 0.32, 0.27, 0.23, 0.205, 0.18, 0.17, 0.155, 0.14, 0.13, 0.12, 0.11]
 
+boundary_jump = 5*(max(10//batches,1)**2)*batch_size
+
 schedule = optax.join_schedules(
     schedules=[
-        optax.constant_schedule(0.05),
+        # optax.constant_schedule(1.0),
+        optax.constant_schedule(0.3),
+        optax.constant_schedule(0.1),
+        optax.constant_schedule(0.03),
         optax.constant_schedule(0.01),
-        optax.constant_schedule(0.003)
+        optax.constant_schedule(0.003),
+        optax.constant_schedule(0.001),
     ],
-    boundaries=[2*batches, 4*batches]
+    boundaries=[(i+1)**2*boundary_jump for i in range(6)]
 )
 
 solver = optax.adam(learning_rate=schedule)
-
-if add_or_img == 'i':
-    batch_schedule = [60000, 30000, 20000, 15000, 12000, 10000, 7500, 6000, 5000, 4000, 3750, 3000,
-                      2500, 2400, 2000, 1875, 1500, 1250, 1200, 1000, 800, 750, 625, 600, 500]
-    batch_i = 0
 
 print("Learning:\n", output, "\nwith arch:", arch)
 key = random.randint(0, 10000)
@@ -893,29 +1177,32 @@ else:
     opt_state = solver.init(neurons)
 init_time = time.time()
 print("Took", init_time-start_time, "seconds to initialise.")
+print([layer.shape for layer in neurons])
+if add_or_img == 'i' and convs:
+    print([layer.shape for layer in neurons_conv])
 cont = True
 if add_or_img == 'i':
     accuracy = acc_conv(neurons, neurons_conv)
     new_loss = loss_conv([neurons, neurons_conv], inputs, output)
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),5)}")
+    print(print_l3(neurons))
+    print(print_l3_disc(neurons))
+    print(get_l2(neurons), get_l2_disc(neurons))
     grad_conv = jax.jit(jax.grad(loss_conv, argnums=0))
 else:
     accuracy = acc(neurons)
     new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]))
     print(f"Accuracy: {round(100*float(accuracy[0]),2)}%, Loss: {round(float(new_loss),5)}")
+    print(print_l3(neurons))
+    print(print_l3_disc(neurons))
+    print(get_l2(neurons), get_l2_disc(neurons))
     grad = jax.jit(jax.grad(loss, argnums=0))
 iters = 0
 popped = 0
 file_i = -1
 
-restart = False
-
 while cont:
     iters += 1
-    if add_or_img == 'i':
-        batches = batch_schedule[min(len(batch_schedule)-1, int(batch_i))]
-        batch_i += 0.5
-        batch_size = num_ins // batches
     for _ in range(max(10//batches, 1)):
         if batches > 1:
             key = random.randint(0, 10000)
@@ -969,70 +1256,32 @@ while cont:
                     print("Testing on testing data...")
                     accuracy = acc(neurons)
                     print(str(round(float(100*accuracy[0]),2))+"%% accuracy on the testing data")
+                    print(print_l3(neurons))
+                    print(print_l3_disc(neurons))
+                    print(get_l2(neurons), get_l2_disc(neurons))
                     image_class.save(neurons, convs, str(round(float(100*accuracy[0]),2))+'%', file_i)
                 elif weigh_even == 'n':
                     print("Now weighing wrong more")
                     weigh_even = 'y'
                 else:
-                    restart = True
-                    print("Restarting with new random weights")
-                    neurons = initialise(arch, all_sigmas[sigma_i], all_ks[sigma_i])
-                    new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]))
-                    opt_state = solver.init(neurons)
+                    print("Now weighing wrong less again")
+                    weigh_even = 'n'
             elif get_optional_input_non_blocking() == 3:
                 if weigh_even == 'y':
                     weigh_even = 'n'
-            if restart:
-                if taper_q == 't':
-                    taper = min(0.99, taper*1.1)
-                    next_layer = round(layer2*taper)
-                    arch = [new_ins]
-                    while next_layer > outs:
-                        arch.append(next_layer)
-                        next_layer = min(next_layer - 1, round(next_layer * taper))
-                    if arch[-1] != outs:
-                        arch.append(outs)
-                elif taper_q == 'c':
-                    arch += [outs]
-                elif taper_q == 'f':
-                    if wide == 'w':
-                        width = round(width*1.1)
-                    else:
-                        hidden += 1
-                    arch = [new_ins] + [width] * hidden + [outs]
-                else:
-                    if wide == 'w':
-                        starting_width = round(starting_width*1.1)
-                        diff = starting_width-outs
-                        layer_diff = diff/hidden
-                    else:
-                        hidden += 1
-                        layer_diff = diff/hidden
-                    arch = [new_ins] + [round(starting_width-i*layer_diff) for i in range(hidden)] + [outs]
-                end_time = time.time()
-                print("Took", end_time-init_time, "seconds before restarting.")
-                i_1 = len(arch) - 1
-                i_2 = max(arch[1:])
-                i_3 = i_1
-                i_4 = max(arch)
-                shapes, total = get_shapes(arch)
-                global_n = sum([arch[layer]*sum(arch[:layer]) for layer in range(1, len(arch))])/sum(arch)
-                neurons = initialise(arch, all_sigmas[sigma_i], all_ks[sigma_i])
-                weigh_even = 'n'
-                new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]))
-                opt_stat = solver.init(neurons)
-                init_time = time.time()
-                print("New arch:", arch)
-                accuracy = acc(neurons)
-                print(f"Accuracy: {round(100*float(accuracy[0]),2)}%, Loss: {round(float(new_loss),5)}")
-                print("Took", init_time-end_time, "seconds to initialise.")
         if iters == max(10//batches, 1):
             if add_or_img != 'i':
                 accuracy = acc(neurons)
                 print(f"Accuracy: {round(100*float(accuracy[0]),2)}%, Loss: {round(float(new_loss),5)}")
+                print(print_l3(neurons))
+                print(print_l3_disc(neurons))
+                print(get_l2(neurons), get_l2_disc(neurons))
             else:
                 accuracy = acc_conv(neurons, neurons_conv)
                 print(f"Accuracy: {str(round(100*float(accuracy),2))}%, Loss: {round(float(new_loss),5)}")
+                print(print_l3(neurons))
+                print(print_l3_disc(neurons))
+                print(get_l2(neurons), get_l2_disc(neurons))
                 file_i = image_class.save(arch, neurons_conv, neurons, convs, str(round(float(100*accuracy),2))+'%', file_i)
             iters = 0
 end_time = time.time()
