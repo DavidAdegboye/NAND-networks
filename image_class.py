@@ -6,6 +6,7 @@ import os
 import numpy as np
 from skimage.transform import resize
 from typing import List, Tuple
+import yaml
 
 Conv = Tuple[int, int, bool]
 
@@ -16,8 +17,11 @@ Conv = Tuple[int, int, bool]
 x_train = x_train / 255.0
 x_test = x_test / 255.0
 
+with open("set-up.yaml", "r") as f:
+    config = yaml.safe_load(f)
+
+size = config["size"]
 # resizing the image from 28*28 to size*size, and from x∈[0,1] to x∈{0,1}
-size = int(input("Picture size (max 28):\n"))
 def preprocess_image(image: np.ndarray, s: Tuple[int, int]=(size, size), threshold: float=0.5) -> np.ndarray:
     """
     Returns a black and white (not grayscale) image, resized to size s
@@ -34,7 +38,7 @@ def preprocess_image(image: np.ndarray, s: Tuple[int, int]=(size, size), thresho
     binary = (resized > threshold).astype(jnp.float32)
     return binary
 
-n = int(input("How many output neurons per number?\n"))
+n = config["n"]
 
 # turning the output label from a number to n hot encoding
 @jax.jit
@@ -60,10 +64,8 @@ def preprocess_test(value: int) -> jnp.ndarray:
     return output
 
 # applying preprocessing to the data
-train_n = 60000
-test_n = 10000
-train_n = int(input("How many training samples (max 60,000)\n"))
-test_n = int(input("How many testing samples (max 10,000)\n"))
+train_n = config["train_n"]
+test_n = config["test_n"]
 x_train_resized = jnp.array([preprocess_image(img) for img in x_train[:train_n]])
 x_test_resized = jnp.array([preprocess_image(img) for img in x_test[:test_n]])
 y_train = jnp.array(y_train[:train_n])
@@ -81,24 +83,16 @@ def set_up_img() -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, in
 #     plt.title(f"Label: {y_train[i]}")
 # plt.show()
 
-def add_real_conv() -> Tuple[List[Tuple[int, int, int, int]], List[int]]:
+def add_real_conv(convs: List[Tuple[int, int, int, int]]) -> List[int]:
     """
     Gets the width and stride of convolutional layers for learning imaes
     """
-    add_conv_help = input("Add extra convolutional layer? Yes(y) or no(n)\n")
-    convs = []
-    true_arch = [size**2]
     current_size = size
-    while add_conv_help == 'y':
-        width = int(input("What's the width of the filters?\n"))
-        stride = int(input("What's the stride?\n"))
-        channels = int(input("How many channels?\n"))
-        add_conv_help = input("Add another layer? yes(y) or no(n)\n")
+    true_arch = [size**2]
+    for width, stride, channels, current_size in convs:
         current_size = int(jnp.ceil((current_size-width+1) / stride))
-        print(current_size)
         true_arch.append(current_size**2)
-        convs.append((width, stride, channels, current_size))
-    return convs, true_arch
+    return true_arch
 
 # finds the most likely output based on how many neurons are "hot"
 @jax.jit

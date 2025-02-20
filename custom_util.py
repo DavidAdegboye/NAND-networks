@@ -1,6 +1,10 @@
 import jax
 import jax.numpy as jnp
 from typing import Tuple
+import yaml
+
+with open("set-up.yaml", "r") as f:
+    config = yaml.safe_load(f)
 
 # function to convert a denary number to a a jnp array of bits
 def denary_to_binary_array(number: int, bits: int) -> jnp.ndarray:
@@ -29,13 +33,9 @@ def set_up_custom() -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]:
     2**ins - the number of samples we have (this would be both inputs.shape[0] and output.shape[0])
     """
     # number of input bits
-    ins = int(input("How many inputs?\n"))
+    ins = config["ins"]
     # number of output bits
-    outs = int(input("How many outputs?\n"))
-    output_list = []
-    for i in range(outs):
-        next_out = input(f"Enter the desired output for the neuron {i+1}, separated by spaces. (There should be {2**ins})\n")
-        output_list.append([int(x) for x in next_out.split()])
-    output = jnp.transpose(jnp.array(output_list))
+    outs = config["outs"]
+    output = jnp.array(config["output"])
     inputs = jax.vmap(denary_to_binary_array, in_axes=(0, None))(jnp.arange(2**(ins)), ins)
     return inputs, output, ins, outs, 2**ins
