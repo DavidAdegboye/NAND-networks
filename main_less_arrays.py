@@ -165,11 +165,12 @@ if l3_coeff == 0:
     max_gates = [0]*len(arch)
 else:
     max_gates = config["max_gates"]
+l3_coeff = l3_coeff / (sum(arch)-sum(max_gates))
 max_gates = jnp.array(max_gates)
 l4_coeff = config["l4_coeff"]
-l5_coeff = config["l5_coeff"]
 min_gates = config["min_gates"]
 min_gates = jnp.array(min_gates)
+l5_coeff = config["l5_coeff"] / sum(min_gates)
 # for adders and arbitrary combinational logic circuits, where we're aiming for 100% accuracy, if we're stuck
 # in the high nineties at a local minima, I've added this to give a little nudge. It makes the losses of the
 # incorrect samples weigh more.
@@ -957,18 +958,35 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
     else:
         l2 = 0
     if l3_coeff:
-        l3 = get_l3(neurons, max_gates)
+        l3 = get_l3(network[0], max_gates)
     else:
         l3 = 0
     if l4_coeff:
-        l4 = get_l4(neurons)
+        l4 = get_l4(network[0])
     else:
         l4 = 0
     if l5_coeff:
-        l5 = get_l5(neurons, min_gates)
+        l5 = get_l5(network[0], min_gates)
     else:
         l5 = 0
     return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + l5_coeff*l5
+
+def mask_fn(params):
+    return jax.tree.map(lambda x: jnp.abs(x) < config["threshold"], params)
+
+def masked_loss_conv(params, inputs, outputs, max_fan_in):
+    neurons, neurons_conv = params  # Unpack parameters
+    
+    # Compute the dynamic masks (must have the same shape as the corresponding arrays)
+    mask_neurons = mask_fn(neurons)  # mask_fn should return a boolean array of the same shape as neurons
+    mask_neurons_conv = mask_fn(neurons_conv)
+
+    # Replace parameters with a version that stops gradients where the mask is False
+    masked_neurons = [jnp.where(mask_layer, layer, jax.lax.stop_gradient(layer)) for mask_layer, layer in zip(mask_neurons, neurons)]
+    masked_neurons_conv = [jnp.where(mask_layer, layer, jax.lax.stop_gradient(layer)) for mask_layer, layer in zip(mask_neurons_conv, neurons_conv)]
+
+    # Call the original loss function with the masked parameters
+    return loss_conv([masked_neurons, masked_neurons_conv], inputs, outputs, max_fan_in)
 
 @jax.jit
 def test(neurons: Network) -> bool:
@@ -1172,6 +1190,7 @@ def run(timeout=config["timeout"]):
             # batched_inputs = inputs.reshape(batches, batch_size, inputs.shape[1])
             # batched_output = output.reshape(batches, batch_size, output.shape[1])
             for batch in range(batches):
+                # print(batch)
                 if add_or_img == 'i':
                     gradients = grad_conv([neurons, neurons_conv],
                                         inputs[batch*batch_size:(batch+1)*batch_size],

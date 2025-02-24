@@ -1,9 +1,13 @@
 import jax
 import jax.numpy as jnp
 from typing import List, Tuple
+import yaml
+
+with open("set-up.yaml", "r") as f:
+    config = yaml.safe_load(f)
 
 # sets up parameters for learning an n-bit adder
-bits = int(input("Input bits:\n"))
+bits = config["bits"]
 def set_up_adders() -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]:
     """
    sets up a run to learn an adder
@@ -19,7 +23,7 @@ def set_up_adders() -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]:
     ins = bits*2
     num_ins = 2**ins
     inputs = jax.vmap(denary_to_binary_array)(jnp.arange(num_ins))
-    out_bits = int(input(f"How many output bits do you want to learn? (max {bits+1})\n"))
+    out_bits = config["out_bits"]
     output = jax.vmap(get_output)(jnp.arange(num_ins))[:,:out_bits]
     print(output.shape)
     return inputs, output, ins, out_bits, num_ins
@@ -87,10 +91,10 @@ def adder_help(inputs: jnp.ndarray, true_arch: List[int]) -> Tuple[jnp.ndarray, 
     add_adder_help - a string telling us if we actually used the adder help
     with_nots - a string telling us if we used a complement layer (from add_second_layer)
     """
-    add_adder_help = input("Add extra help for learning an adder? Yes(y) or no(n)\n")
+    add_adder_help = config["add_adder_help"]
     with_nots = None
     if add_adder_help == 'y':
-        with_nots = input("Did you add a complement layer? Yes(y) or no(n)\n")
+        with_nots = config["with_nots"]
         old_ins = inputs.shape[1]
         inputs = jax.vmap(help_adder, in_axes=(0, None))(inputs, with_nots=='y')
         new_ins = inputs.shape[1]
@@ -112,12 +116,12 @@ def update_circuits(add_adder_help: str, circuits: List[str], with_nots: str|Non
     circuits - updated list of the circuits with the adder layer
     connecteds - updated list for each NAND gate, which tells us whatever before it that's connected
     """
-    if add_adder_help == 'y':
+    if add_adder_help:
         for i in range(bits):
             circuits.append("¬(" + chr(ord('A')+i) + "." + chr(ord('A')+i+bits) + ")")
             connecteds.append([i,i+bits])
             # so for example ABC+DEF, we're adding A NAND D, B NAND E and C NAND F
-            if with_nots == 'y':
+            if with_nots:
                 circuits.append("¬(" + chr(ord('A')+i) + ".¬" + chr(ord('A')+i+bits) + ")")
                 circuits.append("¬(¬" + chr(ord('A')+i) + "." + chr(ord('A')+i+bits) + ")")
                 circuits.append("¬(¬" + chr(ord('A')+i) + ".¬" + chr(ord('A')+i+bits) + ")")
