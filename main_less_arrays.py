@@ -768,7 +768,7 @@ def get_l3(neurons: Network, max_gates: jnp.ndarray) -> float:
     return jnp.sum(jax.nn.relu(jnp.sum(used, axis=1)-max_gates))
 
 @jax.jit
-def get_l5(neurons: Network, min_gates: jnp.ndarray) -> float:
+def get_l5(neurons: Network, min_gates: jnp.ndarray, l5_coeff: float) -> float:
     used = get_l3_used(neurons)
     return jnp.sum(jax.nn.relu(min_gates-jnp.sum(used, axis=1)))
 
@@ -927,13 +927,13 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
     else:
         l4 = 0
     if l5_coeff:
-        l5 = get_l5(neurons, min_gates)
+        l5 = get_l5(neurons, min_gates, l5_coeff)
     else:
         l5 = 0
     return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + l5_coeff*l5
 
 @jax.jit
-def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, max_fan_in: int) -> float:
+def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, max_fan_in: int, l5_coeff: float) -> float:
     """
     calculates loss
 
@@ -966,7 +966,7 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
     else:
         l4 = 0
     if l5_coeff:
-        l5 = get_l5(network[0], min_gates)
+        l5 = get_l5(network[0], min_gates, l5_coeff)
     else:
         l5 = 0
     return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + l5_coeff*l5
@@ -1156,7 +1156,7 @@ def start_run(arch, batches, batch_size):
         print([layer.shape for layer in neurons_conv])
     if add_or_img == 'i':
         accuracy = acc_conv(neurons, neurons_conv)
-        new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in)
+        new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff)
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),5)}")
         print(print_l3(neurons))
         print(print_l3_disc(neurons))
@@ -1217,7 +1217,7 @@ def run(timeout=config["timeout"]):
                     neurons = optax.apply_updates(neurons, updates)
             if time.time() - start_run_time > timeout * 60:
                 if add_or_img == 'i':
-                    new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in)
+                    new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff)
                 else:
                     if weigh_even == 'y':
                         new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates)
@@ -1249,11 +1249,11 @@ def run(timeout=config["timeout"]):
                 cont = False
         if cont:
             if config["l5_coeff"] > 0:
-                if get_l5(neurons, min_gates) < 1:
+                if get_l5(neurons, min_gates, l5_coeff) < 1:
                     print("Setting l5_coeff to 0")
                     l5_coeff = 0
             if add_or_img == 'i':
-                new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in)
+                new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff)
             else:
                 if weigh_even == 'y':
                     new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates)
