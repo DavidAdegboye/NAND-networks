@@ -1173,7 +1173,7 @@ def start_run(arch, batches, batch_size):
         grad = jax.jit(jax.grad(loss, argnums=0))
 
 def run(timeout=config["timeout"]):
-    global batches, batch_size, inputs, output, weigh_even, neurons, neurons_conv, updates, opt_state
+    global batches, batch_size, inputs, output, weigh_even, neurons, neurons_conv, updates, opt_state, l5_coeff
     cont = True
     iters = 0
     file_i = -1
@@ -1248,6 +1248,9 @@ def run(timeout=config["timeout"]):
             if test(neurons) and (l2_coeff==0 or test_fan_in(neurons)) or get_optional_input_non_blocking() == 2:
                 cont = False
         if cont:
+            if config["l5_coeff"] > 0:
+                if get_l5(neurons, min_gates):
+                    l5_coeff = 0
             if add_or_img == 'i':
                 new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in)
             else:
