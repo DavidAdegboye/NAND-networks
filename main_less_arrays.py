@@ -1249,7 +1249,8 @@ def run(timeout=config["timeout"]):
                 cont = False
         if cont:
             if config["l5_coeff"] > 0:
-                if get_l5(neurons, min_gates):
+                if get_l5(neurons, min_gates) < 1:
+                    print("Setting l5_coeff to 0")
                     l5_coeff = 0
             if add_or_img == 'i':
                 new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in)
