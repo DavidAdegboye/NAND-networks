@@ -65,8 +65,8 @@ elif add_or_img == 'a':
     import adders_util
     inputs, output, ins, outs, num_ins = adders_util.set_up_adders()
 else:
-    import image_class
-    inputs, x_test, output, y_test, num_ins = image_class.set_up_img()
+    import image_class_resid
+    inputs, x_test, output, y_test, num_ins = image_class_resid.set_up_img()
     inputs = jnp.expand_dims(inputs, axis=1)
     x_test = jnp.expand_dims(x_test, axis=1)
     outs = output.shape[1]
@@ -96,7 +96,7 @@ def add_second_layers(input: jnp.ndarray, min_fan: int, max_fan: int) -> jnp.nda
 if add_or_img == 'i':
     # for images, this is convolutional layers
     convs = config["convs"]
-    true_arch = image_class.add_real_conv(convs)
+    true_arch = image_class_resid.add_real_conv(convs)
     if convs:
         inputs = jnp.concatenate([inputs, 1-inputs], axis=1)
         new_ins = convs[-1][2] * convs[-1][3]**2
@@ -168,9 +168,6 @@ else:
 l3_coeff = l3_coeff / (sum(arch)-sum(max_gates))
 max_gates = jnp.array(max_gates)
 l4_coeff = config["l4_coeff"]
-min_gates = config["min_gates"]
-min_gates = jnp.array(min_gates)
-l5_coeff = config["l5_coeff"] / sum(min_gates)
 # for adders and arbitrary combinational logic circuits, where we're aiming for 100% accuracy, if we're stuck
 # in the high nineties at a local minima, I've added this to give a little nudge. It makes the losses of the
 # incorrect samples weigh more.
@@ -419,12 +416,12 @@ def feed_forward(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
     the continuous output
     """
     xs = jnp.array([jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
-    if i_1 > 1:
+    for layer_i in range(min(i_1-1, 3)):
         next = jax.vmap(forward, in_axes=(None, 0))(xs, neurons[0])
         next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
-    for layer_i in range(1, i_1-1):
-        next = jax.vmap(forward, in_axes=(None, 0))(xs[-2:], neurons[layer_i])
+    for layer_i in range(3, i_1-1):
+        next = jax.vmap(forward, in_axes=(None, 0))(jnp.vstack(xs[0], xs[-2:]), neurons[layer_i])
         next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
     return jax.vmap(forward, in_axes=(None, 0))(xs, neurons[i_1-1])[:outs]
@@ -442,12 +439,12 @@ def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
     the discrete output
     """
     xs = jnp.array([jnp.pad(inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
-    if i_1 > 1:
+    for layer_i in range(min(i_1-1, 3)):
         next = jax.vmap(forward_disc, in_axes=(None, 0))(xs, neurons[0])
         next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
-    for layer_i in range(1, i_1-1):
-        next = jax.vmap(forward_disc, in_axes=(None, 0))(xs[-2:], neurons[layer_i])
+    for layer_i in range(3, i_1-1):
+        next = jax.vmap(forward_disc, in_axes=(None, 0))(jnp.vstack(xs[0], xs[-2:]), neurons[layer_i])
         next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
     return jax.vmap(forward_disc, in_axes=(None, 0))(xs, neurons[i_1-1])[:outs]
@@ -595,10 +592,10 @@ def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray)
     a 2d jnp array of the weights, which represents the wires going into a certain neuron
     """
     global key
-    if layer == 1 or layer == len(arch)-1:
+    if layer == 1 or layer == 2 or layer == len(arch)-1:
         weights = jnp.ones((layer, i_4)) * -jnp.inf
     else:
-        weights = jnp.ones((2,i_4)) * -jnp.inf
+        weights = jnp.ones((3,i_4)) * -jnp.inf
     # layer lists, each with arch[i] elements
     # so this is a 2D list of floats
     # or a 1D list of jnp arrays
@@ -608,23 +605,20 @@ def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray)
         if layer == 1 or layer == len(arch)-1:
             n = sum(arch[:layer])
         else:
-            n = arch[layer-2] + arch[layer-1]
+            n = arch[0] + arch[layer-2] + arch[layer-1]
     mu = -jnp.log(n-1)/k
-    if layer == 1 or layer == len(arch)-1:
+    if layer == 1 or layer == 2 or layer == len(arch)-1:
         for i in range(layer):
             inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu
             weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[i]), mode="constant", constant_values=-jnp.inf))
             key = random.randint(0, 10000)
-    # elif layer == len(arch)-1:
-    #     for i in range(layer):
-    #         mu = -jnp.log(arch[i]-1)/all_ks[4]
-    #         inner_layer = all_sigmas[4] * jax.random.normal(jax.random.key(key), (arch[i])) + mu
-    #         weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[i]), mode="constant", constant_values=-jnp.inf))
-    #         key = random.randint(0, 10000)
     else:
-        for i in range(2):
-            inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[layer-2+i])) + mu
-            weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[layer-2+i]), mode="constant", constant_values=-jnp.inf))
+        inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[0])) + mu
+        weights = weights.at[0].set(jnp.pad(inner_layer, (0, i_4-arch[0]), mode="constant", constant_values=-jnp.inf))
+        key = random.randint(0, 10000)
+        for i in range(1,3):
+            inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[layer-3+i])) + mu
+            weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[layer-3+i]), mode="constant", constant_values=-jnp.inf))
             key = random.randint(0, 10000)
     return weights
 
@@ -642,10 +636,10 @@ def initialise(arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray) -> List[jnp.
     """
     neurons = []
     for i1 in range(1, len(arch)):
-        if i1 == 1 or i1 == len(arch) - 1:
+        if i1 == 1 or i1 == 2 or i1 == len(arch) - 1:
             layer = jnp.ones((arch[i1], i1, i_4))
         else:
-            layer = jnp.ones((arch[i1], 2, i_4))
+            layer = jnp.ones((arch[i1], 3, i_4))
         for i2 in range(arch[i1]):
             layer = layer.at[i2].set(get_weights(i1, arch, sigma, k))
         neurons.append(layer)
@@ -766,11 +760,6 @@ def get_l3_used(neurons: Network) -> float:
 def get_l3(neurons: Network, max_gates: jnp.ndarray) -> float:
     used = get_l3_used(neurons)
     return jnp.sum(jax.nn.relu(jnp.sum(used, axis=1)-max_gates))
-
-@jax.jit
-def get_l5(neurons: Network, min_gates: jnp.ndarray, l5_coeff: float) -> float:
-    used = get_l3_used(neurons)
-    return jnp.sum(jax.nn.relu(min_gates-jnp.sum(used, axis=1)))
 
 @jax.jit
 def print_l3(neurons: Network) -> float:
@@ -926,14 +915,10 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
         l4 = get_l4(neurons)
     else:
         l4 = 0
-    if l5_coeff:
-        l5 = get_l5(neurons, min_gates, l5_coeff)
-    else:
-        l5 = 0
-    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + l5_coeff*l5
+    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4
 
 @jax.jit
-def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, max_fan_in: int, l5_coeff: float) -> float:
+def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, max_fan_in: int) -> float:
     """
     calculates loss
 
@@ -965,11 +950,7 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
         l4 = get_l4(network[0])
     else:
         l4 = 0
-    # if l5_coeff:
-    #     l5 = get_l5(network[0], min_gates, l5_coeff)
-    # else:
-    #     l5 = 0
-    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + l5_coeff*get_l5(network[0], min_gates, l5_coeff)
+    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4
 
 def mask_fn(params):
     return jax.tree.map(lambda x: jnp.abs(x) < config["threshold"], params)
@@ -1071,7 +1052,7 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     if add_comp:
         pred = jnp.concatenate([pred, 1-pred], axis=1)
     pred = jax.vmap(feed_forward_disc, in_axes=(0, None))(pred, neurons)
-    result = jax.vmap(image_class.evaluate)(pred, y_test)
+    result = jax.vmap(image_class_resid.evaluate)(pred, y_test)
     return jnp.sum(result)/result.size
 
 all_sigmas = [0.1, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0]
@@ -1156,7 +1137,7 @@ def start_run(arch, batches, batch_size):
         print([layer.shape for layer in neurons_conv])
     if add_or_img == 'i':
         accuracy = acc_conv(neurons, neurons_conv)
-        new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff)
+        new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in)
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),5)}")
         print(print_l3(neurons))
         print(print_l3_disc(neurons))
@@ -1173,7 +1154,7 @@ def start_run(arch, batches, batch_size):
         grad = jax.jit(jax.grad(loss, argnums=0))
 
 def run(timeout=config["timeout"]):
-    global batches, batch_size, inputs, output, weigh_even, neurons, neurons_conv, updates, opt_state, l5_coeff
+    global batches, batch_size, inputs, output, weigh_even, neurons, neurons_conv, updates, opt_state
     cont = True
     iters = 0
     file_i = -1
@@ -1217,7 +1198,7 @@ def run(timeout=config["timeout"]):
                     neurons = optax.apply_updates(neurons, updates)
             if time.time() - start_run_time > timeout * 60:
                 if add_or_img == 'i':
-                    new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff)
+                    new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in)
                 else:
                     if weigh_even == 'y':
                         new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates)
@@ -1229,7 +1210,7 @@ def run(timeout=config["timeout"]):
                     print(print_l3(neurons))
                     print(print_l3_disc(neurons))
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
-                    image_class.save(neurons, convs, str(round(float(100*accuracy[0]),2))+'%', file_i)
+                    image_class_resid.save(neurons, convs, str(round(float(100*accuracy[0]),2))+'%', file_i)
                     return accuracy
                 else:
                     accuracy = acc(neurons)
@@ -1248,12 +1229,8 @@ def run(timeout=config["timeout"]):
             if test(neurons) and (l2_coeff==0 or test_fan_in(neurons)) or get_optional_input_non_blocking() == 2:
                 cont = False
         if cont:
-            if config["l5_coeff"] > 0 and l5_coeff != 0:
-                if get_l5(neurons, min_gates, l5_coeff) < 1:
-                    print("Setting l5_coeff to 0")
-                    l5_coeff = 0
             if add_or_img == 'i':
-                new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff)
+                new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_inz)
             else:
                 if weigh_even == 'y':
                     new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates)
@@ -1269,7 +1246,7 @@ def run(timeout=config["timeout"]):
                         print(print_l3(neurons))
                         print(print_l3_disc(neurons))
                         print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
-                        image_class.save(neurons, convs, str(round(float(100*accuracy[0]),2))+'%', file_i)
+                        image_class_resid.save(neurons, convs, str(round(float(100*accuracy[0]),2))+'%', file_i)
                     elif weigh_even == 'n':
                         print("Now weighing wrong more")
                         weigh_even = 'y'
@@ -1293,7 +1270,7 @@ def run(timeout=config["timeout"]):
                     print(print_l3(neurons))
                     print(print_l3_disc(neurons))
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
-                    file_i = image_class.save(arch, neurons_conv, neurons, convs, str(round(float(100*accuracy),2))+'%', file_i)
+                    file_i = image_class_resid.save(arch, neurons_conv, neurons, convs, str(round(float(100*accuracy),2))+'%', file_i)
                 iters = 0
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
