@@ -739,14 +739,15 @@ def get_l3_used(neurons: Network) -> float:
     used_back = used_back.at[:len(arch)-1].set(1-jnp.prod(1-sig_neurons[-1], axis=0))
     # for the rest of the neurons, which are currently set to 0 (unused), we or with their usage from the output
     for layer in range(len(arch)-2, 2, -1):
-        temp = sig_neurons[layer-1] * used_back[jnp.array([0, layer-2, layer-1])][:, jnp.newaxis, jnp.newaxis]
+        temp = sig_neurons[layer-1] * used_back[layer][:, jnp.newaxis, jnp.newaxis]
         # this is a 2D matrix, the LHS of the * is how much each neuron to the left of this neuron is used by this neuron
         # the RHS of the * is a vector, which is how much this neuron is used by the output.
         temp = 1-(jnp.prod(1-temp, axis=0)*(1-used_back[jnp.array([0, layer-2, layer])]))
         used_back = used_back.at[jnp.array([0, layer-2, layer-1])].set(temp)
     for layer in range(2,0,-1):
-        temp = sig_neurons[layer-1] * used_back[:layer][:, jnp.newaxis, jnp.newaxis]
-        used_back = used_back.at[:layer].set(1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer]))
+        temp = sig_neurons[layer-1] * used_back[layer][:, jnp.newaxis, jnp.newaxis]
+        temp = 1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer])
+        used_back = used_back.at[:layer].set(temp)
     used_for = jnp.zeros(shape=(len(arch), i_4))
     used_for = used_for.at[0, :new_ins].set(jnp.ones(shape=new_ins))
     for layer in range(1, min(4, len(arch))):
@@ -791,14 +792,15 @@ def print_l3(neurons: Network) -> float:
     used_back = used_back.at[:len(arch)-1].set(1-jnp.prod(1-sig_neurons[-1], axis=0))
     # for the rest of the neurons, which are currently set to 0 (unused), we or with their usage from the output
     for layer in range(len(arch)-2, 2, -1):
-        temp = sig_neurons[layer-1] * used_back[jnp.array([0, layer-2, layer-1])][:, jnp.newaxis, jnp.newaxis]
+        temp = sig_neurons[layer-1] * used_back[layer][:, jnp.newaxis, jnp.newaxis]
         # this is a 2D matrix, the LHS of the * is how much each neuron to the left of this neuron is used by this neuron
         # the RHS of the * is a vector, which is how much this neuron is used by the output.
         temp = 1-(jnp.prod(1-temp, axis=0)*(1-used_back[jnp.array([0, layer-2, layer])]))
         used_back = used_back.at[jnp.array([0, layer-2, layer-1])].set(temp)
     for layer in range(2,0,-1):
-        temp = sig_neurons[layer-1] * used_back[:layer][:, jnp.newaxis, jnp.newaxis]
-        used_back = used_back.at[:layer].set(1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer]))
+        temp = sig_neurons[layer-1] * used_back[layer][:, jnp.newaxis, jnp.newaxis]
+        temp = 1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer])
+        used_back = used_back.at[:layer].set(temp)
     used_for = jnp.zeros(shape=(len(arch), i_4))
     used_for = used_for.at[0, :new_ins].set(jnp.ones(shape=new_ins))
     for layer in range(1, min(4, len(arch))):
@@ -838,14 +840,15 @@ def print_l3_disc(neurons: Network) -> float:
     used_back = used_back.at[:len(arch)-1].set(1-jnp.prod(1-sig_neurons[-1], axis=0))
     # for the rest of the neurons, which are currently set to 0 (unused), we or with their usage from the output
     for layer in range(len(arch)-2, 2, -1):
-        temp = sig_neurons[layer-1] * used_back[jnp.array([0, layer-2, layer-1])][:, jnp.newaxis, jnp.newaxis]
+        temp = sig_neurons[layer-1] * used_back[layer][:, jnp.newaxis, jnp.newaxis]
         # this is a 2D matrix, the LHS of the * is how much each neuron to the left of this neuron is used by this neuron
         # the RHS of the * is a vector, which is how much this neuron is used by the output.
         temp = 1-(jnp.prod(1-temp, axis=0)*(1-used_back[jnp.array([0, layer-2, layer])]))
         used_back = used_back.at[jnp.array([0, layer-2, layer-1])].set(temp)
     for layer in range(2,0,-1):
-        temp = sig_neurons[layer-1] * used_back[:layer][:, jnp.newaxis, jnp.newaxis]
-        used_back = used_back.at[:layer].set(1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer]))
+        temp = sig_neurons[layer-1] * used_back[layer][:, jnp.newaxis, jnp.newaxis]
+        temp = 1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer])
+        used_back = used_back.at[:layer].set(temp)
     used_for = jnp.zeros(shape=(len(arch), i_4))
     used_for = used_for.at[0, :new_ins].set(jnp.ones(shape=new_ins))
     for layer in range(1, min(4, len(arch))):
@@ -929,7 +932,7 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
         l4 = get_l4(neurons)
     else:
         l4 = 0
-    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + + get_l5(neurons, min_gates, l5_coeff)
+    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + get_l5(neurons, min_gates, l5_coeff)
 
 @jax.jit
 def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, max_fan_in: int, scaled: List[jnp.ndarray]) -> float:
