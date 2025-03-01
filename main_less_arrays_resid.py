@@ -98,13 +98,13 @@ if add_or_img == 'i':
     convs = config["convs"]
     convs = [[w,s,c+2,ns] for w,s,c,ns in convs]
     true_arch = image_class_resid.add_real_conv(convs)
+    inputs = jnp.concatenate([inputs, 1-inputs], axis=1)
+    x_test = jnp.concatenate([x_test, 1-x_test], axis=1)
     if convs:
         scaled_train_imgs, scaled_test_imgs = image_class_resid.get_imgs(convs)
-        inputs = jnp.concatenate([inputs, 1-inputs], axis=1)
-        x_test = jnp.concatenate([x_test, 1-x_test], axis=1)
         new_ins = convs[-1][2] * convs[-1][3]**2
     else:
-        new_ins = true_arch[0]
+        new_ins = true_arch[0] * 2
     add_comp = config["add_comp"]
     if add_comp:
         new_ins *= 2
@@ -941,27 +941,12 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
     if convs:
         pred = jax.vmap(feed_forward_conv, in_axes=(0, None))(inputs, network[1])
     else:
-        pred = inputs
+        inputs = inputs.reshape(inputs.shape[0], -1)
+        return loss(network[0], inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
     pred = pred.reshape(pred.shape[0], -1)
     if add_comp:
         pred = jnp.concatenate([pred, 1-pred], axis=1)
-    pred = jax.vmap(feed_forward, in_axes=(0, None))(pred, network[0])
-    pred = jnp.clip(pred, epsilon, 1-epsilon)
-    pred_logits = jnp.log(pred) - jnp.log(1-pred)
-    l1 = jnp.mean(optax.sigmoid_binary_cross_entropy(pred_logits, output))
-    if l2_coeff:
-        l2 = get_l2(network[0], max_fan_in)
-    else:
-        l2 = 0
-    if l3_coeff:
-        l3 = get_l3(network[0], max_gates)
-    else:
-        l3 = 0
-    if l4_coeff:
-        l4 = get_l4(network[0])
-    else:
-        l4 = 0
-    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4
+    return loss(network[0], pred, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
 
 def mask_fn(params):
     return jax.tree.map(lambda x: jnp.abs(x) < config["threshold"], params)
@@ -1058,13 +1043,13 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     """
     # returns the accuracy
     if convs:
-        pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None))(x_test, neurons_conv)
+        pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, None))(x_test, neurons_conv, scaled_test_imgs)
+        if add_comp:
+            pred = jnp.concatenate([pred, 1-pred], axis=1)
     else:
         pred = x_test
     pred = pred.reshape(pred.shape[0], -1)
     # print(jnp.sum(pred))
-    if add_comp:
-        pred = jnp.concatenate([pred, 1-pred], axis=1)
     pred = jax.vmap(feed_forward_disc, in_axes=(0, None))(pred, neurons)
     result = jax.vmap(image_class_resid.evaluate)(pred, y_test)
     return jnp.sum(result)/result.size
