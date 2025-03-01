@@ -136,11 +136,10 @@ if taper_q == 't':
     taper = config["taper"]
     next_layer = config["width"]
     arch = [new_ins]
-    while next_layer > outs:
+    for _ in range(config["hidden"]):
         arch.append(next_layer)
-        next_layer = min(next_layer-1, round(next_layer*taper))
-    if arch[-1] != outs:
-        arch.append(outs)
+        next_layer = max(min(next_layer-1, round(next_layer*taper)), outs)
+    arch.append(outs)
 elif taper_q == 'c':
     arch = [new_ins]
     arch += config["architecture"]
