@@ -1028,7 +1028,7 @@ def acc(neurons: Network) -> Tuple[float, jnp.ndarray, jnp.ndarray]:
         return jnp.sum(pred)/((2**(ins))*(outs)), trues[0], falses[0]
     return jnp.sum(pred)/((2**(ins))*(outs)), jnp.zeros(0), jnp.zeros(0)
 
-# @jax.jit
+@jax.jit
 def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     """
     calculates the accuracy, and also the masks used in the loss function
@@ -1042,8 +1042,6 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     """
     # returns the accuracy
     if convs:
-        print(x_test.shape)
-        print([imgs.shape for imgs in scaled_test_imgs])
         pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, 0))(x_test, neurons_conv, scaled_test_imgs)
         if add_comp:
             pred = jnp.concatenate([pred, 1-pred], axis=1)
@@ -1137,8 +1135,8 @@ def start_run(arch, batches, batch_size):
         print([layer.shape for layer in neurons_conv])
     if add_or_img == 'i':
         accuracy = acc_conv(neurons, neurons_conv)
-        print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),5)}")
         new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, scaled_train_imgs)
+        print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),5)}")
         print(print_l3(neurons))
         print(print_l3_disc(neurons))
         print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
