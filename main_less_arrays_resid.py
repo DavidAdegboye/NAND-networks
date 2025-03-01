@@ -940,6 +940,8 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
     """
     if convs:
         pred = jax.vmap(feed_forward_conv, in_axes=(0, None))(inputs, network[1])
+    else:
+        pred = inputs
     pred = pred.reshape(pred.shape[0], -1)
     if add_comp:
         pred = jnp.concatenate([pred, 1-pred], axis=1)
@@ -1057,6 +1059,8 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     # returns the accuracy
     if convs:
         pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None))(x_test, neurons_conv)
+    else:
+        pred = x_test
     pred = pred.reshape(pred.shape[0], -1)
     # print(jnp.sum(pred))
     if add_comp:
