@@ -96,9 +96,12 @@ def add_second_layers(input: jnp.ndarray, min_fan: int, max_fan: int) -> jnp.nda
 if add_or_img == 'i':
     # for images, this is convolutional layers
     convs = config["convs"]
+    convs = [[w,s,c+2,ns] for w,s,c,ns in convs]
     true_arch = image_class_resid.add_real_conv(convs)
     if convs:
+        scaled_train_imgs, scaled_test_imgs = image_class_resid.get_imgs(convs)
         inputs = jnp.concatenate([inputs, 1-inputs], axis=1)
+        x_test = jnp.concatenate([x_test, 1-x_test], axis=1)
         new_ins = convs[-1][2] * convs[-1][3]**2
     else:
         new_ins = true_arch[0]
@@ -499,7 +502,7 @@ def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> j
     )(channels)
 
 @jax.jit
-def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray) -> jnp.ndarray:
+def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.ndarray]) -> jnp.ndarray:
     """
     Applies all of the convolutional layers to the input
     
@@ -511,12 +514,12 @@ def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray) -> jnp.ndarray:
     The result of applying the convolutional layers, ready to be passed into
     the dense layers
     """
-    for ws, (_,_,s,n) in zip(weights, convs):
+    for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
         xs = forward_conv(xs, ws, s, jnp.zeros(n))
     return xs
 
 @jax.jit
-def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray) -> jnp.ndarray:
+def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.ndarray]) -> jnp.ndarray:
     """
     Applies all of the convolutional layers to the input
     
@@ -528,7 +531,7 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray) -> jnp.ndarray:
     The result of applying the convolutional layers, ready to be passed into
     the dense layers
     """
-    for ws, (_,_,s,n) in zip(weights, convs):
+    for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
         xs = forward_conv_disc(xs, ws, s, jnp.zeros(n))
     return xs
 
@@ -935,7 +938,8 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
     Returns
     loss
     """
-    pred = jax.vmap(feed_forward_conv, in_axes=(0, None))(inputs, network[1])
+    if convs:
+        pred = jax.vmap(feed_forward_conv, in_axes=(0, None))(inputs, network[1])
     pred = pred.reshape(pred.shape[0], -1)
     if add_comp:
         pred = jnp.concatenate([pred, 1-pred], axis=1)
@@ -1051,7 +1055,8 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     accuracy - the accuracy (may be specifically the testing accuracy)
     """
     # returns the accuracy
-    pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None))(x_test, neurons_conv)
+    if convs:
+        pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None))(x_test, neurons_conv)
     pred = pred.reshape(pred.shape[0], -1)
     # print(jnp.sum(pred))
     if add_comp:
@@ -1173,6 +1178,9 @@ def run(timeout=config["timeout"]):
                 shuffled_indices = jax.random.permutation(key, inputs.shape[0])
                 inputs = inputs[shuffled_indices]
                 output = output[shuffled_indices]
+                if add_or_img == 'i' and convs:
+                    scaled_train_imgs = [imgs[shuffled_indices] for imgs in scaled_train_imgs]
+                    scaled_test_imgs = [imgs[shuffled_indices] for imgs in scaled_test_imgs]
             # batched_inputs = inputs.reshape(batches, batch_size, inputs.shape[1])
             # batched_output = output.reshape(batches, batch_size, output.shape[1])
             for batch in range(batches):

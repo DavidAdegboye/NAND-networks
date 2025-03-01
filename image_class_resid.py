@@ -22,7 +22,7 @@ with open("set-up.yaml", "r") as f:
 
 size = config["size"]
 # resizing the image from 28*28 to size*size, and from x∈[0,1] to x∈{0,1}
-def preprocess_image(image: np.ndarray, s: Tuple[int, int]=(size, size), threshold: float=0.5) -> np.ndarray:
+def preprocess_image(image: np.ndarray, s: Tuple[int, int]=(size, size), threshold: float=0.5) -> jnp.ndarray:
     """
     Returns a black and white (not grayscale) image, resized to size s
 
@@ -93,6 +93,12 @@ def add_real_conv(convs: List[Tuple[int, int, int, int]]) -> List[int]:
         current_size = int(jnp.ceil((current_size-width+1) / stride))
         true_arch.append(current_size**2)
     return true_arch
+
+@jax.jit
+def get_imgs(convs: List[Tuple[int, int, int, int]]) -> List[jnp.ndarray]:
+    imgs_list = [jnp.array([preprocess_image(img, ns) for img in x_train[:train_n]]) for _,_,_,ns in convs]
+    test_list = [jnp.array([preprocess_image(img, ns) for img in x_test[:test_n]]) for _,_,_,ns in convs]
+    return imgs_list, test_list
 
 # finds the most likely output based on how many neurons are "hot"
 @jax.jit
