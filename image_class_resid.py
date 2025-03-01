@@ -85,8 +85,8 @@ def set_up_img() -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, in
 
 # @jax.jit
 def get_imgs(convs: List[Tuple[int, int, int, int]]) -> List[jnp.ndarray]:
-    imgs_list = [jnp.array([preprocess_image(img, (ns,ns)) for img in x_train[:train_n]]) for _,_,_,ns in convs]
-    test_list = [jnp.array([preprocess_image(img, (ns,ns)) for img in x_test[:test_n]]) for _,_,_,ns in convs]
+    imgs_list = [jnp.expand_dims(jnp.array([preprocess_image(img, (ns,ns)) for img in x_train[:train_n]]), axis=1) for _,_,_,ns in convs]
+    test_list = [jnp.expand_dims(jnp.array([preprocess_image(img, (ns,ns)) for img in x_test[:test_n]]), axis=1) for _,_,_,ns in convs]
     imgs_list = [jnp.concatenate([inputs, 1-inputs], axis=1) for inputs in imgs_list]
     test_list = [jnp.concatenate([inputs, 1-inputs], axis=1) for inputs in test_list]
     return imgs_list, test_list
