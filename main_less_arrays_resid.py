@@ -1043,7 +1043,7 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     # returns the accuracy
     if convs:
         print(x_test.shape)
-        [print(imgs.shape) for imgs in scaled_test_imgs]
+        print([imgs.shape for imgs in scaled_test_imgs])
         pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, 0))(x_test, neurons_conv, scaled_test_imgs)
         if add_comp:
             pred = jnp.concatenate([pred, 1-pred], axis=1)
