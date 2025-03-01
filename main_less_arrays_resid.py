@@ -925,7 +925,7 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
     return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4
 
 @jax.jit
-def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, max_fan_in: int) -> float:
+def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, max_fan_in: int, scaled: List[jnp.ndarray]) -> float:
     """
     calculates loss
 
@@ -938,7 +938,7 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
     loss
     """
     if convs:
-        pred = jax.vmap(feed_forward_conv, in_axes=(0, None))(inputs, network[1])
+        pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(inputs, network[1], list(zip(*scaled)))
     else:
         inputs = inputs.reshape(inputs.shape[0], -1)
         return loss(network[0], inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
@@ -950,7 +950,7 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
 def mask_fn(params):
     return jax.tree.map(lambda x: jnp.abs(x) < config["threshold"], params)
 
-def masked_loss_conv(params, inputs, outputs, max_fan_in):
+def masked_loss_conv(params, inputs, outputs, max_fan_in, scaled):
     neurons, neurons_conv = params  # Unpack parameters
     
     # Compute the dynamic masks (must have the same shape as the corresponding arrays)
@@ -962,7 +962,7 @@ def masked_loss_conv(params, inputs, outputs, max_fan_in):
     masked_neurons_conv = [jnp.where(mask_layer, layer, jax.lax.stop_gradient(layer)) for mask_layer, layer in zip(mask_neurons_conv, neurons_conv)]
 
     # Call the original loss function with the masked parameters
-    return loss_conv([masked_neurons, masked_neurons_conv], inputs, outputs, max_fan_in)
+    return loss_conv([masked_neurons, masked_neurons_conv], inputs, outputs, max_fan_in, scaled)
 
 @jax.jit
 def test(neurons: Network) -> bool:
@@ -1042,7 +1042,7 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     """
     # returns the accuracy
     if convs:
-        pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, None))(x_test, neurons_conv, scaled_test_imgs)
+        pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, 0))(x_test, neurons_conv, list(zip(*scaled_test_imgs)))
         if add_comp:
             pred = jnp.concatenate([pred, 1-pred], axis=1)
     else:
@@ -1135,7 +1135,7 @@ def start_run(arch, batches, batch_size):
         print([layer.shape for layer in neurons_conv])
     if add_or_img == 'i':
         accuracy = acc_conv(neurons, neurons_conv)
-        new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in)
+        new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, scaled_train_imgs)
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),5)}")
         print(print_l3(neurons))
         print(print_l3_disc(neurons))
@@ -1177,7 +1177,8 @@ def run(timeout=config["timeout"]):
                     gradients = grad_conv([neurons, neurons_conv],
                                         inputs[batch*batch_size:(batch+1)*batch_size],
                                         output[batch*batch_size:(batch+1)*batch_size],
-                                        max_fan_in)
+                                        max_fan_in,
+                                        [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs])
                     update, opt_state = solver.update(gradients, opt_state, [neurons, neurons_conv])
                     neurons, neurons_conv = optax.apply_updates([neurons, neurons_conv], update)
                 elif weigh_even == 'y':
@@ -1199,7 +1200,7 @@ def run(timeout=config["timeout"]):
                     neurons = optax.apply_updates(neurons, updates)
             if time.time() - start_run_time > timeout * 60:
                 if add_or_img == 'i':
-                    new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in)
+                    new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, scaled_train_imgs)
                 else:
                     if weigh_even == 'y':
                         new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates)
@@ -1231,7 +1232,7 @@ def run(timeout=config["timeout"]):
                 cont = False
         if cont:
             if add_or_img == 'i':
-                new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in)
+                new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, scaled_train_imgs)
             else:
                 if weigh_even == 'y':
                     new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates)
