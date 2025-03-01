@@ -1137,8 +1137,8 @@ def start_run(arch, batches, batch_size):
         print([layer.shape for layer in neurons_conv])
     if add_or_img == 'i':
         accuracy = acc_conv(neurons, neurons_conv)
-        new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, scaled_train_imgs)
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),5)}")
+        new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, scaled_train_imgs)
         print(print_l3(neurons))
         print(print_l3_disc(neurons))
         print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
