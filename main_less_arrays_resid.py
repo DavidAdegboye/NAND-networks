@@ -169,6 +169,9 @@ else:
 l3_coeff = l3_coeff / (sum(arch)-sum(max_gates))
 max_gates = jnp.array(max_gates)
 l4_coeff = config["l4_coeff"]
+min_gates = config["min_gates"]
+min_gates = jnp.array(min_gates)
+l5_coeff = config["l5_coeff"] / sum(min_gates)
 # for adders and arbitrary combinational logic circuits, where we're aiming for 100% accuracy, if we're stuck
 # in the high nineties at a local minima, I've added this to give a little nudge. It makes the losses of the
 # incorrect samples weigh more.
@@ -574,7 +577,7 @@ def initialise_conv(convs: List[Tuple[int, int, int, int]], sigma: jnp.ndarray, 
     neurons = []
     current_c = 2
     for w,_,c,_ in convs:
-        weights = get_weights_conv(w, c, current_c, sigma, k)
+        weights = get_weights_conv(w, c-2, current_c, sigma, k)
         neurons.append(weights)
         current_c = c
     return neurons
@@ -873,6 +876,11 @@ def get_l4(neurons: Network) -> float:
         s += jnp.sum(1-jax.nn.sigmoid(jnp.absolute(layer)))
     return s/total
 
+@jax.jit
+def get_l5(neurons: Network, min_gates: jnp.ndarray, l5_coeff: float) -> float:
+    used = get_l3_used(neurons)
+    return l5_coeff*jnp.sum(jax.nn.relu(min_gates-jnp.sum(used, axis=1)))
+
 epsilon = 1e-7
 @jax.jit
 def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.ndarray, mask2:jnp.ndarray, max_fan_in: int, max_gates: jnp.ndarray) -> float:
@@ -922,7 +930,7 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
         l4 = get_l4(neurons)
     else:
         l4 = 0
-    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4
+    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + + get_l5(neurons, min_gates, l5_coeff)
 
 @jax.jit
 def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, max_fan_in: int, scaled: List[jnp.ndarray]) -> float:
