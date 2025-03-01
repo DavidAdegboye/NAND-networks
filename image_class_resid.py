@@ -83,17 +83,6 @@ def set_up_img() -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, in
 #     plt.title(f"Label: {y_train[i]}")
 # plt.show()
 
-def add_real_conv(convs: List[Tuple[int, int, int, int]]) -> List[int]:
-    """
-    Gets the width and stride of convolutional layers for learning imaes
-    """
-    current_size = size
-    true_arch = [size**2]
-    for width, stride, channels, current_size in convs:
-        current_size = int(jnp.ceil((current_size-width+1) / stride))
-        true_arch.append(current_size**2)
-    return true_arch
-
 # @jax.jit
 def get_imgs(convs: List[Tuple[int, int, int, int]]) -> List[jnp.ndarray]:
     imgs_list = [jnp.array([preprocess_image(img, (ns,ns)) for img in x_train[:train_n]]) for _,_,_,ns in convs]

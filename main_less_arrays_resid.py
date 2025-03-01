@@ -97,7 +97,7 @@ if add_or_img == 'i':
     # for images, this is convolutional layers
     convs = config["convs"]
     convs = [[w,s,c+2,ns] for w,s,c,ns in convs]
-    true_arch = image_class_resid.add_real_conv(convs)
+    true_arch = [config["size"]**2] + [ns**2 for _,_,_,ns in convs]
     inputs = jnp.concatenate([inputs, 1-inputs], axis=1)
     x_test = jnp.concatenate([x_test, 1-x_test], axis=1)
     if convs:
