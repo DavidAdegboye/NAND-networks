@@ -1028,7 +1028,7 @@ def acc(neurons: Network) -> Tuple[float, jnp.ndarray, jnp.ndarray]:
         return jnp.sum(pred)/((2**(ins))*(outs)), trues[0], falses[0]
     return jnp.sum(pred)/((2**(ins))*(outs)), jnp.zeros(0), jnp.zeros(0)
 
-@jax.jit
+# @jax.jit
 def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     """
     calculates the accuracy, and also the masks used in the loss function
@@ -1042,9 +1042,9 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     """
     # returns the accuracy
     if convs:
-        pred = jax.vmap(lambda x, n, s: feed_forward_conv_disc(x, n, tuple(s)), in_axes=(0, None, 0))(
-            x_test, neurons_conv, jax.tree_util.tree_map(lambda *s: jnp.stack(s, axis=0), *scaled_test_imgs)
-        )
+        print(x_test.shape)
+        [print(imgs.shape) for imgs in scaled_test_imgs]
+        pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, 0))(x_test, neurons_conv, scaled_test_imgs)
         if add_comp:
             pred = jnp.concatenate([pred, 1-pred], axis=1)
     else:
