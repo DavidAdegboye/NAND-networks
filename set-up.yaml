@@ -23,7 +23,7 @@ bits: 8 # only for adders
 out_bits: 9 # only for adders (should be at most bits+1)
 add_adder_help: False # only for adders
 with_nots: False # only for adders
-add_comp: True # only for images, should be True
+add_comp: False # only for images, should be  if using conv layers
 size: 28 # only for images
 train_n: 60000 # only for images
 test_n: 10000 # only for images
