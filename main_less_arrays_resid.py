@@ -514,7 +514,7 @@ def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        xs = forward_conv(xs, ws, s, jnp.zeros(n))
+        xs = jnp.concatenate([imgs_list[i], forward_conv(xs, ws, s, jnp.zeros(n))], axis=0)
     return xs
 
 @jax.jit
@@ -531,7 +531,7 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        xs = forward_conv_disc(xs, ws, s, jnp.zeros(n))
+        xs = jnp.concatenate([imgs_list[i], forward_conv(xs, ws, s, jnp.zeros(n))], axis=0)
     return xs
 
 def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
@@ -1152,7 +1152,7 @@ def start_run(arch, batches, batch_size):
         grad = jax.jit(jax.grad(loss, argnums=0))
 
 def run(timeout=config["timeout"]):
-    global batches, batch_size, inputs, output, weigh_even, neurons, neurons_conv, updates, opt_state
+    global batches, batch_size, inputs, output, weigh_even, neurons, neurons_conv, updates, opt_state, scaled_train_imgs
     cont = True
     iters = 0
     file_i = -1
@@ -1168,7 +1168,6 @@ def run(timeout=config["timeout"]):
                 output = output[shuffled_indices]
                 if add_or_img == 'i' and convs:
                     scaled_train_imgs = [imgs[shuffled_indices] for imgs in scaled_train_imgs]
-                    scaled_test_imgs = [imgs[shuffled_indices] for imgs in scaled_test_imgs]
             # batched_inputs = inputs.reshape(batches, batch_size, inputs.shape[1])
             # batched_output = output.reshape(batches, batch_size, output.shape[1])
             for batch in range(batches):
