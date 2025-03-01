@@ -745,7 +745,7 @@ def get_l3_used(neurons: Network) -> float:
         temp = 1-(jnp.prod(1-temp, axis=0)*(1-used_back[jnp.array([0, layer-2, layer])]))
         used_back = used_back.at[jnp.array([0, layer-2, layer-1])].set(temp)
     for layer in range(2,0,-1):
-        temp = sig_neurons[layer-1] * used_back[layer][:, jnp.newaxis, jnp.newaxis]
+        temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
         temp = 1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer])
         used_back = used_back.at[:layer].set(temp)
     used_for = jnp.zeros(shape=(len(arch), i_4))
@@ -798,7 +798,7 @@ def print_l3(neurons: Network) -> float:
         temp = 1-(jnp.prod(1-temp, axis=0)*(1-used_back[jnp.array([0, layer-2, layer])]))
         used_back = used_back.at[jnp.array([0, layer-2, layer-1])].set(temp)
     for layer in range(2,0,-1):
-        temp = sig_neurons[layer-1] * used_back[layer][:, jnp.newaxis, jnp.newaxis]
+        temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
         temp = 1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer])
         used_back = used_back.at[:layer].set(temp)
     used_for = jnp.zeros(shape=(len(arch), i_4))
@@ -846,7 +846,7 @@ def print_l3_disc(neurons: Network) -> float:
         temp = 1-(jnp.prod(1-temp, axis=0)*(1-used_back[jnp.array([0, layer-2, layer])]))
         used_back = used_back.at[jnp.array([0, layer-2, layer-1])].set(temp)
     for layer in range(2,0,-1):
-        temp = sig_neurons[layer-1] * used_back[layer][:, jnp.newaxis, jnp.newaxis]
+        temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
         temp = 1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer])
         used_back = used_back.at[:layer].set(temp)
     used_for = jnp.zeros(shape=(len(arch), i_4))
