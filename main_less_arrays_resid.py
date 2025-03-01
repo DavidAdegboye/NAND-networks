@@ -738,11 +738,13 @@ def get_l3_used(neurons: Network) -> float:
     # outputs are used by outputs
     used_back = used_back.at[:len(arch)-1].set(1-jnp.prod(1-sig_neurons[-1], axis=0))
     # for the rest of the neurons, which are currently set to 0 (unused), we or with their usage from the output
-    for layer in range(len(arch)-2, 1, -1):
+    for layer in range(len(arch)-2, 2, -1):
         temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
         # this is a 2D matrix, the LHS of the * is how much each neuron to the left of this neuron is used by this neuron
         # the RHS of the * is a vector, which is how much this neuron is used by the output.
         used_back = used_back.at[jnp.array([0, layer-2, layer-1])].set(1-(jnp.prod(1-temp, axis=0)*(1-used_back[jnp.array([0, layer-2, layer])])))
+    temp = sig_neurons[1] * used_back[2, :arch[2]][:, jnp.newaxis, jnp.newaxis]
+    used_back = used_back.at[:2].set(1-(jnp.prod(1-temp, axis=0)*(1-used_back[:2])))
     temp = sig_neurons[0] * used_back[1, :arch[1]][:, jnp.newaxis, jnp.newaxis]
     temp = 1-((1-used_back[0])*jnp.prod(1-temp, axis=0))
     used_back = used_back.at[0].set(temp[0])
