@@ -938,7 +938,7 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
     loss
     """
     if convs:
-        pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(inputs, network[1], list(zip(*scaled)))
+        pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, 0))(x_test, neurons_conv, scaled)
     else:
         inputs = inputs.reshape(inputs.shape[0], -1)
         return loss(network[0], inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
