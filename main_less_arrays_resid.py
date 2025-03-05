@@ -105,6 +105,7 @@ if add_or_img == 'i':
         new_ins = convs[-1][2] * convs[-1][3]**2
     else:
         new_ins = true_arch[0] * 2
+        scaled_train_imgs, scaled_test_imgs = [], []
     add_comp = config["add_comp"]
     if add_comp:
         new_ins *= 2
@@ -171,7 +172,10 @@ max_gates = jnp.array(max_gates)
 l4_coeff = config["l4_coeff"]
 min_gates = config["min_gates"]
 min_gates = jnp.array(min_gates)
-l5_coeff = config["l5_coeff"] / sum(min_gates)
+if sum(min_gates) > 0:
+    l5_coeff = config["l5_coeff"] / sum(min_gates)
+else:
+    l5_coeff = 0
 # for adders and arbitrary combinational logic circuits, where we're aiming for 100% accuracy, if we're stuck
 # in the high nineties at a local minima, I've added this to give a little nudge. It makes the losses of the
 # incorrect samples weigh more.
@@ -749,7 +753,7 @@ def get_l3_used(neurons: Network) -> float:
         temp = 1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer])
         used_back = used_back.at[:layer].set(temp)
     used_for = jnp.zeros(shape=(len(arch), i_4))
-    used_for = used_for.at[0, :new_ins].set(jnp.ones(shape=new_ins))
+    used_for = used_for.at[0, :arch[0]].set(jnp.ones(shape=new_ins))
     for layer in range(1, min(4, len(arch))):
         temp = used_for[:layer][jnp.newaxis,:,:] * sig_neurons[layer-1]
         used_for = used_for.at[layer, :arch[layer]].set(1-(jnp.prod(1-temp, axis=(1,2))))
@@ -762,7 +766,7 @@ def get_l3_used(neurons: Network) -> float:
     if len(arch) > 4:
         temp = used_for[:len(arch)-1][jnp.newaxis,:,:] * sig_neurons[len(arch)-2]
         used_for = used_for.at[len(arch)-1, :arch[-1]].set(1-jnp.prod(1-temp, axis=(1,2)))
-    return used_back*used_for
+    return used_back*used_for 
 
 @jax.jit
 def get_l3(neurons: Network, max_gates: jnp.ndarray) -> float:
@@ -783,6 +787,7 @@ def print_l3(neurons: Network) -> float:
     
     Returns
     l3
+    """
     """
     sig_neurons = [jax.nn.sigmoid(layer/temperature) for layer in neurons]
     # the weights excluding connections to inputs
@@ -815,7 +820,9 @@ def print_l3(neurons: Network) -> float:
     if len(arch) > 4:
         temp = used_for[:len(arch)-1][jnp.newaxis,:,:] * sig_neurons[len(arch)-2]
         used_for = used_for.at[len(arch)-1, :arch[-1]].set(1-jnp.prod(1-temp, axis=(1,2)))
-    return jnp.sum(used_back*used_for, axis=1)
+    """
+    used = get_l3_used(neurons)
+    return jnp.sum(used, axis=1)
 
 @jax.jit
 def print_l3_disc(neurons: Network) -> float:
@@ -850,7 +857,7 @@ def print_l3_disc(neurons: Network) -> float:
         temp = 1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer])
         used_back = used_back.at[:layer].set(temp)
     used_for = jnp.zeros(shape=(len(arch), i_4))
-    used_for = used_for.at[0, :new_ins].set(jnp.ones(shape=new_ins))
+    used_for = used_for.at[0, :arch[0]].set(jnp.ones(shape=new_ins))
     for layer in range(1, min(4, len(arch))):
         temp = used_for[:layer][jnp.newaxis,:,:] * sig_neurons[layer-1]
         used_for = used_for.at[layer, :arch[layer]].set(1-(jnp.prod(1-temp, axis=(1,2))))
