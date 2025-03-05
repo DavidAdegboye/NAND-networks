@@ -1064,39 +1064,23 @@ def start_run(arch, batches, batch_size):
     shapes, total = get_shapes(arch)
     if add_or_img == 'i' and convs:
         neurons_conv_shape = []
+        # a list for the convolutional layers
+        # of the number of inputs per NAND gate, and the number of NAND gates in that layer
         old_c = 2
-        for w,_,c,_ in convs:
-            neurons_conv_shape.append((c, old_c, w))
+        for w,_,c,ns in convs:
+            neurons_conv_shape.append((w**2*old_c, c*ns**2))
             old_c = c
-        global_conv_n = sum([x[1]*x[2]**2*new_n**2 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)])/sum([x[0]*new_n**2 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)])
-        print(global_conv_n)
-    global_n = (arch[1]*arch[0] + arch[-1]*sum(arch[:-1]) + sum([arch[layer]*(arch[layer-1]+arch[layer-2]) for layer in range(2, len(arch)-1)]))/sum(arch)
-    print(global_n)
-    if add_or_img == 'i' and convs:
-        global_n = (sum([x[1]*x[2]**2*new_n**0 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)])
-                + arch[1]*arch[0] + arch[-1]*sum(arch[:-1])
-                + sum([arch[layer]*(arch[layer-1]+arch[layer-2]) for layer in range(2, len(arch)-1)])) / (
-                    sum([x[0]*new_n**0 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)]) + sum(arch))
+        neurons_shape = []
+        for i in range(1, len(arch)):
+            if i <= 3 or i == len(arch)-1:
+                neurons_shape.append((sum(arch[:i]), arch[i]))
+            else:
+                neurons_shape.append((arch[0]+arch[i-2]+arch[i-1], arch[i]))
+        global_n = (sum([ncs[0]*ncs[1] for ncs in neurons_conv_shape])+
+                    sum(ns[0]*ns[1] for ns in neurons_shape))/(
+                        sum([ncs[1] for ncs in neurons_conv_shape])
+                        +sum(ns[1] for ns in neurons_shape))
         global_conv_n = global_n
-        print(global_n)
-
-# if add_or_img == 'i' and convs:
-#     neurons_conv_shape = []
-#     old_c = 2
-#     for w,_,c,_ in convs:
-#         neurons_conv_shape.append((c, old_c, w))
-#         old_c = c
-#     global_conv_n = sum([x[1]*x[2]**2*new_n**2 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)])/sum([x[0]*new_n**2 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)])
-#     print(global_conv_n)
-# global_n = (arch[1]*arch[0] + sum([arch[layer]*(arch[layer-1]+arch[layer-2]) for layer in range(2, len(arch)-1)]))/sum(arch[:-1])
-# print(global_n)
-# if add_or_img == 'i' and convs:
-#     global_n = (sum([x[1]*x[2]**2*new_n**0 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)])
-#             + arch[1]*arch[0]
-#             + sum([arch[layer]*(arch[layer-1]+arch[layer-2]) for layer in range(2, len(arch)-1)])) / (
-#                 sum([x[0]*new_n**0 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)]) + sum(arch[:-1]))
-#     global_conv_n = global_n
-#     print(global_n)
 
     boundary_jump = 5*(max(10//batches,1)**2)*batch_size
     lr_multiplier = batch_size**0.5
