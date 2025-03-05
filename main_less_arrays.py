@@ -96,12 +96,11 @@ def add_second_layers(input: jnp.ndarray, min_fan: int, max_fan: int) -> jnp.nda
 if add_or_img == 'i':
     # for images, this is convolutional layers
     convs = config["convs"]
-    true_arch = image_class.add_real_conv(convs)
+    true_arch = [config["size"]**2] + [ns**2 for _,_,_,ns in convs]
     if convs:
-        inputs = jnp.concatenate([inputs, 1-inputs], axis=1)
         new_ins = convs[-1][2] * convs[-1][3]**2
     else:
-        new_ins = true_arch[0]
+        new_ins = true_arch[0] * 2
     add_comp = config["add_comp"]
     if add_comp:
         new_ins *= 2
@@ -130,15 +129,13 @@ sigma_i = config["sigma_i"]
 # I've found linear works the best for adders, although there may be a different way to taper down I've not tried.
 taper_q = config["taper_q"]
 if taper_q == 't':
-    layer2 = 2**ins - 1
-    taper = float(config["taper"])
-    next_layer = round(layer2 * taper)
+    taper = config["taper"]
+    next_layer = config["width"]
     arch = [new_ins]
-    while next_layer > outs:
+    for _ in range(config["hidden"]):
         arch.append(next_layer)
-        next_layer = min(next_layer-1, round(next_layer*taper))
-    if arch[-1] != outs:
-        arch.append(outs)
+        next_layer = max(min(next_layer-1, round(next_layer*taper)), outs)
+    arch.append(outs)
 elif taper_q == 'c':
     arch = [new_ins]
     arch += config["architecture"]
@@ -170,7 +167,10 @@ max_gates = jnp.array(max_gates)
 l4_coeff = config["l4_coeff"]
 min_gates = config["min_gates"]
 min_gates = jnp.array(min_gates)
-l5_coeff = config["l5_coeff"] / sum(min_gates)
+if sum(min_gates) > 0:
+    l5_coeff = config["l5_coeff"] / sum(min_gates)
+else:
+    l5_coeff = 0
 # for adders and arbitrary combinational logic circuits, where we're aiming for 100% accuracy, if we're stuck
 # in the high nineties at a local minima, I've added this to give a little nudge. It makes the losses of the
 # incorrect samples weigh more.
@@ -734,7 +734,6 @@ def get_l3_used(neurons: Network) -> float:
     l3
     """
     sig_neurons = [jax.nn.sigmoid(layer/temperature) for layer in neurons]
-    # the weights excluding connections to inputs
     used_back = jnp.zeros(shape=(len(arch), i_4))
     used_back = used_back.at[len(arch)-1, :outs].set(jnp.ones(shape=outs))
     # outputs are used by outputs
@@ -766,11 +765,6 @@ def get_l3_used(neurons: Network) -> float:
 def get_l3(neurons: Network, max_gates: jnp.ndarray) -> float:
     used = get_l3_used(neurons)
     return jnp.sum(jax.nn.relu(jnp.sum(used, axis=1)-max_gates))
-
-@jax.jit
-def get_l5(neurons: Network, min_gates: jnp.ndarray, l5_coeff: float) -> float:
-    used = get_l3_used(neurons)
-    return jnp.sum(jax.nn.relu(min_gates-jnp.sum(used, axis=1)))
 
 @jax.jit
 def print_l3(neurons: Network) -> float:
@@ -877,6 +871,11 @@ def get_l4(neurons: Network) -> float:
         s += jnp.sum(1-jax.nn.sigmoid(jnp.absolute(layer)))
     return s/total
 
+@jax.jit
+def get_l5(neurons: Network, min_gates: jnp.ndarray, l5_coeff: float) -> float:
+    used = get_l3_used(neurons)
+    return l5_coeff*jnp.sum(jax.nn.relu(min_gates-jnp.sum(used, axis=1)))
+
 epsilon = 1e-7
 @jax.jit
 def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.ndarray, mask2:jnp.ndarray, max_fan_in: int, max_gates: jnp.ndarray) -> float:
@@ -926,11 +925,7 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
         l4 = get_l4(neurons)
     else:
         l4 = 0
-    if l5_coeff:
-        l5 = get_l5(neurons, min_gates, l5_coeff)
-    else:
-        l5 = 0
-    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + l5_coeff*l5
+    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + get_l5(neurons, min_gates, l5_coeff)
 
 @jax.jit
 def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, max_fan_in: int, l5_coeff: float) -> float:
@@ -945,48 +940,15 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
     Returns
     loss
     """
-    pred = jax.vmap(feed_forward_conv, in_axes=(0, None))(inputs, network[1])
+    if convs:
+        pred = jax.vmap(feed_forward_conv, in_axes=(0, None))(inputs, network[1])
+    else:
+        inputs = inputs.reshape(inputs.shape[0], -1)
+        return loss(network[0], inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
     pred = pred.reshape(pred.shape[0], -1)
     if add_comp:
         pred = jnp.concatenate([pred, 1-pred], axis=1)
-    pred = jax.vmap(feed_forward, in_axes=(0, None))(pred, network[0])
-    pred = jnp.clip(pred, epsilon, 1-epsilon)
-    pred_logits = jnp.log(pred) - jnp.log(1-pred)
-    l1 = jnp.mean(optax.sigmoid_binary_cross_entropy(pred_logits, output))
-    if l2_coeff:
-        l2 = get_l2(network[0], max_fan_in)
-    else:
-        l2 = 0
-    if l3_coeff:
-        l3 = get_l3(network[0], max_gates)
-    else:
-        l3 = 0
-    if l4_coeff:
-        l4 = get_l4(network[0])
-    else:
-        l4 = 0
-    # if l5_coeff:
-    #     l5 = get_l5(network[0], min_gates, l5_coeff)
-    # else:
-    #     l5 = 0
-    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + l5_coeff*get_l5(network[0], min_gates, l5_coeff)
-
-def mask_fn(params):
-    return jax.tree.map(lambda x: jnp.abs(x) < config["threshold"], params)
-
-def masked_loss_conv(params, inputs, outputs, max_fan_in):
-    neurons, neurons_conv = params  # Unpack parameters
-    
-    # Compute the dynamic masks (must have the same shape as the corresponding arrays)
-    mask_neurons = mask_fn(neurons)  # mask_fn should return a boolean array of the same shape as neurons
-    mask_neurons_conv = mask_fn(neurons_conv)
-
-    # Replace parameters with a version that stops gradients where the mask is False
-    masked_neurons = [jnp.where(mask_layer, layer, jax.lax.stop_gradient(layer)) for mask_layer, layer in zip(mask_neurons, neurons)]
-    masked_neurons_conv = [jnp.where(mask_layer, layer, jax.lax.stop_gradient(layer)) for mask_layer, layer in zip(mask_neurons_conv, neurons_conv)]
-
-    # Call the original loss function with the masked parameters
-    return loss_conv([masked_neurons, masked_neurons_conv], inputs, outputs, max_fan_in)
+    return loss(network[0], pred, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
 
 @jax.jit
 def test(neurons: Network) -> bool:
@@ -1052,7 +1014,7 @@ def acc(neurons: Network) -> Tuple[float, jnp.ndarray, jnp.ndarray]:
         return jnp.sum(pred)/((2**(ins))*(outs)), trues[0], falses[0]
     return jnp.sum(pred)/((2**(ins))*(outs)), jnp.zeros(0), jnp.zeros(0)
 
-# @jax.jit
+@jax.jit
 def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     """
     calculates the accuracy, and also the masks used in the loss function
@@ -1065,11 +1027,14 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     accuracy - the accuracy (may be specifically the testing accuracy)
     """
     # returns the accuracy
-    pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None))(x_test, neurons_conv)
+    if convs:
+        pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None))(x_test, neurons_conv)
+        if add_comp:
+            pred = jnp.concatenate([pred, 1-pred], axis=1)
+    else:
+        pred = x_test
     pred = pred.reshape(pred.shape[0], -1)
-    print(jnp.sum(pred))
-    if add_comp:
-        pred = jnp.concatenate([pred, 1-pred], axis=1)
+    # print(jnp.sum(pred))
     pred = jax.vmap(feed_forward_disc, in_axes=(0, None))(pred, neurons)
     result = jax.vmap(image_class.evaluate)(pred, y_test)
     return jnp.sum(result)/result.size
