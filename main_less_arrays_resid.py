@@ -825,7 +825,7 @@ def print_l3(neurons: Network) -> float:
     used = get_l3_used(neurons)
     return jnp.sum(used, axis=1)
 
-@jax.jit
+# @jax.jit
 def print_l3_disc(neurons: Network) -> float:
     """
     calculates l3, which is minimised for any number of gates less than or equal to "max_gates"
@@ -871,6 +871,7 @@ def print_l3_disc(neurons: Network) -> float:
     if len(arch) > 4:
         temp = used_for[:len(arch)-1][jnp.newaxis,:,:] * sig_neurons[len(arch)-2]
         used_for = used_for.at[len(arch)-1, :arch[-1]].set(1-jnp.prod(1-temp, axis=(1,2)))
+    print((used_back*used_for)[0])
     return jnp.sum(used_back*used_for, axis=1)
 
 @jax.jit
