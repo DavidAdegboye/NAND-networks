@@ -1081,6 +1081,8 @@ def start_run(arch, batches, batch_size):
                         sum([ncs[1] for ncs in neurons_conv_shape])
                         +sum(ns[1] for ns in neurons_shape))
         global_conv_n = global_n
+        global_conv_n = sum([ncs[0]*ncs[1] for ncs in neurons_conv_shape])/sum([ncs[1] for ncs in neurons_conv_shape])
+        global_n = sum(ns[0]*ns[1] for ns in neurons_shape))/sum(ns[1] for ns in neurons_shape))
 
     boundary_jump = 5*(max(10//batches,1)**2)*batch_size
     lr_multiplier = batch_size**0.5
