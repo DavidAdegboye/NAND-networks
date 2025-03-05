@@ -151,6 +151,8 @@ else:
     layer_diff = diff/hidden
     arch = [new_ins] + [round(starting_width-i*layer_diff) for i in range(hidden)] + [outs]
 
+print(arch)
+
 temperature = config["temperature"]
 l2_coeff = config["l2_coeff"]
 if l2_coeff == 0:
@@ -828,7 +830,7 @@ def get_l5(neurons: Network, min_gates: jnp.ndarray, l5_coeff: float) -> float:
 
 epsilon = 1e-7
 @jax.jit
-def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.ndarray, mask2:jnp.ndarray, max_fan_in: int, max_gates: jnp.ndarray) -> float:
+def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.ndarray, mask2:jnp.ndarray, max_fan_in: int, max_gates: jnp.ndarray, l5_coeff: float) -> float:
     """
     calculates loss
 
@@ -894,11 +896,11 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
         pred = jax.vmap(feed_forward_conv, in_axes=(0, None))(inputs, network[1])
     else:
         inputs = inputs.reshape(inputs.shape[0], -1)
-        return loss(network[0], inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
+        return loss(network[0], inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
     pred = pred.reshape(pred.shape[0], -1)
     if add_comp:
         pred = jnp.concatenate([pred, 1-pred], axis=1)
-    return loss(network[0], pred, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
+    return loss(network[0], pred, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
 
 @jax.jit
 def test(neurons: Network) -> bool:
@@ -999,25 +1001,24 @@ def start_run(arch, batches, batch_size):
     i_3 = i_1
     i_4 = max(arch)
     shapes, total = get_shapes(arch)
+    neurons_shape = [(sum(arch[:i]), arch[i]) for i in range(1, len(arch))]
+    global_n = sum(ns[0]*ns[1] for ns in neurons_shape)/sum(ns[1] for ns in neurons_shape)
     if add_or_img == 'i' and convs:
         neurons_conv_shape = []
+        # a list for the convolutional layers
+        # of the number of inputs per NAND gate, and the number of NAND gates in that layer
         old_c = 2
-        for w,_,c,_ in convs:
-            neurons_conv_shape.append((c, old_c, w))
+        for w,_,c,ns in convs:
+            neurons_conv_shape.append((w**2*old_c, c*ns**2))
             old_c = c
-        global_conv_n = sum([x[1]*x[2]**2*new_n**2 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)])/sum([x[0]*new_n**2 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)])
-        print(global_conv_n)
-    global_n = (arch[1]*arch[0] + arch[-1]*sum(arch[:-1]) + sum([arch[layer]*(arch[layer-1]+arch[layer-2]) for layer in range(2, len(arch)-1)]))/sum(arch)
-    print(global_n)
-    if add_or_img == 'i' and convs:
-        global_n = (sum([x[1]*x[2]**2*new_n**0 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)])
-                + arch[1]*arch[0] + arch[-1]*sum(arch[:-1])
-                + sum([arch[layer]*(arch[layer-1]+arch[layer-2]) for layer in range(2, len(arch)-1)])) / (
-                    sum([x[0]*new_n**0 for x,(_,_,_,new_n) in zip(neurons_conv_shape, convs)]) + sum(arch))
+        neurons_shape = [(sum(arch[:i]), arch[i]) for i in range(1, len(arch))]
+        global_n = (sum([ncs[0]*ncs[1] for ncs in neurons_conv_shape])+
+                    sum(ns[0]*ns[1] for ns in neurons_shape))/(
+                        sum([ncs[1] for ncs in neurons_conv_shape])
+                        +sum(ns[1] for ns in neurons_shape))
         global_conv_n = global_n
-        print(global_n)
-
-
+        global_conv_n = sum([ncs[0]*ncs[1] for ncs in neurons_conv_shape])/sum([ncs[1] for ncs in neurons_conv_shape])
+        global_n = sum(ns[0]*ns[1] for ns in neurons_shape)/sum(ns[1] for ns in neurons_shape)
 
     boundary_jump = 5*(max(10//batches,1)**2)*batch_size
     lr_multiplier = batch_size**0.5
@@ -1094,7 +1095,7 @@ def run(timeout=config["timeout"]):
                     gradients = grad_conv([neurons, neurons_conv],
                                         inputs[batch*batch_size:(batch+1)*batch_size],
                                         output[batch*batch_size:(batch+1)*batch_size],
-                                        max_fan_in)
+                                        max_fan_in, l5_coeff)
                     update, opt_state = solver.update(gradients, opt_state, [neurons, neurons_conv])
                     neurons, neurons_conv = optax.apply_updates([neurons, neurons_conv], update)
                 elif weigh_even == 'y':
