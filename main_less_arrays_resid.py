@@ -1065,7 +1065,7 @@ def start_run(arch, batches, batch_size):
     i_3 = i_1
     i_4 = max(arch)
     shapes, total = get_shapes(arch)
-    neurons_conv_shape = []
+    neurons_shape = []
     for i in range(1, len(arch)):
         if i <= 3 or i == len(arch)-1:
             neurons_shape.append((sum(arch[:i]), arch[i]))
