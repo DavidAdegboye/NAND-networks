@@ -1175,7 +1175,7 @@ def run(timeout=config["timeout"]):
                     gradients = grad_conv([neurons, neurons_conv],
                                         inputs[batch*batch_size:(batch+1)*batch_size],
                                         output[batch*batch_size:(batch+1)*batch_size],
-                                        max_fan_in,
+                                        max_fan_in, l5_coeff,
                                         [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs])
                     update, opt_state = solver.update(gradients, opt_state, [neurons, neurons_conv])
                     neurons, neurons_conv = optax.apply_updates([neurons, neurons_conv], update)
