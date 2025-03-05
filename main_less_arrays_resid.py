@@ -894,7 +894,7 @@ def get_l5(neurons: Network, min_gates: jnp.ndarray, l5_coeff: float) -> float:
 
 epsilon = 1e-7
 @jax.jit
-def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.ndarray, mask2:jnp.ndarray, max_fan_in: int, max_gates: jnp.ndarray) -> float:
+def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.ndarray, mask2:jnp.ndarray, max_fan_in: int, max_gates: jnp.ndarray, l5_coeff: float) -> float:
     """
     calculates loss
 
@@ -960,11 +960,11 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
         pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(inputs, network[1], scaled)
     else:
         inputs = inputs.reshape(inputs.shape[0], -1)
-        return loss(network[0], inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
+        return loss(network[0], inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
     pred = pred.reshape(pred.shape[0], -1)
     if add_comp:
         pred = jnp.concatenate([pred, 1-pred], axis=1)
-    return loss(network[0], pred, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
+    return loss(network[0], pred, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
 
 @jax.jit
 def test(neurons: Network) -> bool:
@@ -1065,6 +1065,12 @@ def start_run(arch, batches, batch_size):
     i_3 = i_1
     i_4 = max(arch)
     shapes, total = get_shapes(arch)
+    for i in range(1, len(arch)):
+        if i <= 3 or i == len(arch)-1:
+            neurons_shape.append((sum(arch[:i]), arch[i]))
+        else:
+            neurons_shape.append((arch[0]+arch[i-2]+arch[i-1], arch[i]))
+    global_n = sum(ns[0]*ns[1] for ns in neurons_shape)/sum(ns[1] for ns in neurons_shape)
     if add_or_img == 'i' and convs:
         neurons_conv_shape = []
         # a list for the convolutional layers
