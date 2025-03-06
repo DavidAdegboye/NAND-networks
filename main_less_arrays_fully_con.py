@@ -460,10 +460,10 @@ def forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> jnp.nd
     w = weights.shape[2]
     old_channels = xs.shape[0]
     channels = jnp.arange(weights.shape[0])
-    return jax.vmap(
+    return 1-jax.vmap(
         lambda c: jax.vmap(
             lambda i: jax.vmap(
-                lambda j: 1-f(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
+                lambda j: f(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
             )(jnp.arange(n))
         )(jnp.arange(n))
     )(channels)
@@ -485,10 +485,10 @@ def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> j
     w = weights.shape[2]
     old_channels = xs.shape[0]
     channels = jnp.arange(weights.shape[0])
-    return jax.vmap(
+    return 1-jax.vmap(
         lambda c: jax.vmap(
             lambda i: jax.vmap(
-                lambda j: 1-f_disc(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
+                lambda j: f_disc(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
             )(jnp.arange(n))
         )(jnp.arange(n))
     )(channels)
