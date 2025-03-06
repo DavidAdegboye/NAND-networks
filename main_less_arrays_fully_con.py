@@ -6,6 +6,7 @@ import itertools
 from typing import List, Tuple, Set, Union
 import time
 import yaml
+from functools import partial
 
 import sys
 import os
@@ -442,7 +443,7 @@ def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
         xs = jnp.vstack([xs, next])
     return jax.vmap(forward_disc, in_axes=(None, 0))(xs, neurons[i_1-1])[:outs]
 
-@jax.jit
+@partial(jax.jit, static_argnames='n')
 def forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> jnp.ndarray:
     """
     Applies a filter of width `w` and stride `s` to the input array `xs`.
@@ -463,11 +464,11 @@ def forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> jnp.nd
         lambda c: jax.vmap(
             lambda i: jax.vmap(
                 lambda j: f(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
-            )(jnp.arange(n.shape[0]))
-        )(jnp.arange(n.shape[0]))
+            )(jnp.arange(n))
+        )(jnp.arange(n))
     )(channels)
 
-@jax.jit
+@partial(jax.jit, static_argnames='n')
 def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> jnp.ndarray:
     """
     Applies a filter of width `w` and stride `s` to the input array `xs`.
@@ -488,8 +489,8 @@ def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> j
         lambda c: jax.vmap(
             lambda i: jax.vmap(
                 lambda j: f_disc(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
-            )(jnp.arange(n.shape[0]))
-        )(jnp.arange(n.shape[0]))
+            )(jnp.arange(n))
+        )(jnp.arange(n))
     )(channels)
 
 @jax.jit
@@ -506,7 +507,7 @@ def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray) -> jnp.ndarray:
     the dense layers
     """
     for ws, (_,_,s,n) in zip(weights, convs):
-        xs = forward_conv(xs, ws, s, jnp.zeros(n))
+        xs = forward_conv(xs, ws, s, n)
     return xs
 
 @jax.jit
@@ -523,7 +524,7 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray) -> jnp.ndarray:
     the dense layers
     """
     for ws, (_,_,s,n) in zip(weights, convs):
-        xs = forward_conv_disc(xs, ws, s, jnp.zeros(n))
+        xs = forward_conv_disc(xs, ws, s, n)
     return xs
 
 def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
@@ -677,6 +678,7 @@ def get_l2_disc(neurons: Network, max_fan_in: int) -> float:
     l2s = jax.nn.relu(fan_ins-max_fan_in)
     return jnp.max(l2s)
 
+@partial(jax.jit, static_argnums=1)
 def cont_or_arr(arr: jnp.ndarray, axis=None) -> jnp.ndarray:
     # computes a continuous or, using De Morgan's
     return 1-jnp.prod(1-arr, axis=axis)
@@ -775,12 +777,12 @@ def get_l4(neurons: Network) -> float:
     return s/total
 
 @jax.jit
-def get_l5(neurons: Network, min_gates: jnp.ndarray, l5_coeff: float) -> float:
+def get_l5(neurons: Network, min_gates: jnp.ndarray) -> float:
     used = get_l3_used(neurons)
-    return l5_coeff*jnp.sum(jax.nn.relu(min_gates-jnp.sum(used, axis=1)))
+    return jnp.sum(jax.nn.relu(min_gates-jnp.sum(used, axis=1)))
 
 epsilon = 1e-7
-@jax.jit
+@partial(jax.jit, static_argnames="l5_coeff")
 def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.ndarray, mask2:jnp.ndarray, max_fan_in: int, max_gates: jnp.ndarray, l5_coeff: float) -> float:
     """
     calculates loss
@@ -828,9 +830,13 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
         l4 = get_l4(neurons)
     else:
         l4 = 0
-    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + get_l5(neurons, min_gates, l5_coeff)
+    if l5_coeff:
+        l5 = get_l5(neurons, min_gates)
+    else:
+        l5 = 0
+    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + l5_coeff*l5
 
-@jax.jit
+@partial(jax.jit, static_argnums=1)
 def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, max_fan_in: int, l5_coeff: float) -> float:
     """
     calculates loss
