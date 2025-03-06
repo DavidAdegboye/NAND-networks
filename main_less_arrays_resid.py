@@ -229,7 +229,7 @@ def forward(xs: jnp.ndarray, weights: jnp.ndarray) -> float:
     # to use vmap, I include some padding that doesn't affect the value.
     # x=1, w=0, since f(1,0)=1, so it wouldn't affect the result
     # after the product.
-    return 1 - jnp.prod(jax.vmap(f)(xs, weights))
+    return 1 - jnp.prod(f(xs, weights), axis=0)
 
 @jax.jit
 def forward_disc(xs: jnp.ndarray, weights: jnp.ndarray) -> int:
@@ -243,7 +243,7 @@ def forward_disc(xs: jnp.ndarray, weights: jnp.ndarray) -> int:
     Returns
     the discrete effective output for that NAND gate
     """
-    return 1 - jnp.prod(jax.vmap(f_disc)(xs, weights))
+    return 1 - jnp.prod(f_disc(xs, weights), axis=0)
 
 def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
     """
