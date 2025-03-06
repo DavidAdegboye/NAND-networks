@@ -158,19 +158,17 @@ else:
     max_fan_in = config["max_fan"]
 l3_coeff = config["l3_coeff"]
 if l3_coeff == 0:
-    max_gates = [0]*len(arch)
+    max_gates = jnp.array([0]*len(arch))
 else:
-    max_gates = config["max_gates"]
+    max_gates = jnp.array(config["max_gates"])
 l3_coeff = l3_coeff / (sum(arch)-sum(max_gates))
-max_gates = jnp.array(max_gates)
 l4_coeff = config["l4_coeff"]
-min_gates = config["min_gates"]
-min_gates = jnp.array(min_gates)
-if sum(min_gates) > 0:
-    l5_coeff = config["l5_coeff"] / sum(min_gates)
+l5_coeff = config["l5_coeff"]
+if l5_coeff == 0:
+    min_gates = jnp.array([0]*len(arch))
 else:
-    l5_coeff = 0
-    min_gates = [0] * len(arch)
+    min_gates = jnp.array(config["max_gates"])
+l5_coeff = l5_coeff / (sum(min_gates))
 # for adders and arbitrary combinational logic circuits, where we're aiming for 100% accuracy, if we're stuck
 # in the high nineties at a local minima, I've added this to give a little nudge. It makes the losses of the
 # incorrect samples weigh more.
