@@ -98,12 +98,9 @@ if add_or_img == 'i':
     convs = config["convs"]
     true_arch = [config["size"]**2] + [ns**2 for _,_,_,ns in convs]
     if convs:
-        new_ins = convs[-1][2] * convs[-1][3]**2
+        new_ins = convs[-1][2] * convs[-1][3]**2 * 2
     else:
         new_ins = true_arch[0] * 2
-    add_comp = config["add_comp"]
-    if add_comp:
-        new_ins *= 2
 else:
     true_arch = []
     # for adders and arbitrary combinational logic circuits, we're first adding extra layers
@@ -949,7 +946,7 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
         inputs = inputs.reshape(inputs.shape[0], -1)
         return loss(network[0], inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
     pred = pred.reshape(pred.shape[0], -1)
-    if add_comp:
+    if convs:
         pred = jnp.concatenate([pred, 1-pred], axis=1)
     return loss(network[0], pred, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
 
@@ -1032,8 +1029,7 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     # returns the accuracy
     if convs:
         pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None))(x_test, neurons_conv)
-        if add_comp:
-            pred = jnp.concatenate([pred, 1-pred], axis=1)
+        pred = jnp.concatenate([pred, 1-pred], axis=1)
     else:
         pred = x_test
     pred = pred.reshape(pred.shape[0], -1)
