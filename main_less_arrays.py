@@ -711,7 +711,6 @@ def get_l2_disc(neurons: Network, max_fan_in: int) -> float:
     l2s = jax.nn.relu(fan_ins-max_fan_in)
     return jnp.max(l2s)
 
-@jax.jit
 def cont_or_arr(arr: jnp.ndarray, axis=None) -> jnp.ndarray:
     # computes a continuous or, using De Morgan's
     return 1-jnp.prod(1-arr, axis=axis)
