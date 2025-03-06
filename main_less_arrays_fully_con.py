@@ -1017,7 +1017,7 @@ def start_run(arch, batches, batch_size):
         print(print_l3(neurons))
         print(print_l3_disc(neurons))
         print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
-        grad_conv = jax.jit(jax.grad(loss_conv, argnums=0))
+        grad_conv = jax.jit(jax.grad(loss_conv, argnums=0), static_argnames=["l5_coeff"])
     else:
         accuracy = acc(neurons)
         new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
@@ -1026,7 +1026,7 @@ def start_run(arch, batches, batch_size):
         print(print_l3_disc(neurons))
         print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
         print(get_l3(neurons, max_gates))
-        grad = jax.jit(jax.grad(loss, argnums=0))
+        grad = jax.jit(jax.grad(loss, argnums=0), static_argnames=["l5_coeff"])
 
 def run(timeout=config["timeout"]):
     global batches, batch_size, inputs, output, weigh_even, neurons, neurons_conv, updates, opt_state, l5_coeff
