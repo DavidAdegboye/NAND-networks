@@ -178,6 +178,7 @@ if sum(min_gates) > 0:
     l5_coeff = config["l5_coeff"] / sum(min_gates)
 else:
     l5_coeff = 0
+    min_gates = [0] * len(arch)
 # for adders and arbitrary combinational logic circuits, where we're aiming for 100% accuracy, if we're stuck
 # in the high nineties at a local minima, I've added this to give a little nudge. It makes the losses of the
 # incorrect samples weigh more.
