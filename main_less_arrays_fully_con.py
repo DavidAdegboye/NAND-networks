@@ -836,7 +836,7 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
         l5 = 0
     return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + l5_coeff*l5
 
-@partial(jax.jit, static_argnums=1)
+@partial(jax.jit, static_argnames="l5_coeff")
 def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, max_fan_in: int, l5_coeff: float) -> float:
     """
     calculates loss
