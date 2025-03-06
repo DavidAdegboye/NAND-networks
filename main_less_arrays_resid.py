@@ -714,9 +714,18 @@ def get_l2_disc(neurons: Network, max_fan_in: int) -> float:
     return jnp.max(l2s)
 
 @jax.jit
-def cont_or(arr: jnp.ndarray) -> float:
+def cont_or_arr(arr: jnp.ndarray, axis=None) -> jnp.ndarray:
     # computes a continuous or, using De Morgan's
-    return 1-jnp.prod(1-arr)
+    return 1-jnp.prod(1-arr, axis=axis)
+
+@jax.jit
+def cont_or(arr1: jnp.ndarray, arr2: jnp.ndarray) -> jnp.ndarray:
+    return 1-(1-arr1)*(1-arr2)
+
+def func(layer: int) -> jnp.ndarray:
+    if layer <= 2 or layer == len(arch) - 1:
+        return jnp.arange(layer)
+    return jnp.array([0, layer-2, layer-1])
 
 @jax.jit
 def get_l3_used(neurons: Network) -> float:
@@ -737,33 +746,19 @@ def get_l3_used(neurons: Network) -> float:
     used_back = jnp.zeros(shape=(len(arch), i_4))
     used_back = used_back.at[len(arch)-1, :outs].set(jnp.ones(shape=outs))
     # outputs are used by outputs
-    used_back = used_back.at[:len(arch)-1].set(1-jnp.prod(1-sig_neurons[-1], axis=0))
-    # for the rest of the neurons, which are currently set to 0 (unused), we or with their usage from the output
-    for layer in range(len(arch)-2, 2, -1):
+    for layer in range(len(arch)-1, 0, -1):
         temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
         # this is a 2D matrix, the LHS of the * is how much each neuron to the left of this neuron is used by this neuron
         # the RHS of the * is a vector, which is how much this neuron is used by the output.
-        temp = 1-(jnp.prod(1-temp, axis=0)*(1-used_back[jnp.array([0, layer-2, layer])]))
-        used_back = used_back.at[jnp.array([0, layer-2, layer-1])].set(temp)
-    for layer in range(2,0,-1):
-        temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
-        temp = 1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer])
-        used_back = used_back.at[:layer].set(temp)
+        temp = cont_or_arr(temp, axis=0)
+        used_back = used_back.at[func(layer)].set(cont_or(used_back[func(layer)], temp))
     used_for = jnp.zeros(shape=(len(arch), i_4))
-    used_for = used_for.at[0, :arch[0]].set(jnp.ones(shape=new_ins))
-    for layer in range(1, min(4, len(arch))):
-        temp = used_for[:layer][jnp.newaxis,:,:] * sig_neurons[layer-1]
-        used_for = used_for.at[layer, :arch[layer]].set(1-(jnp.prod(1-temp, axis=(1,2))))
-    # setting the first row to how connected it is to the inputs
-    for layer in range(4, len(arch)-1):
-        temp = used_for[jnp.array([0, layer-2, layer-1])][jnp.newaxis,:,:] * sig_neurons[layer-1]
-        used_for = used_for.at[layer, :arch[layer]].set(1-(jnp.prod(1-temp, axis=(1,2))))
-        # used_for represents how much the neuron is actually connected to the inputs,
-        # whether directly or through other NAND gates
-    if len(arch) > 4:
-        temp = used_for[:len(arch)-1][jnp.newaxis,:,:] * sig_neurons[len(arch)-2]
-        used_for = used_for.at[len(arch)-1, :arch[-1]].set(1-jnp.prod(1-temp, axis=(1,2)))
-    return used_back*used_for 
+    used_for = used_for.at[0, :new_ins].set(jnp.ones(shape=new_ins))
+    for layer in range(1, len(arch)):
+        temp = sig_neurons[layer-1][:arch[layer]] * used_for[func(layer)][jnp.newaxis,:,:]
+        temp = cont_or_arr(temp, axis=(1,2))
+        used_for = used_for.at[layer, :arch[layer]].set(cont_or(used_for[layer, :arch[layer]], temp))
+    return used_back*used_for
 
 @jax.jit
 def get_l3(neurons: Network, max_gates: jnp.ndarray) -> float:
@@ -772,52 +767,6 @@ def get_l3(neurons: Network, max_gates: jnp.ndarray) -> float:
 
 @jax.jit
 def print_l3(neurons: Network) -> float:
-    """
-    calculates l3, which is minimised for any number of gates less than or equal to "max_gates"
-    used_back tells us if the NAND gates will be used in the outputs
-    used_for tells us if the NAND gates are connected to the inputs
-    and so their product tells us if the NAND gates are being used
-    just like l2, this doesn't account for duplicate gates (but output_circuit does)
-
-    Parameters
-    neurons - the network
-    
-    Returns
-    l3
-    """
-    """
-    sig_neurons = [jax.nn.sigmoid(layer/temperature) for layer in neurons]
-    # the weights excluding connections to inputs
-    used_back = jnp.zeros(shape=(len(arch), i_4))
-    used_back = used_back.at[len(arch)-1, :outs].set(jnp.ones(shape=outs))
-    # outputs are used by outputs
-    used_back = used_back.at[:len(arch)-1].set(1-jnp.prod(1-sig_neurons[-1], axis=0))
-    # for the rest of the neurons, which are currently set to 0 (unused), we or with their usage from the output
-    for layer in range(len(arch)-2, 2, -1):
-        temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
-        # this is a 2D matrix, the LHS of the * is how much each neuron to the left of this neuron is used by this neuron
-        # the RHS of the * is a vector, which is how much this neuron is used by the output.
-        temp = 1-(jnp.prod(1-temp, axis=0)*(1-used_back[jnp.array([0, layer-2, layer])]))
-        used_back = used_back.at[jnp.array([0, layer-2, layer-1])].set(temp)
-    for layer in range(2,0,-1):
-        temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
-        temp = 1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer])
-        used_back = used_back.at[:layer].set(temp)
-    used_for = jnp.zeros(shape=(len(arch), i_4))
-    used_for = used_for.at[0, :new_ins].set(jnp.ones(shape=new_ins))
-    for layer in range(1, min(4, len(arch))):
-        temp = used_for[:layer][jnp.newaxis,:,:] * sig_neurons[layer-1]
-        used_for = used_for.at[layer, :arch[layer]].set(1-(jnp.prod(1-temp, axis=(1,2))))
-    # setting the first row to how connected it is to the inputs
-    for layer in range(4, len(arch)-1):
-        temp = used_for[jnp.array([0, layer-2, layer-1])][jnp.newaxis,:,:] * sig_neurons[layer-1]
-        used_for = used_for.at[layer, :arch[layer]].set(1-(jnp.prod(1-temp, axis=(1,2))))
-        # used_for represents how much the neuron is actually connected to the inputs,
-        # whether directly or through other NAND gates
-    if len(arch) > 4:
-        temp = used_for[:len(arch)-1][jnp.newaxis,:,:] * sig_neurons[len(arch)-2]
-        used_for = used_for.at[len(arch)-1, :arch[-1]].set(1-jnp.prod(1-temp, axis=(1,2)))
-    """
     used = get_l3_used(neurons)
     return jnp.sum(used, axis=1)
 
@@ -837,38 +786,22 @@ def print_l3_disc(neurons: Network) -> float:
     l3
     """
     sig_neurons = [jnp.where(layer>0,1,0) for layer in neurons]
-    # the weights excluding connections to inputs
     used_back = jnp.zeros(shape=(len(arch), i_4))
     used_back = used_back.at[len(arch)-1, :outs].set(jnp.ones(shape=outs))
     # outputs are used by outputs
-    used_back = used_back.at[:len(arch)-1].set(1-jnp.prod(1-sig_neurons[-1], axis=0))
-    # for the rest of the neurons, which are currently set to 0 (unused), we or with their usage from the output
-    for layer in range(len(arch)-2, 2, -1):
+    for layer in range(len(arch)-1, 0, -1):
         temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
         # this is a 2D matrix, the LHS of the * is how much each neuron to the left of this neuron is used by this neuron
         # the RHS of the * is a vector, which is how much this neuron is used by the output.
-        temp = 1-(jnp.prod(1-temp, axis=0)*(1-used_back[jnp.array([0, layer-2, layer])]))
-        used_back = used_back.at[jnp.array([0, layer-2, layer-1])].set(temp)
-    for layer in range(2,0,-1):
-        temp = sig_neurons[layer-1] * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis]
-        temp = 1-(jnp.prod(1-temp, axis=0) * 1-used_back[:layer])
-        used_back = used_back.at[:layer].set(temp)
+        temp = cont_or_arr(temp, axis=0)
+        used_back = used_back.at[func(layer)].set(cont_or(used_back[func(layer)], temp))
     used_for = jnp.zeros(shape=(len(arch), i_4))
-    used_for = used_for.at[0, :arch[0]].set(jnp.ones(shape=new_ins))
-    for layer in range(1, min(4, len(arch))):
-        temp = used_for[:layer][jnp.newaxis,:,:] * sig_neurons[layer-1]
-        used_for = used_for.at[layer, :arch[layer]].set(1-(jnp.prod(1-temp, axis=(1,2))))
-    # setting the first row to how connected it is to the inputs
-    for layer in range(4, len(arch)-1):
-        temp = used_for[jnp.array([0, layer-2, layer-1])][jnp.newaxis,:,:] * sig_neurons[layer-1]
-        used_for = used_for.at[layer, :arch[layer]].set(1-(jnp.prod(1-temp, axis=(1,2))))
-        # used_for represents how much the neuron is actually connected to the inputs,
-        # whether directly or through other NAND gates
-    if len(arch) > 4:
-        temp = used_for[:len(arch)-1][jnp.newaxis,:,:] * sig_neurons[len(arch)-2]
-        used_for = used_for.at[len(arch)-1, :arch[-1]].set(1-jnp.prod(1-temp, axis=(1,2)))
-    print((used_back*used_for)[0])
-    return jnp.sum(used_back*used_for, axis=1)
+    used_for = used_for.at[0, :new_ins].set(jnp.ones(shape=new_ins))
+    for layer in range(1, len(arch)):
+        temp = sig_neurons[layer-1][:arch[layer]] * used_for[func(layer)][jnp.newaxis,:,:]
+        temp = cont_or_arr(temp, axis=(1,2))
+        used_for = used_for.at[layer, :arch[layer]].set(cont_or(used_for[layer, :arch[layer]], temp))
+    return used_back*used_for
 
 @jax.jit
 def get_l4(neurons: Network) -> float:
