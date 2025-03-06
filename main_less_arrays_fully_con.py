@@ -761,7 +761,7 @@ def print_l3_disc(neurons: Network) -> float:
         temp = sig_neurons[layer-1][:arch[layer]] * used_for[:layer][jnp.newaxis,:,:]
         temp = cont_or_arr(temp, axis=(1,2))
         used_for = used_for.at[layer, :arch[layer]].set(cont_or(used_for[layer ,:arch[layer]], temp))
-    return used_back*used_for
+    return jnp.sum(used_back*used_for, axis=1)
 
 @jax.jit
 def get_l4(neurons: Network) -> float:
