@@ -425,6 +425,31 @@ def feed_forward(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
     return jax.vmap(forward, in_axes=(None, 0))(xs, neurons[i_1-1])[:outs]
 
 @jax.jit
+def feed_forward(inputs: jnp.ndarray, neurons: List[jnp.ndarray]) -> jnp.ndarray:
+    """
+    Calculates the continuous output of the network.
+    
+    Parameters:
+      inputs - the input data
+      neurons - the network layers
+      
+    Returns:
+      The continuous output.
+    """
+    xs = jnp.ones((i_1+1, i_4))
+    xs = xs.at[0,:len(inputs)].set(inputs)
+    
+    def update_xs(idx: int, _: None) -> None:
+        # Compute the output for the current layer using xs[idx]
+        next_out = jax.vmap(forward, in_axes=(None, 0))(xs[:idx], neurons[idx-1])
+        xs = xs.at[idx, :neurons[idx-1].shape[0]].set(next_out)
+        return None
+
+    jax.lax.fori_loop(1, i_1+1, update_xs, None)
+    
+    return xs[-1, :outs]
+
+@jax.jit
 def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
     """
     Calculates the discrete output of the network
