@@ -1151,7 +1151,7 @@ def run(timeout=config["timeout"]):
                     print(f"Accuracy: {str(round(100*float(accuracy),2))}%, Loss: {round(float(new_loss),5)}")
                     print(print_l3(neurons))
                     print(print_l3_disc(neurons))
-                    print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
+                    print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in, l5_coeff)
                     image_class.save(neurons, convs, str(round(float(100*accuracy[0]),2))+'%', file_i)
                     return accuracy
                 else:
@@ -1159,8 +1159,8 @@ def run(timeout=config["timeout"]):
                     print(f"Accuracy: {round(100*float(accuracy[0]),2)}%, Loss: {round(float(new_loss),5)}")
                     print(print_l3(neurons))
                     print(print_l3_disc(neurons))
-                    print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
-                    print(get_l3(neurons, max_gates))
+                    print(get_l2(neurons, max_fan_in, l5_coeff), get_l2_disc(neurons, max_fan_in, l5_coeff), max_fan_in)
+                    print(get_l3(neurons, max_gates, l5_coeff))
                     circuit = output_circuit(neurons, verbose=True, super_verbose=True)
                     [print(circ) for circ in circuit]
                     return accuracy[0]
