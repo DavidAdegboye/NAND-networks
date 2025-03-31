@@ -817,7 +817,7 @@ def get_l5(neurons: Network, min_gates: jnp.ndarray) -> float:
     return jnp.sum(jax.nn.relu(min_gates-jnp.sum(used, axis=1)))
 
 epsilon = 1e-7
-@partial(jax.jit, static_argnames="l5_coeff")
+@jax.jit
 def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.ndarray, mask2:jnp.ndarray, max_fan_in: int, max_gates: jnp.ndarray, l5_coeff: float) -> float:
     """
     calculates loss
@@ -865,10 +865,11 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
         l4 = get_l4(neurons)
     else:
         l4 = 0
-    if l5_coeff:
-        l5 = get_l5(neurons, min_gates)
-    else:
-        l5 = 0
+    # if l5_coeff:
+    #     l5 = get_l5(neurons, min_gates)
+    # else:
+    #     l5 = 0
+    l5 = 0
     return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + l5_coeff*l5
 
 @partial(jax.jit, static_argnames="l5_coeff")
@@ -1071,7 +1072,7 @@ def start_run(arch, batches, batch_size):
         print(print_l3_disc(neurons))
         print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
         print(get_l3(neurons, max_gates))
-        grad = jax.jit(jax.grad(loss, argnums=0), static_argnames=["l5_coeff"])
+        grad = jax.jit(jax.grad(loss, argnums=0))
 
 def run(timeout=config["timeout"]):
     global batches, batch_size, inputs, output, weigh_even, neurons, neurons_conv, updates, opt_state, l5_coeff, scaled_train_imgs
