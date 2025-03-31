@@ -120,7 +120,11 @@ else:
         true_arch.append(new_ins - old_ins)
     # and then if it's an adder, we're also adding extra help for adders
     if add_or_img == 'a':
+        print(inputs.shape)
+        print(true_arch)
         inputs, true_arch, add_adder_help, with_nots = adders_util.adder_help(inputs, true_arch)
+        print(inputs.shape)
+        print(true_arch)
     new_ins = inputs.shape[1]
 print(true_arch)
 
