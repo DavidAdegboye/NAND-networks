@@ -1127,7 +1127,7 @@ def run(timeout=config["timeout"]):
                                     output[batch*batch_size:(batch+1)*batch_size],
                                     accuracy[1][batch*batch_size:(batch+1)*batch_size],
                                     accuracy[2][batch*batch_size:(batch+1)*batch_size],
-                                    max_fan_in, max_gates)
+                                    max_fan_in, max_gate, l5_coeff)
                     updates, opt_state = solver.update(gradients, opt_state, neurons)
                     neurons = optax.apply_updates(neurons, updates)
                     accuracy = acc(neurons)
@@ -1135,7 +1135,7 @@ def run(timeout=config["timeout"]):
                     gradients = grad(neurons,
                                     inputs[batch*batch_size:(batch+1)*batch_size],
                                     output[batch*batch_size:(batch+1)*batch_size],
-                                    jnp.array([]), jnp.array([]), max_fan_in, max_gates)
+                                    jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
                     updates, opt_state = solver.update(gradients, opt_state, neurons)
                     neurons = optax.apply_updates(neurons, updates)
             if time.time() - start_run_time > timeout * 60:
