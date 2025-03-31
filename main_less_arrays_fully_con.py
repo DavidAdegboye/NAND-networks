@@ -169,7 +169,7 @@ if l5_coeff == 0:
     min_gates = jnp.array([0]*len(arch))
 else:
     min_gates = jnp.array(config["max_gates"])
-    l5_coeff = l5_coeff / (sum(min_gates))
+    l5_coeff = float(l5_coeff / (sum(min_gates)))
 # for adders and arbitrary combinational logic circuits, where we're aiming for 100% accuracy, if we're stuck
 # in the high nineties at a local minima, I've added this to give a little nudge. It makes the losses of the
 # incorrect samples weigh more.
@@ -351,7 +351,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                 if len(sorted_connected) == 1:
                     node = '¬' + sorted_connected[0][1]
                     if len(node) > 2:
-                        if node[:3] == "¬¬¬":
+                        if node[:2] == "¬¬" and node[2] != '(':
                             node = node[2:]
                 else:
                     node = '¬(' + '.'.join([element[1] for element in sorted_connected]) + ')'
@@ -423,31 +423,6 @@ def feed_forward(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
         next = jnp.array([jnp.pad(next,(0, i_4-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
     return jax.vmap(forward, in_axes=(None, 0))(xs, neurons[i_1-1])[:outs]
-
-@jax.jit
-def feed_forward(inputs: jnp.ndarray, neurons: List[jnp.ndarray]) -> jnp.ndarray:
-    """
-    Calculates the continuous output of the network.
-    
-    Parameters:
-      inputs - the input data
-      neurons - the network layers
-      
-    Returns:
-      The continuous output.
-    """
-    xs = jnp.ones((i_1+1, i_4))
-    xs = xs.at[0,:len(inputs)].set(inputs)
-    
-    def update_xs(idx: int, _: None) -> None:
-        # Compute the output for the current layer using xs[idx]
-        next_out = jax.vmap(forward, in_axes=(None, 0))(xs[:idx], neurons[idx-1])
-        xs = xs.at[idx, :neurons[idx-1].shape[0]].set(next_out)
-        return None
-
-    jax.lax.fori_loop(1, i_1+1, update_xs, None)
-    
-    return xs[-1, :outs]
 
 @jax.jit
 def feed_forward_disc(inputs: jnp.ndarray, neurons: jnp.ndarray) -> jnp.ndarray:
@@ -1045,7 +1020,7 @@ def start_run(arch, batches, batch_size):
         grad_conv = jax.jit(jax.grad(loss_conv, argnums=0), static_argnames=["l5_coeff"])
     else:
         accuracy = acc(neurons)
-        new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
+        new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
         print(f"Accuracy: {round(100*float(accuracy[0]),2)}%, Loss: {round(float(new_loss),5)}")
         print(print_l3(neurons))
         print(print_l3_disc(neurons))
@@ -1085,7 +1060,7 @@ def run(timeout=config["timeout"]):
                                     output[batch*batch_size:(batch+1)*batch_size],
                                     accuracy[1][batch*batch_size:(batch+1)*batch_size],
                                     accuracy[2][batch*batch_size:(batch+1)*batch_size],
-                                    max_fan_in, max_gates)
+                                    max_fan_in, max_gates, l5_coeff)
                     updates, opt_state = solver.update(gradients, opt_state, neurons)
                     neurons = optax.apply_updates(neurons, updates)
                     accuracy = acc(neurons)
@@ -1093,7 +1068,7 @@ def run(timeout=config["timeout"]):
                     gradients = grad(neurons,
                                     inputs[batch*batch_size:(batch+1)*batch_size],
                                     output[batch*batch_size:(batch+1)*batch_size],
-                                    jnp.array([]), jnp.array([]), max_fan_in, max_gates)
+                                    jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
                     updates, opt_state = solver.update(gradients, opt_state, neurons)
                     neurons = optax.apply_updates(neurons, updates)
             if time.time() - start_run_time > timeout * 60:
@@ -1101,9 +1076,9 @@ def run(timeout=config["timeout"]):
                     new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff)
                 else:
                     if weigh_even == 'y':
-                        new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates)
+                        new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates, l5_coeff)
                     else:
-                        new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
+                        new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
                 if add_or_img == 'i':
                     accuracy = acc_conv(neurons, neurons_conv)
                     print(f"Accuracy: {str(round(100*float(accuracy),2))}%, Loss: {round(float(new_loss),5)}")
@@ -1137,9 +1112,9 @@ def run(timeout=config["timeout"]):
                 new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff)
             else:
                 if weigh_even == 'y':
-                    new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates)
+                    new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, l5_coeff)
                 else:
-                    new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
+                    new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
                 if get_optional_input_non_blocking() == 1:
                     if add_or_img == 'i':
                         cont = False

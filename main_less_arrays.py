@@ -169,7 +169,7 @@ if l5_coeff == 0:
     min_gates = jnp.array([0]*len(arch))
 else:
     min_gates = jnp.array(config["max_gates"])
-    l5_coeff = l5_coeff / (sum(min_gates))
+    l5_coeff = float(l5_coeff / (sum(min_gates)))
 # for adders and arbitrary combinational logic circuits, where we're aiming for 100% accuracy, if we're stuck
 # in the high nineties at a local minima, I've added this to give a little nudge. It makes the losses of the
 # incorrect samples weigh more.
@@ -1087,7 +1087,7 @@ def start_run(arch, batches, batch_size):
         grad_conv = jax.jit(jax.grad(loss_conv, argnums=0), static_argnames=["l5_coeff"])
     else:
         accuracy = acc(neurons)
-        new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
+        new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
         print(f"Accuracy: {round(100*float(accuracy[0]),2)}%, Loss: {round(float(new_loss),5)}")
         print(print_l3(neurons))
         print(print_l3_disc(neurons))
@@ -1143,9 +1143,9 @@ def run(timeout=config["timeout"]):
                     new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff)
                 else:
                     if weigh_even == 'y':
-                        new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates)
+                        new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates, l5_coeff)
                     else:
-                        new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
+                        new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
                 if add_or_img == 'i':
                     accuracy = acc_conv(neurons, neurons_conv)
                     print(f"Accuracy: {str(round(100*float(accuracy),2))}%, Loss: {round(float(new_loss),5)}")
@@ -1179,9 +1179,9 @@ def run(timeout=config["timeout"]):
                 new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff)
             else:
                 if weigh_even == 'y':
-                    new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates)
+                    new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates, l5_coeff)
                 else:
-                    new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates)
+                    new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
                 if get_optional_input_non_blocking() == 1:
                     if add_or_img == 'i':
                         cont = False
