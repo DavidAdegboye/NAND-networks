@@ -67,6 +67,7 @@ def help_adder(input: jnp.ndarray, nots: bool) -> jnp.ndarray:
     Returns
     new_input - the result, another jnp array
     """
+    print(input.shape)
     new_input = list(input)
     for i in range(bits):
         new_input.append(1-new_input[i]*new_input[i+bits])
@@ -75,7 +76,9 @@ def help_adder(input: jnp.ndarray, nots: bool) -> jnp.ndarray:
             new_input.append(1-new_input[i]*new_input[i+3*bits])
             new_input.append(1-new_input[i+bits]*new_input[i+2*bits])
             new_input.append(1-new_input[i+2*bits]*new_input[i+3*bits])
-    return jnp.array(new_input)
+    new_input = jnp.array(new_input)
+    print(new_input.shape)
+    return new_input
 
 def adder_help(inputs: jnp.ndarray, true_arch: List[int]) -> Tuple[jnp.ndarray, List[int], str, str|None]:
     """
@@ -93,10 +96,10 @@ def adder_help(inputs: jnp.ndarray, true_arch: List[int]) -> Tuple[jnp.ndarray, 
     """
     add_adder_help = config["add_adder_help"]
     with_nots = None
-    if add_adder_help == 'y':
+    if add_adder_help:
         with_nots = config["with_nots"]
         old_ins = inputs.shape[1]
-        inputs = jax.vmap(help_adder, in_axes=(0, None))(inputs, with_nots=='y')
+        inputs = jax.vmap(help_adder, in_axes=(0, None))(inputs, with_nots)
         new_ins = inputs.shape[1]
         true_arch.append(new_ins - old_ins)
     return inputs, true_arch, add_adder_help, with_nots
