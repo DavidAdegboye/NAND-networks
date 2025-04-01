@@ -1206,7 +1206,7 @@ def run(timeout=config["timeout"]):
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
     if add_or_img != 'i':
-        circuit = output_circuit(neurons)
+        circuit = output_circuit(neurons, True, True)
         [print(circ) for circ in circuit]
     return accuracy[0]
 
