@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import optax
 import random
 import itertools
-from typing import List, Tuple, Set, Union
+from typing import List, Tuple, Set, Union, Dict
 import time
 import yaml
 from functools import partial
