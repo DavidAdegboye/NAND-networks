@@ -283,6 +283,36 @@ def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
     output.append(current)
     return output
 
+def clean_connected(connetecteds: Dict[int: List[int]], used_list: List[int], arch: List[int]) -> List[List[jnp.ndarray]]:
+    # converts our somewhat clean connecteds dictionary, into a List of jnp arrays representing the learnt NAND network
+    for layer in arch:
+        node_count += layer
+        upper_bounds.append(node_count)
+    node_to_true_index = dict()
+    layer_index = 0
+    current_layer = 0
+    upper_bounds = []
+    node_count = 0
+    layer = []
+    net = []
+    for node in used_list:
+        if node < upper_bounds[current_layer]:
+            node_to_true_index[node] = (current_layer, layer_index)
+            layer_index += 1
+        else:
+            while node >= upper_bounds[current_layer]:
+                net.append(layer.copy())
+                current_layer += 1
+                layer_index = 0
+                layer = []
+            node_to_true_index[node] = (current_layer, layer_index)
+            layer_index += 1
+        if current_layer != 0:
+            connections = [node_to_true_index[con] for con in connetecteds[node]]
+            layer.append(connections)
+    net.append(layer)
+    return net
+
 def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[str]:
     """
     Outputs the learnt circuit, and also prints some useful data about the network
@@ -392,8 +422,12 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
     used_list: List[int] = sorted(list(used))
     if verbose:
         print(used_list)
+    true_net = {i: connecteds[i] for i in used_list}
+    true_weights = clean_connected(true_net, used_list, arch)
     if super_verbose:
-        [print(i, connecteds[i]) for i in used_list]
+        [print(k,v) for k,v in true_net.items()]
+        print()
+        [print(layer) for layer in true_weights]
     learnt_arch = get_used(used_list, arch, verbose)
     fan_ins = []
     for node_index in used_list:
