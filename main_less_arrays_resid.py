@@ -283,7 +283,7 @@ def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
     output.append(current)
     return output
 
-def clean_connected(connetecteds: Dict[int: List[int]], used_list: List[int], arch: List[int]) -> List[List[jnp.ndarray]]:
+def clean_connected(connetecteds: Dict[int, List[int]], used_list: List[int], arch: List[int]) -> List[List[jnp.ndarray]]:
     # converts our somewhat clean connecteds dictionary, into a List of jnp arrays representing the learnt NAND network
     for layer in arch:
         node_count += layer
