@@ -426,6 +426,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
             start = len(surr_arr[layer_i])
         else:
             start = 0
+        print(neurons[layer_i])
         for neuron_i in range(start, len(shapes[layer_i])):
             i = 0
             connected: Set[Tuple[int, str]] = set()
