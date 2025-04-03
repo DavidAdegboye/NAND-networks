@@ -497,7 +497,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
     print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
     return circuits[-true_arch[-1]:]
 
-@jax.jit
+@partial(jax.jit, static_argnames="layer_i")
 def calc_surr(xs: jnp.ndarray, layer_i: int) -> jnp.ndarray:
     start = [1-jnp.prod(xs[node[:,0], node[:,1]]) for node in surr_arr[layer_i]]
     return jnp.array(start)
