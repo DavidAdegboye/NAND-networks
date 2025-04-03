@@ -155,7 +155,7 @@ def surr_trans_dict(with_nots: bool, add_help: bool) -> Dict[int, int]:
     return trans_dict
 
 def update_surr_arr() -> List[List[jnp.array]]:
-    trans_dict = surr_trans_dict()
+    trans_dict = surr_trans_dict(config["with_nots"], config["add_adder_help"])
     out_arr = []
     for old_layer in config["surr_arr"]:
         new_layer = []
