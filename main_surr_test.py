@@ -382,6 +382,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                 connected: Set[Tuple[int, str]] = set()
                 for inner_layer_i, weight_i in surr_arr[layer_i][neuron_i]:
                     i = sum_arch[inner_layer_i] + weight_i
+                    print(i)
                     connected.add((indices[i], circuits[indices[i]]))
                 added += 1
                 connecteds.append([node[0] for node in sorted_connected])
