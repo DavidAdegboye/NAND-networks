@@ -379,29 +379,29 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
             gate_i1 = layer_i+1
             gate_i2 = 0
             for neuron_i in range(len(surr_arr[layer_i])):
-                connected: Set[Tuple[int, str]] = set()
+                connected: List[Tuple[int, str]] = set()
                 for inner_layer_i, weight_i in surr_arr[layer_i][neuron_i]:
                     i = sum_arch[inner_layer_i] + int(weight_i)
-                    connected.add((indices[i], circuits[indices[i]]))
+                    connected.append((indices[i], circuits[indices[i]]))
                 added += 1
-                connecteds.append([node[0] for node in sorted_connected])
+                connecteds.append([node[0] for node in connected])
                 i = len(connecteds)-1
                 if super_verbose:
                     print(i, connecteds[i])
-                if len(sorted_connected) == 1:
-                    node = '¬' + sorted_connected[0][1]
+                if len(connected) == 1:
+                    node = '¬' + connected[0][1]
                     if len(node) > 2:
                         if node[:3] == "¬¬¬":
                             node = node[2:]
                 else:
-                    node = '¬(' + '.'.join([element[1] for element in sorted_connected]) + ')'
+                    node = '¬(' + '.'.join([element[1] for element in connected]) + ')'
                 if node in c2i.keys():
                     if layer_i == i_1-1:
                         circuits.append(node)
                         gates[-1].append(["=", index2gate[c2i[node]]])
                         index2gate[added] = (gate_i1, gate_i2)
                         gate_i2 += 1
-                        for prev_node in sorted_connected:
+                        for prev_node in connected:
                             used.add(prev_node[0])
                     else:
                         circuits.append('_')
@@ -410,11 +410,11 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                     circuits.append(node)
                     c2i[node] = added
                     indices[added] = added
-                    gates[-1].append([index2gate[element[0]] for element in sorted_connected])
+                    gates[-1].append([index2gate[element[0]] for element in connected])
                     index2gate[added] = (gate_i1, gate_i2)
                     gate_i2 += 1
                     if layer_i == i_1-1:
-                        for prev_node in sorted_connected:
+                        for prev_node in connected:
                             used.add(prev_node[0])
                         used.add(added)
         for neuron_i in range(len(shapes[layer_i])):
