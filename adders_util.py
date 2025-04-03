@@ -156,12 +156,14 @@ def surr_trans_dict(with_nots: bool, add_help: bool) -> Dict[int, int]:
 
 def update_surr_arr() -> List[List[jnp.array]]:
     trans_dict = surr_trans_dict(config["with_nots"], config["add_adder_help"])
+    print(trans_dict)
     out_arr = []
     for old_layer in config["surr_arr"]:
         new_layer = []
         for old_node in old_layer:
             new_node = []
             for layer_i, node_i in old_node:
+                print(layer_i, node_i)
                 new_node.append(jnp.array([layer_i, trans_dict[node_i]]))
             new_node = jnp.stack(new_node)
             new_layer.append(new_node)
