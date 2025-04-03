@@ -159,6 +159,7 @@ def update_surr_arr() -> List[List[jnp.array]]:
     print(trans_dict)
     out_arr = []
     for old_layer in config["surr_arr"]:
+        print(old_layer)
         new_layer = []
         for old_node in old_layer:
             new_node = []
