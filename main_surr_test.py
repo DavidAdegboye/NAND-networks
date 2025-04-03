@@ -374,6 +374,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
         for layer in true_arch:
             sum_arch.append(sums)
             sums += layer
+        print("surrogates")
         for layer_i in range(i_1):
             gates.append([])
             gate_i1 = layer_i+1
@@ -417,6 +418,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                         for prev_node in connected:
                             used.add(prev_node[0])
                         used.add(added)
+            print("natties")
             for neuron_i in range(len(shapes[layer_i])):
                 i = 0
                 connected: Set[Tuple[int, str]] = set()
