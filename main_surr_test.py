@@ -307,7 +307,7 @@ def clean_connected(connetecteds: Dict[int, List[int]], used_list: List[int], ar
     net = []
     for node in used_list:
         if node < upper_bounds[current_layer]:
-            node_to_true_index[node] = (current_layer, layer_index)
+            node_to_true_index[node] = [current_layer, layer_index]
             layer_index += 1
         else:
             while node >= upper_bounds[current_layer]:
@@ -315,7 +315,7 @@ def clean_connected(connetecteds: Dict[int, List[int]], used_list: List[int], ar
                 current_layer += 1
                 layer_index = 0
                 layer = []
-            node_to_true_index[node] = (current_layer, layer_index)
+            node_to_true_index[node] = [current_layer, layer_index]
             layer_index += 1
         if current_layer != 0:
             connections = [node_to_true_index[con] for con in connetecteds[node]]
@@ -1312,7 +1312,7 @@ def run(timeout=config["timeout"]):
         [print(circ) for circ in circuit]
     return accuracy[0]
 
-start_run(arch, batches, batch_size)
+start_run(batches, batch_size)
 run()
 
 batch_list = [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
