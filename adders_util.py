@@ -162,7 +162,10 @@ def update_surr_arr() -> List[List[jnp.array]]:
         for old_node in old_layer:
             new_node = []
             for layer_i, node_i in old_node:
-                new_node.append(jnp.array([layer_i, trans_dict[node_i]]))
+                if layer_i == 0:
+                    new_node.append(jnp.array([layer_i, trans_dict[node_i]]))
+                else:
+                    new_node.append(jnp.array([layer_i, node_i]))
             new_node = jnp.stack(new_node)
             new_layer.append(new_node)
         out_arr.append(new_layer.copy())
