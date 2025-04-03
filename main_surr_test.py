@@ -423,18 +423,15 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                                 used.add(prev_node[0])
                             used.add(added)
             print("natties")
-        if use_surr and layer_i < len(surr_arr):
-            start = len(surr_arr[layer_i])
-        else:
-            start = 0
         print(layer_i)
+        print(arch)
         print(true_arch)
-        [print(i,n) for i,n in enumerate(neurons[layer_i][:true_arch[layer_i+1]])]
-        for neuron_i in range(start, len(shapes[layer_i])):
+        [print(i,n) for i,n in enumerate(neurons[layer_i][:arch[layer_i+1]])]
+        for neuron_i in range(arch[layer_i+1]):
             i = 0
             connected: Set[Tuple[int, str]] = set()
-            for inner_layer_i in range(len(shapes[layer_i][neuron_i])):
-                for weight_i in range(shapes[layer_i][neuron_i][inner_layer_i]):
+            for inner_layer_i in range(layer_i+1):
+                for weight_i in range(true_arch[inner_layer_i]):
                     if neurons[layer_i][neuron_i,inner_layer_i,weight_i] > 0 and indices[i] not in empties:
                         connected.add((indices[i], circuits[indices[i]]))
                     i += 1
@@ -765,32 +762,6 @@ def initialise(arch: List[int], true_arch: List[int], sigma: jnp.ndarray, k: jnp
         neurons.append(layer)
     return neurons
 
-def get_shapes(arch: List[int]) -> Tuple[NetworkShape, int]:
-    """
-    returns a data structure which tells you the exact shape of the input wires for each NAND gate
-
-    Parameters
-    arch - a list representing the architecture
-    
-    Returns
-    shapes - the data structure
-    total - the total number of wires in the network
-    """
-    # gets the shape of the network based on the architecture
-    shapes: NetworkShape = []
-    total = 0
-    for layer in range(1, len(arch)):
-        shapes.append([])
-        if layer == 1 or len(arch)-1:
-            for _ in range(arch[layer]):
-                shapes[-1].append(arch[:layer].copy())
-                total += sum(arch[:layer])
-        else:
-            for _ in range(arch[layer]):
-                shapes[-1].append(arch[layer-2:layer].copy())
-                total += (arch[layer-2] + arch[layer-1])
-    return shapes, total
-
 @jax.jit
 def get_l2(neurons: Network, max_fan_in: int) -> float:
     """
@@ -928,7 +899,7 @@ def get_l4(neurons: Network) -> float:
     s = 0
     for layer in neurons:
         s += jnp.sum(1-jax.nn.sigmoid(jnp.absolute(layer)))
-    return s/total
+    return s
 
 @jax.jit
 def get_l5(neurons: Network, min_gates: jnp.ndarray) -> float:
@@ -1105,12 +1076,11 @@ all_sigmas = [0.1, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 1.0, 1.5, 2.0, 3.0,
 all_ks = [1.0, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91, 0.9, 0.85, 0.75, 0.65, 0.5, 0.39, 0.32, 0.27, 0.23, 0.205, 0.18, 0.17, 0.155, 0.14, 0.13, 0.12, 0.11]
 
 def start_run(batches, batch_size):
-    global i_1, i_3, i_4, shapes, total, global_n, global_conv_n, boundary_jump, schedule, solver, key, neurons, neurons_conv, opt_state, grad, grad_conv
+    global i_1, i_3, i_4, global_n, global_conv_n, boundary_jump, schedule, solver, key, neurons, neurons_conv, opt_state, grad, grad_conv
     i_1 = len(true_arch) - 1
     # i_2 = max(true_arch[1:])
     i_3 = i_1
     i_4 = max(true_arch)
-    shapes, total = get_shapes(true_arch)
     neurons_shape = []
     for i in range(1, len(true_arch)):
         if i <= 3 or i == len(true_arch)-1:
