@@ -283,7 +283,7 @@ def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
     output.append(current)
     return output
 
-def clean_connected(connetecteds: Dict[int, List[int]], used_list: List[int], arch: List[int]) -> List[List[jnp.ndarray]]:
+def clean_connected(connetecteds: Dict[int, List[int]], used_list: List[int], arch: List[int]) -> List[List[List[Tuple[int, int]]]]:
     # converts our somewhat clean connecteds dictionary, into a List of jnp arrays representing the learnt NAND network
     upper_bounds = []
     node_count = 0
@@ -311,7 +311,7 @@ def clean_connected(connetecteds: Dict[int, List[int]], used_list: List[int], ar
             connections = [node_to_true_index[con] for con in connetecteds[node]]
             layer.append(connections)
     net.append(layer)
-    return net
+    return net[1:]
 
 def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[str]:
     """
