@@ -1,6 +1,6 @@
 import jax
 import jax.numpy as jnp
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import yaml
 
 with open("set-up.yaml", "r") as f:
@@ -132,3 +132,38 @@ def update_circuits(add_adder_help: str, circuits: List[str], with_nots: str|Non
                 connecteds.append([i+bits,i+2*bits])
                 connecteds.append([i+2*bits,i+3*bits])
     return circuits, connecteds
+
+def surr_trans_dict(with_nots: bool, add_help: bool) -> Dict[int, int]:
+    trans_dict = dict()
+    surr_bits = config["surr_bits"]
+    diff = config["bits"] - surr_bits
+    for i in range(surr_bits):
+        trans_dict[i] = diff + i
+    for i in range(surr_bits, 2*surr_bits):
+        trans_dict[i] = 2 * diff + i
+    if with_nots:
+        for i in range(2*surr_bits, 3*surr_bits):
+            trans_dict[i] = 3 * diff + i
+        for i in range(3*surr_bits, 4*surr_bits):
+            trans_dict[i] = 4 * diff + i
+        if add_help:
+            for i in range(4*surr_bits, 8*surr_bits):
+                trans_dict[i] = 8 * diff + i
+    elif add_help:
+        for i in range(2*surr_bits, 3*surr_bits):
+            trans_dict[i] = 3 * diff + i
+    return trans_dict
+
+def update_surr_arr() -> List[List[jnp.array]]:
+    trans_dict = surr_trans_dict()
+    out_arr = []
+    for old_layer in config["surr_arr"]:
+        new_layer = []
+        for old_node in old_layer:
+            new_node = []
+            for layer_i, node_i in old_node:
+                new_node.append(jnp.array([layer_i, trans_dict[node_i]]))
+            new_node = jnp.stack(new_node)
+            new_layer.append(new_node)
+        out_arr.append(new_layer.copy())
+    return out_arr
