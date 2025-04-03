@@ -387,6 +387,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                         i = sum_arch[inner_layer_i] + int(weight_i)
                         connected.append((indices[i], circuits[indices[i]]))
                     added += 1
+                    connected = sorted(connected)
                     connecteds.append([node[0] for node in connected])
                     i = len(connecteds)-1
                     if super_verbose:
