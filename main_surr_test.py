@@ -379,7 +379,8 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
         gate_i1 = layer_i+1
         gate_i2 = 0
         if use_surr:
-            print("surrogates")
+            if super_verbose:
+                print("surrogates")
             if layer_i < len(surr_arr):
                 for neuron_i in range(len(surr_arr[layer_i])):
                     connected: List[Tuple[int, str]] = []
@@ -422,11 +423,8 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                             for prev_node in connected:
                                 used.add(prev_node[0])
                             used.add(added)
-            print("natties")
-        print(layer_i)
-        print(arch)
-        print(true_arch)
-        [print(i,n) for i,n in enumerate(neurons[layer_i][:arch[layer_i+1]])]
+            if super_verbose:
+                print("natties")
         for neuron_i in range(arch[layer_i+1]):
             i = 0
             connected: Set[Tuple[int, str]] = set()
@@ -490,9 +488,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
     true_net = {i: connecteds[i] for i in used_list}
     true_weights = clean_connected(true_net, used_list, true_arch)
     if super_verbose:
-        [print(k,v) for k,v in true_net.items()]
-        print()
-        [print(layer) for layer in true_weights]
+        print(true_weights)
     learnt_arch = get_used(used_list, true_arch, verbose)
     fan_ins = []
     for node_index in used_list:
