@@ -1148,10 +1148,10 @@ def start_run(batches, batch_size):
     key = random.randint(0, 10000)
     start_time = time.time()
     if add_or_img == 'i':
-        neurons = initialise(arch, all_sigmas[sigma_i], all_ks[sigma_i])
+        neurons = initialise(arch, true_arch, all_sigmas[sigma_i], all_ks[sigma_i])
         neurons_conv = initialise_conv(convs, all_sigmas[4], all_ks[4])
     else:
-        neurons = initialise(arch, all_sigmas[sigma_i], all_ks[sigma_i])
+        neurons = initialise(arch, true_arch, all_sigmas[sigma_i], all_ks[sigma_i])
     if add_or_img == 'i':
         opt_state = solver.init([neurons, neurons_conv])
     else:
