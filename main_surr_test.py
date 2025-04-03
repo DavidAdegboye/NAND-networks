@@ -417,54 +417,54 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                         for prev_node in connected:
                             used.add(prev_node[0])
                         used.add(added)
-        for neuron_i in range(len(shapes[layer_i])):
-            i = 0
-            connected: Set[Tuple[int, str]] = set()
-            for inner_layer_i in range(len(shapes[layer_i][neuron_i])):
-                for weight_i in range(shapes[layer_i][neuron_i][inner_layer_i]):
-                    if neurons[layer_i][neuron_i,inner_layer_i,weight_i] > 0 and indices[i] not in empties:
-                        connected.add((indices[i], circuits[indices[i]]))
-                    i += 1
-            added += 1
-            sorted_connected = sorted(list(connected))
-            connecteds.append([node[0] for node in sorted_connected])
-            i = len(connecteds)-1
-            if super_verbose:
-                print(i, connecteds[i])
-            if not sorted_connected:
-                empties.append(added)
-                indices[added] = added
-                circuits.append('_')
-            else:
-                if len(sorted_connected) == 1:
-                    node = '¬' + sorted_connected[0][1]
-                    if len(node) > 2:
-                        if node[:3] == "¬¬¬":
-                            node = node[2:]
+            for neuron_i in range(len(shapes[layer_i])):
+                i = 0
+                connected: Set[Tuple[int, str]] = set()
+                for inner_layer_i in range(len(shapes[layer_i][neuron_i])):
+                    for weight_i in range(shapes[layer_i][neuron_i][inner_layer_i]):
+                        if neurons[layer_i][neuron_i,inner_layer_i,weight_i] > 0 and indices[i] not in empties:
+                            connected.add((indices[i], circuits[indices[i]]))
+                        i += 1
+                added += 1
+                sorted_connected = sorted(list(connected))
+                connecteds.append([node[0] for node in sorted_connected])
+                i = len(connecteds)-1
+                if super_verbose:
+                    print(i, connecteds[i])
+                if not sorted_connected:
+                    empties.append(added)
+                    indices[added] = added
+                    circuits.append('_')
                 else:
-                    node = '¬(' + '.'.join([element[1] for element in sorted_connected]) + ')'
-                if node in c2i.keys():
-                    if layer_i == i_1-1:
+                    if len(sorted_connected) == 1:
+                        node = '¬' + sorted_connected[0][1]
+                        if len(node) > 2:
+                            if node[:3] == "¬¬¬":
+                                node = node[2:]
+                    else:
+                        node = '¬(' + '.'.join([element[1] for element in sorted_connected]) + ')'
+                    if node in c2i.keys():
+                        if layer_i == i_1-1:
+                            circuits.append(node)
+                            gates[-1].append(["=", index2gate[c2i[node]]])
+                            index2gate[added] = (gate_i1, gate_i2)
+                            gate_i2 += 1
+                            for prev_node in sorted_connected:
+                                used.add(prev_node[0])
+                        else:
+                            circuits.append('_')
+                        indices[added] = c2i[node]
+                    else:
                         circuits.append(node)
-                        gates[-1].append(["=", index2gate[c2i[node]]])
+                        c2i[node] = added
+                        indices[added] = added
+                        gates[-1].append([index2gate[element[0]] for element in sorted_connected])
                         index2gate[added] = (gate_i1, gate_i2)
                         gate_i2 += 1
-                        for prev_node in sorted_connected:
-                            used.add(prev_node[0])
-                    else:
-                        circuits.append('_')
-                    indices[added] = c2i[node]
-                else:
-                    circuits.append(node)
-                    c2i[node] = added
-                    indices[added] = added
-                    gates[-1].append([index2gate[element[0]] for element in sorted_connected])
-                    index2gate[added] = (gate_i1, gate_i2)
-                    gate_i2 += 1
-                    if layer_i == i_1-1:
-                        for prev_node in sorted_connected:
-                            used.add(prev_node[0])
-                        used.add(added)
+                        if layer_i == i_1-1:
+                            for prev_node in sorted_connected:
+                                used.add(prev_node[0])
+                            used.add(added)
     queue = list(used)
     nodes = []
     while len(queue):
