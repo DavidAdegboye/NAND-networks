@@ -401,6 +401,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                         node = '¬(' + '.'.join([element[1] for element in connected]) + ')'
                     if node in c2i.keys():
                         if layer_i == i_1-1:
+                      
                             circuits.append(node)
                             gates[-1].append(["=", index2gate[c2i[node]]])
                             index2gate[added] = (gate_i1, gate_i2)
@@ -426,7 +427,9 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
             start = len(surr_arr[layer_i])
         else:
             start = 0
-        [print(n) for n in neurons[layer_i][:true_arch[layer_i+1]]]
+        print(layer_i)
+        print(true_arch)
+        [print(i,n) for i,n in enumerate(neurons[layer_i][:true_arch[layer_i+1]])]
         for neuron_i in range(start, len(shapes[layer_i])):
             i = 0
             connected: Set[Tuple[int, str]] = set()
