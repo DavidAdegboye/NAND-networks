@@ -161,12 +161,9 @@ print(arch)
 true_arch = arch.copy()
 
 if use_surr:
-    new_surr_arr = []
     for i, layer in enumerate(surr_arr):
         if i < len(arch) - 1:
             true_arch[i+1] += len(layer)
-            new_surr_arr.append(layer)
-    surr_arr = new_surr_arr
 
 temperature = config["temperature"]
 l2_coeff = config["l2_coeff"]
