@@ -269,15 +269,7 @@ def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
     current = 0
     layer_i = 0
     current_l = 0
-    # if we've added some helper bits, we're unpacking them into their separate layers
-    if true_arch:
-        eff_arch = arch[1:].copy()
-        eff_arch = [ins] + true_arch + eff_arch
-    else:
-        eff_arch = arch.copy()
-    if verbose:
-        print(eff_arch)
-    current_h = eff_arch[0]
+    current_h = arch[0]
     # counting the number of nodes in each layer.
     for node in used:
         if current_l <= node < current_h:
@@ -288,7 +280,7 @@ def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
                 current = 0
                 layer_i += 1
                 current_l = current_h
-                current_h = current_l + eff_arch[layer_i]
+                current_h = current_l + arch[layer_i]
             current += 1
     output.append(current)
     return output
