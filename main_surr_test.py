@@ -187,6 +187,11 @@ else:
 # for adders and arbitrary combinational logic circuits, where we're aiming for 100% accuracy, if we're stuck
 # in the high nineties at a local minima, I've added this to give a little nudge. It makes the losses of the
 # incorrect samples weigh more.
+l6_coeff = config["l6_coeff"]
+if l6_coeff == 0:
+    mean_fan_in = 0
+else:
+    mean_fan_in = config["mean_fan"]
 weigh_even = 'n'
 
 batches = config["batches"]
@@ -765,6 +770,25 @@ def get_l2(neurons: Network, max_fan_in: int) -> float:
     l2s = jax.nn.relu(fan_ins-max_fan_in)
     return jnp.sum(jax.nn.softmax(l2s)*l2s)
 
+num_neurons = sum(true_arch[1:])
+@jax.jit
+def get_l6(neurons: Network, mean_fan_in: float) -> float:
+    """
+    calculates l2, which is minimised for any maximum fan-in under or equal to "max_fan_in"
+    this doesn't account for duplicate gates
+
+    Parameters
+    neurons - the network
+    
+    Returns
+    l2
+    """
+    fan_ins = jnp.array([])
+    for layer in neurons:
+        fan_ins = jnp.concatenate((fan_ins, jax.vmap(lambda x:jnp.sum(jax.nn.sigmoid(x/temperature)))(layer)))
+    l6s = jnp.sum(fan_ins)/num_neurons
+    return jax.nn.relu(l6s-mean_fan_in)
+
 @jax.jit
 def get_l2_disc(neurons: Network, max_fan_in: int) -> float:
     """
@@ -929,22 +953,16 @@ def loss(neurons: Network, inputs: jnp.ndarray, output: jnp.ndarray, mask1: jnp.
     else:
         l1 = jnp.mean(optax.sigmoid_binary_cross_entropy(pred_logits, output))
     if l2_coeff:
-        l2 = get_l2(neurons, max_fan_in)
-    else:
-        l2 = 0
+        l1 += l2_coeff * get_l2(neurons, max_fan_in)
     if l3_coeff:
-        l3 = get_l3(neurons, max_gates)
-    else:
-        l3 = 0
+        l1 += l3_coeff * get_l3(neurons, max_gates)
     if l4_coeff:
-        l4 = get_l4(neurons)
-    else:
-        l4 = 0
+        l1 += l4_coeff * get_l4(neurons)
     if l5_coeff:
-        l5 = get_l5(neurons, min_gates)
-    else:
-        l5 = 0
-    return l1 + l2_coeff*l2 + l3_coeff*l3 + l4_coeff*l4 + l5_coeff*l5
+        l1 += l5_coeff * get_l5(neurons, min_gates)
+    if l6_coeff:
+        l1 += l6_coeff * get_l6(neurons, mean_fan_in)
+    return l1
 
 @partial(jax.jit, static_argnames="l5_coeff")
 def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, max_fan_in: int, l5_coeff: float, scaled: List[jnp.ndarray]) -> float:
