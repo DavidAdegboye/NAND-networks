@@ -157,16 +157,15 @@ else:
     layer_diff = diff/hidden
     arch = [new_ins] + [round(starting_width-i*layer_diff) for i in range(hidden)] + [outs]
 
-print("True arch:", true_arch)
-print(arch)
 true_arch = arch.copy()
 
 if use_surr:
+    surr_copy = []
     for i, layer in enumerate(surr_arr):
         if i < len(arch) - 2:
             true_arch[i+1] += len(layer)
-
-print("True arch:", true_arch)
+            surr_copy.append(layer)
+    surr_arr = surr_copy.copy()
 
 temperature = config["temperature"]
 l2_coeff = config["l2_coeff"]
