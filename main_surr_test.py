@@ -163,7 +163,7 @@ true_arch = arch.copy()
 
 if use_surr:
     for i, layer in enumerate(surr_arr):
-        if i < len(arch) - 1:
+        if i < len(arch) - 2:
             true_arch[i+1] += len(layer)
 
 print("True arch:", true_arch)
