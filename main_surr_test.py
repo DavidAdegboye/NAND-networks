@@ -578,7 +578,7 @@ def forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> jnp.nd
     return 1-jax.vmap(
         lambda c: jax.vmap(
             lambda i: jax.vmap(
-                lambda j: f(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
+                lambda j: 1-f(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
             )(jnp.arange(n))
         )(jnp.arange(n))
     )(channels)
@@ -603,7 +603,7 @@ def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> j
     return 1-jax.vmap(
         lambda c: jax.vmap(
             lambda i: jax.vmap(
-                lambda j: f_disc(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
+                lambda j: 1-f_disc(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
             )(jnp.arange(n))
         )(jnp.arange(n))
     )(channels)
@@ -1082,6 +1082,7 @@ all_ks = [1.0, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91, 0.9, 0.85, 0.75, 0.65,
 
 def start_run(batches, batch_size):
     global i_1, i_3, i_4, global_n, global_conv_n, boundary_jump, schedule, solver, key, neurons, neurons_conv, opt_state, grad, grad_conv
+    dps = config["decimal_places"]
     i_1 = len(true_arch) - 1
     # i_2 = max(true_arch[1:])
     i_3 = i_1
@@ -1152,7 +1153,7 @@ def start_run(batches, batch_size):
     if add_or_img == 'i':
         accuracy = acc_conv(neurons, neurons_conv)
         new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff, scaled_train_imgs)
-        print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),5)}")
+        print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
         print(print_l3(neurons))
         print(print_l3_disc(neurons))
         print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
@@ -1160,7 +1161,7 @@ def start_run(batches, batch_size):
     else:
         accuracy = acc(neurons)
         new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
-        print(f"Accuracy: {round(100*float(accuracy[0]),2)}%, Loss: {round(float(new_loss),5)}")
+        print(f"Accuracy: {round(100*float(accuracy[0]),2)}%, Loss: {round(float(new_loss),dps)}")
         print(print_l3(neurons))
         print(print_l3_disc(neurons))
         print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
@@ -1169,6 +1170,7 @@ def start_run(batches, batch_size):
 
 def run(timeout=config["timeout"]):
     global batches, batch_size, inputs, output, weigh_even, neurons, neurons_conv, updates, opt_state, l5_coeff, scaled_train_imgs
+    dps = config["decimal_places"]
     cont = True
     iters = 0
     file_i = -1
@@ -1223,7 +1225,7 @@ def run(timeout=config["timeout"]):
                         new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
                 if add_or_img == 'i':
                     accuracy = acc_conv(neurons, neurons_conv)
-                    print(f"Accuracy: {str(round(100*float(accuracy),2))}%, Loss: {round(float(new_loss),5)}")
+                    print(f"Accuracy: {str(round(100*float(accuracy),2))}%, Loss: {round(float(new_loss),dps)}")
                     print(print_l3(neurons))
                     print(print_l3_disc(neurons))
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
@@ -1231,7 +1233,7 @@ def run(timeout=config["timeout"]):
                     return accuracy
                 else:
                     accuracy = acc(neurons)
-                    print(f"Accuracy: {round(100*float(accuracy[0]),2)}%, Loss: {round(float(new_loss),5)}")
+                    print(f"Accuracy: {round(100*float(accuracy[0]),2)}%, Loss: {round(float(new_loss),dps)}")
                     print(print_l3(neurons))
                     print(print_l3_disc(neurons))
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
@@ -1263,7 +1265,7 @@ def run(timeout=config["timeout"]):
                         print("Done training!")
                         print("Testing on testing data...")
                         accuracy = acc_conv(neurons, neurons_conv)
-                        print(f"Accuracy: {str(round(100*float(accuracy),2))}%, Loss: {round(float(new_loss),5)}")
+                        print(f"Accuracy: {str(round(100*float(accuracy),2))}%, Loss: {round(float(new_loss),dps)}")
                         print(print_l3(neurons))
                         print(print_l3_disc(neurons))
                         print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
@@ -1280,14 +1282,14 @@ def run(timeout=config["timeout"]):
             if iters == max(10//batches, 1):
                 if add_or_img != 'i':
                     accuracy = acc(neurons)
-                    print(f"Accuracy: {round(100*float(accuracy[0]),2)}%, Loss: {round(float(new_loss),5)}")
+                    print(f"Accuracy: {round(100*float(accuracy[0]),2)}%, Loss: {round(float(new_loss),dps)}")
                     print(print_l3(neurons))
                     print(print_l3_disc(neurons))
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
                     print(get_l3(neurons, max_gates))
                 else:
                     accuracy = acc_conv(neurons, neurons_conv)
-                    print(f"Accuracy: {str(round(100*float(accuracy),2))}%, Loss: {round(float(new_loss),5)}")
+                    print(f"Accuracy: {str(round(100*float(accuracy),2))}%, Loss: {round(float(new_loss),dps)}")
                     print(print_l3(neurons))
                     print(print_l3_disc(neurons))
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
