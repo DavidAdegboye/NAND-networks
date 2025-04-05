@@ -107,6 +107,7 @@ if add_or_img == 'i':
     else:
         new_ins = true_arch[0] * 2
         scaled_train_imgs, scaled_test_imgs = [], []
+    use_surr = False
 else:
     true_arch = []
     # for adders and arbitrary combinational logic circuits, we're first adding extra layers
@@ -124,6 +125,8 @@ else:
         use_surr = config["use_surr"]
         if use_surr:
             surr_arr = adders_util.update_surr_arr()
+    else:
+        use_surr = False
     new_ins = inputs.shape[1]
 print(true_arch)
 
