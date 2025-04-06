@@ -625,7 +625,8 @@ def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        xs = jnp.concatenate([imgs_list[i], forward_conv(xs, ws, s, n), 1-forward_conv(xs, ws, s, n)], axis=0)
+        temp = forward_conv(xs, ws, s, n)
+        xs = jnp.concatenate([imgs_list[i], temp, 1-temp], axis=0)
     return xs
 
 @jax.jit
@@ -642,7 +643,8 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        xs = jnp.concatenate([imgs_list[i], forward_conv_disc(xs, ws, s, n), 1-forward_conv_disc(xs, ws, s, n)], axis=0)
+        temp = forward_conv_disc(xs, ws, s, n)
+        xs = jnp.concatenate([imgs_list[i], temp, 1-temp], axis=0)
     return xs
 
 def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
