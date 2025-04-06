@@ -103,7 +103,8 @@ if add_or_img == 'i':
     x_test = jnp.concatenate([x_test, 1-x_test], axis=1)
     if convs:
         scaled_train_imgs, scaled_test_imgs = image_class_resid.get_imgs(convs)
-        new_ins = convs[-1][2] * convs[-1][3]**2 * 2
+        new_ins = (2*convs[-1][2]+2) * convs[-1][3]**2
+        print(new_ins)
     else:
         new_ins = true_arch[0] * 2
         scaled_train_imgs, scaled_test_imgs = [], []
