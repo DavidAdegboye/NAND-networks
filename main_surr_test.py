@@ -685,7 +685,7 @@ def initialise_conv(convs: List[Tuple[int, int, int, int]], sigma: jnp.ndarray, 
     neurons = []
     current_c = 2
     for w,_,c,_ in convs:
-        weights = get_weights_conv(w, c/2-1, current_c, sigma, k)
+        weights = get_weights_conv(w, c//2-1, current_c, sigma, k)
         neurons.append(weights)
         current_c = c
     return neurons
