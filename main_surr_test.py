@@ -97,7 +97,7 @@ def add_second_layers(input: jnp.ndarray, min_fan: int, max_fan: int) -> jnp.nda
 if add_or_img == 'i':
     # for images, this is convolutional layers
     convs = config["convs"]
-    convs = [[w,s,c+2,ns] for w,s,c,ns in convs]
+    convs = [[w,s,2*c+2,ns] for w,s,c,ns in convs]
     true_arch = [config["size"]**2] + [ns**2 for _,_,_,ns in convs]
     inputs = jnp.concatenate([inputs, 1-inputs], axis=1)
     x_test = jnp.concatenate([x_test, 1-x_test], axis=1)
@@ -625,7 +625,7 @@ def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        xs = jnp.concatenate([imgs_list[i], forward_conv(xs, ws, s, n)], axis=0)
+        xs = jnp.concatenate([imgs_list[i], forward_conv(xs, ws, s, n), 1-forward_conv(xs, ws, s, n)], axis=0)
     return xs
 
 @jax.jit
@@ -642,7 +642,7 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        xs = jnp.concatenate([imgs_list[i], forward_conv(xs, ws, s, n)], axis=0)
+        xs = jnp.concatenate([imgs_list[i], forward_conv_disc(xs, ws, s, n), 1-forward_conv_disc(xs, ws, s, n)], axis=0)
     return xs
 
 def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
@@ -685,7 +685,7 @@ def initialise_conv(convs: List[Tuple[int, int, int, int]], sigma: jnp.ndarray, 
     neurons = []
     current_c = 2
     for w,_,c,_ in convs:
-        weights = get_weights_conv(w, c-2, current_c, sigma, k)
+        weights = get_weights_conv(w, c/2-1, current_c, sigma, k)
         neurons.append(weights)
         current_c = c
     return neurons
@@ -988,8 +988,6 @@ def loss_conv(network: List[Network], inputs: jnp.ndarray, output: jnp.ndarray, 
         inputs = inputs.reshape(inputs.shape[0], -1)
         return loss(network[0], inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
     pred = pred.reshape(pred.shape[0], -1)
-    if convs:
-        pred = jnp.concatenate([pred, 1-pred], axis=1)
     return loss(network[0], pred, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
 
 @jax.jit
@@ -1071,7 +1069,6 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     # returns the accuracy
     if convs:
         pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, 0))(x_test, neurons_conv, scaled_test_imgs)
-        pred = jnp.concatenate([pred, 1-pred], axis=1)
     else:
         pred = x_test
     pred = pred.reshape(pred.shape[0], -1)
