@@ -1221,7 +1221,14 @@ def run(timeout=config["timeout"]):
                     neurons = optax.apply_updates(neurons, updates)
             if time.time() - start_run_time > timeout * 60:
                 if add_or_img == 'i':
-                    new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff, scaled_train_imgs)
+                    losses = []
+                    for batch in range(batches):
+                        losses.append(loss_conv([neurons, neurons_conv],
+                                            inputs[batch*batch_size:(batch+1)*batch_size],
+                                            output[batch*batch_size:(batch+1)*batch_size],
+                                            max_fan_in, l5_coeff,
+                                            [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs]))
+                    new_loss = sum(losses)/len(losses)
                 else:
                     if weigh_even == 'y':
                         new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates, l5_coeff)
@@ -1258,7 +1265,14 @@ def run(timeout=config["timeout"]):
                     print("Setting l5_coeff to 0")
                     l5_coeff = 0
             if add_or_img == 'i':
-                new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff, scaled_train_imgs)
+                losses = []
+                for batch in range(batches):
+                    losses.append(loss_conv([neurons, neurons_conv],
+                                        inputs[batch*batch_size:(batch+1)*batch_size],
+                                        output[batch*batch_size:(batch+1)*batch_size],
+                                        max_fan_in, l5_coeff,
+                                        [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs]))
+                new_loss = sum(losses)/len(losses)
             else:
                 if weigh_even == 'y':
                     new_loss = loss(neurons, inputs, output, accuracy[1], accuracy[2], max_fan_in, max_gates, l5_coeff)
