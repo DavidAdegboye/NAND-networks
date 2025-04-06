@@ -666,10 +666,11 @@ def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndar
     # layer lists, each with arch[i] elements
     # so this is a 2D list of floats
     # or a 1D list of jnp arrays
-    if global_weights:
-        n = global_conv_n
-    else:
-        n = old_c*w**2
+    # if global_weights:
+    #     n = global_conv_n
+    # else:
+    #     n = old_c*w**2
+    n = old_c*w**2
     mu = -jnp.log(n-1)/k
     return sigma * jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
 
@@ -1097,27 +1098,27 @@ def start_run(batches, batch_size):
         else:
             neurons_shape.append((true_arch[0]+true_arch[i-2]+true_arch[i-1], true_arch[i]))
     global_n = sum(ns[0]*ns[1] for ns in neurons_shape)/sum(ns[1] for ns in neurons_shape)
-    if add_or_img == 'i' and convs:
-        neurons_conv_shape = []
-        # a list for the convolutional layers
-        # of the number of inputs per NAND gate, and the number of NAND gates in that layer
-        old_c = 2
-        for w,_,c,ns in convs:
-            neurons_conv_shape.append((w**2*old_c, c*ns**2))
-            old_c = c
-        neurons_shape = []
-        for i in range(1, len(arch)):
-            if i <= 3 or i == len(arch)-1:
-                neurons_shape.append((sum(arch[:i]), arch[i]))
-            else:
-                neurons_shape.append((arch[0]+arch[i-2]+arch[i-1], arch[i]))
-        global_n = (sum([ncs[0]*ncs[1] for ncs in neurons_conv_shape])+
-                    sum(ns[0]*ns[1] for ns in neurons_shape))/(
-                        sum([ncs[1] for ncs in neurons_conv_shape])
-                        +sum(ns[1] for ns in neurons_shape))
-        global_conv_n = global_n
-        global_conv_n = sum([ncs[0]*ncs[1] for ncs in neurons_conv_shape])/sum([ncs[1] for ncs in neurons_conv_shape])
-        global_n = sum(ns[0]*ns[1] for ns in neurons_shape)/sum(ns[1] for ns in neurons_shape)
+    # if add_or_img == 'i' and convs:
+    #     neurons_conv_shape = []
+    #     # a list for the convolutional layers
+    #     # of the number of inputs per NAND gate, and the number of NAND gates in that layer
+    #     old_c = 2
+    #     for w,_,c,ns in convs:
+    #         neurons_conv_shape.append((w**2*old_c, c*ns**2))
+    #         old_c = c
+    #     neurons_shape = []
+    #     for i in range(1, len(arch)):
+    #         if i <= 3 or i == len(arch)-1:
+    #             neurons_shape.append((sum(arch[:i]), arch[i]))
+    #         else:
+    #             neurons_shape.append((arch[0]+arch[i-2]+arch[i-1], arch[i]))
+    #     global_n = (sum([ncs[0]*ncs[1] for ncs in neurons_conv_shape])+
+    #                 sum(ns[0]*ns[1] for ns in neurons_shape))/(
+    #                     sum([ncs[1] for ncs in neurons_conv_shape])
+    #                     +sum(ns[1] for ns in neurons_shape))
+    #     global_conv_n = global_n
+    #     global_conv_n = sum([ncs[0]*ncs[1] for ncs in neurons_conv_shape])/sum([ncs[1] for ncs in neurons_conv_shape])
+    #     global_n = sum(ns[0]*ns[1] for ns in neurons_shape)/sum(ns[1] for ns in neurons_shape)
 
     boundary_jump = 5*(max(10//batches,1)**2)*batch_size
     lr_multiplier = batch_size**0.5
