@@ -1232,6 +1232,7 @@ def run(timeout=config["timeout"]):
                     print(print_l3(neurons))
                     print(print_l3_disc(neurons))
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
+                    print(neurons_conv[0])
                     image_class_resid.save(neurons, convs, str(round(float(100*accuracy[0]),2))+'%', file_i)
                     return accuracy
                 else:
