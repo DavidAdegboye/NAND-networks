@@ -671,6 +671,7 @@ def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndar
     # else:
     #     n = old_c*w**2
     n = old_c*w**2
+    print("n:", n)
     mu = -jnp.log(n-1)/k
     return sigma * jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
 
