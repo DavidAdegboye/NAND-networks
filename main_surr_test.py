@@ -604,6 +604,7 @@ def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> j
     w = weights.shape[2]
     old_channels = xs.shape[0]
     channels = jnp.arange(weights.shape[0])
+    print(xs.shape)
     print(weights.shape)
     output = jax.vmap(
         lambda c: jax.vmap(
