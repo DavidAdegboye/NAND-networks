@@ -605,13 +605,15 @@ def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> j
     old_channels = xs.shape[0]
     channels = jnp.arange(weights.shape[0])
     print(weights.shape)
-    return jax.vmap(
+    output = jax.vmap(
         lambda c: jax.vmap(
             lambda i: jax.vmap(
                 lambda j: 1-f_disc(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
             )(jnp.arange(n))
         )(jnp.arange(n))
     )(channels)
+    print(output.shape)
+    return output
 
 @jax.jit
 def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.ndarray]) -> jnp.ndarray:
