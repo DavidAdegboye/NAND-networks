@@ -662,13 +662,13 @@ def custom_sampler(shape, threshold, boundaries_a, boundaries_b):
       A JAX array of samples with the given shape.
     """
     key = random.randint(0, 10000)
-    decision = jax.random.uniform(key, shape=shape)
+    decision = jax.random.uniform(jax.random.key(key), shape=shape)
     key = random.randint(0, 10000)
-    samples_a = jax.random.uniform(key, shape=shape,
+    samples_a = jax.random.uniform(jax.random.key(key), shape=shape,
                                    minval=boundaries_a[0],
                                    maxval=boundaries_a[1])
     key = random.randint(0, 10000)
-    samples_b = jax.random.uniform(key, shape=shape,
+    samples_b = jax.random.uniform(jax.random.key(key), shape=shape,
                                    minval=boundaries_b[0],
                                    maxval=boundaries_b[1])
     return jnp.where(decision < threshold, samples_a, samples_b)
