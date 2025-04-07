@@ -1143,6 +1143,7 @@ def start_run(batches, batch_size):
     if add_or_img == 'i':
         neurons = initialise(arch, true_arch, all_sigmas[sigma_i], all_ks[sigma_i])
         neurons_conv = tuple(initialise_conv(convs, all_sigmas[10], all_ks[10]))
+        print(neurons_conv[1][0])
     else:
         neurons = initialise(arch, true_arch, all_sigmas[sigma_i], all_ks[sigma_i])
     if add_or_img == 'i':
@@ -1318,7 +1319,6 @@ def run(timeout=config["timeout"]):
                     print(print_l3(neurons))
                     print(print_l3_disc(neurons))
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
-                    print(neurons_conv[1][0])
                     file_i = image_class_resid.save(arch, neurons_conv, neurons, convs, str(round(float(100*accuracy),2))+'%', file_i)
                 iters = 0
     end_time = time.time()
