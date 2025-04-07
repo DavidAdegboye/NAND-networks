@@ -1143,7 +1143,7 @@ def start_run(batches, batch_size):
     start_time = time.time()
     if add_or_img == 'i':
         neurons = initialise(arch, true_arch, all_sigmas[sigma_i], all_ks[sigma_i])
-        neurons_conv = tuple(initialise_conv(convs, all_sigmas[10], all_ks[10]))
+        neurons_conv = tuple(initialise_conv(convs, all_sigmas[4], all_ks[4]))
         print(neurons_conv[1][0])
     else:
         neurons = initialise(arch, true_arch, all_sigmas[sigma_i], all_ks[sigma_i])
