@@ -1314,17 +1314,7 @@ def run(timeout=config["timeout"]):
                 else:
                     new_loss = loss(neurons, inputs, output, jnp.array([]), jnp.array([]), max_fan_in, max_gates, l5_coeff)
                 if get_optional_input_non_blocking() == 1:
-                    if add_or_img == 'i':
-                        cont = False
-                        print("Done training!")
-                        print("Testing on testing data...")
-                        accuracy = acc_conv(neurons, neurons_conv)
-                        print(f"Accuracy: {str(round(100*float(accuracy),2))}%, Loss: {round(float(new_loss),dps)}")
-                        print(print_l3(neurons))
-                        print(print_l3_disc(neurons))
-                        print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
-                        image_class_resid.save(neurons, convs, str(round(float(100*accuracy[0]),2))+'%', file_i)
-                    elif weigh_even == 'n':
+                    if weigh_even == 'n':
                         print("Now weighing wrong more")
                         weigh_even = 'y'
                     else:
@@ -1348,6 +1338,7 @@ def run(timeout=config["timeout"]):
                     print(print_l3_disc(neurons))
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
                     file_i = image_class_resid.save(arch, neurons_conv, neurons, convs, str(round(float(100*accuracy),2))+'%', file_i)
+                    print(neurons_conv[1][0])
                 iters = 0
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
