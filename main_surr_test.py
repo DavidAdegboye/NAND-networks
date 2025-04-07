@@ -604,17 +604,13 @@ def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> j
     w = weights.shape[2]
     old_channels = xs.shape[0]
     channels = jnp.arange(weights.shape[0])
-    print(xs.shape)
-    print(weights.shape)
-    output = jax.vmap(
+    return jax.vmap(
         lambda c: jax.vmap(
             lambda i: jax.vmap(
                 lambda j: 1-f_disc(jax.lax.dynamic_slice(xs, (0, i*s, j*s), (old_channels, w, w)), weights[c])
             )(jnp.arange(n))
         )(jnp.arange(n))
     )(channels)
-    print(output.shape)
-    return output
 
 @jax.jit
 def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.ndarray]) -> jnp.ndarray:
@@ -1079,7 +1075,9 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
         pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, 0))(x_test, neurons_conv, scaled_test_imgs)
     else:
         pred = x_test
+    print(pred.shape)
     pred = pred.reshape(pred.shape[0], -1)
+    print(pred.shape)
     # print(jnp.sum(pred))
     pred = jax.vmap(feed_forward_disc, in_axes=(0, None))(pred, neurons)
     result = jax.vmap(image_class_resid.evaluate)(pred, y_test)
@@ -1251,7 +1249,6 @@ def run(timeout=config["timeout"]):
                     print(print_l3(neurons))
                     print(print_l3_disc(neurons))
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
-                    print(neurons_conv[1][0])
                     image_class_resid.save(neurons, convs, str(round(float(100*accuracy[0]),2))+'%', file_i)
                     return accuracy
                 else:
