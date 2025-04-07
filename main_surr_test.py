@@ -103,7 +103,6 @@ if add_or_img == 'i':
     x_test = jnp.concatenate([x_test, 1-x_test], axis=1)
     if convs:
         scaled_train_imgs, scaled_test_imgs = image_class_resid.get_imgs(convs)
-        print(scaled_train_imgs[0])
         new_ins = convs[-1][2] * convs[-1][3]**2
         print(new_ins)
     else:
@@ -1241,7 +1240,7 @@ def run(timeout=config["timeout"]):
                     print(print_l3(neurons))
                     print(print_l3_disc(neurons))
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
-                    print(neurons_conv[0])
+                    print(neurons_conv[1][0])
                     image_class_resid.save(neurons, convs, str(round(float(100*accuracy[0]),2))+'%', file_i)
                     return accuracy
                 else:
