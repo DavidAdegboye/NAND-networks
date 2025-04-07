@@ -648,6 +648,31 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
         xs = jnp.concatenate([imgs_list[i], temp, 1-temp], axis=0)
     return xs
 
+def custom_sampler(shape, threshold, boundaries_a, boundaries_b):
+    """
+    Sample values based on a two-stage uniform process.
+    
+    Parameters:
+      shape: tuple - Desired output shape.
+      threshold: float - Threshold in [0, 1] to decide which distribution to sample from.
+      boundaries_a: tuple - (low, high) for the first uniform distribution.
+      boundaries_b: tuple - (low, high) for the second uniform distribution.
+    
+    Returns:
+      A JAX array of samples with the given shape.
+    """
+    key = random.randint(0, 10000)
+    decision = jax.random.uniform(key, shape=shape)
+    key = random.randint(0, 10000)
+    samples_a = jax.random.uniform(key, shape=shape,
+                                   minval=boundaries_a[0],
+                                   maxval=boundaries_a[1])
+    key = random.randint(0, 10000)
+    samples_b = jax.random.uniform(key, shape=shape,
+                                   minval=boundaries_b[0],
+                                   maxval=boundaries_b[1])
+    return jnp.where(decision < threshold, samples_a, samples_b)
+
 def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
     """
     Returns the weights for a filter
@@ -663,6 +688,7 @@ def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndar
     a 2d jnp array of the weights, which represents the wires going into a certain neuron
     """
     global key
+    key = random.randint(0, 10000)
     # layer lists, each with arch[i] elements
     # so this is a 2D list of floats
     # or a 1D list of jnp arrays
@@ -672,6 +698,7 @@ def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndar
     #     n = old_c*w**2
     n = old_c*w**2
     print("n:", n)
+    return custom_sampler((c, old_c, w, w), 1/n, (0,1), (-1,0))
     mu = -jnp.log(n-1)/k
     return sigma * jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
 
