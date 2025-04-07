@@ -1156,7 +1156,21 @@ def start_run(batches, batch_size):
         print([layer.shape for layer in neurons_conv])
     if add_or_img == 'i':
         accuracy = acc_conv(neurons, neurons_conv)
-        new_loss = loss_conv([neurons, neurons_conv], inputs, output, max_fan_in, l5_coeff, scaled_train_imgs)
+        key = random.randint(0, 10000)
+        key = jax.random.PRNGKey(key)
+        shuffled_indices = jax.random.permutation(key, inputs.shape[0])
+        inputs = inputs[shuffled_indices]
+        output = output[shuffled_indices]
+        if add_or_img == 'i' and convs:
+            scaled_train_imgs = [imgs[shuffled_indices] for imgs in scaled_train_imgs]
+        losses = []
+        for batch in range(batches):
+            losses.append(loss_conv([neurons, neurons_conv],
+                                inputs[batch*batch_size:(batch+1)*batch_size],
+                                output[batch*batch_size:(batch+1)*batch_size],
+                                max_fan_in, l5_coeff,
+                                [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs]))
+        new_loss = sum(losses)/len(losses)
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
         print(print_l3(neurons))
         print(print_l3_disc(neurons))
