@@ -1075,9 +1075,7 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
         pred = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, 0))(x_test, neurons_conv, scaled_test_imgs)
     else:
         pred = x_test
-    print(pred.shape)
     pred = pred.reshape(pred.shape[0], -1)
-    print(pred.shape)
     # print(jnp.sum(pred))
     pred = jax.vmap(feed_forward_disc, in_axes=(0, None))(pred, neurons)
     result = jax.vmap(image_class_resid.evaluate)(pred, y_test)
@@ -1144,7 +1142,7 @@ def start_run(batches, batch_size):
     start_time = time.time()
     if add_or_img == 'i':
         neurons = initialise(arch, true_arch, all_sigmas[sigma_i], all_ks[sigma_i])
-        neurons_conv = initialise_conv(convs, all_sigmas[10], all_ks[10])
+        neurons_conv = tuple(initialise_conv(convs, all_sigmas[10], all_ks[10]))
     else:
         neurons = initialise(arch, true_arch, all_sigmas[sigma_i], all_ks[sigma_i])
     if add_or_img == 'i':
