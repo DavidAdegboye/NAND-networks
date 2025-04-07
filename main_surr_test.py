@@ -698,7 +698,7 @@ def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndar
     #     n = old_c*w**2
     n = old_c*w**2
     print("n:", n)
-    return custom_sampler((c, old_c, w, w), 1/n, (0,1), (-1,0))
+    return custom_sampler((c, old_c, w, w), 1/n, (1,2), (-2,-1))
     mu = -jnp.log(n-1)/k
     return sigma * jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
 
@@ -1171,7 +1171,7 @@ def start_run(batches, batch_size):
     if add_or_img == 'i':
         neurons = initialise(arch, true_arch, all_sigmas[sigma_i], all_ks[sigma_i])
         neurons_conv = tuple(initialise_conv(convs, all_sigmas[4], all_ks[4]))
-        print(neurons_conv[1][0])
+        print(neurons_conv[0][0])
     else:
         neurons = initialise(arch, true_arch, all_sigmas[sigma_i], all_ks[sigma_i])
     if add_or_img == 'i':
@@ -1338,7 +1338,7 @@ def run(timeout=config["timeout"]):
                     print(print_l3_disc(neurons))
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
                     file_i = image_class_resid.save(arch, neurons_conv, neurons, convs, str(round(float(100*accuracy),2))+'%', file_i)
-                    print(neurons_conv[1][0])
+                    print(neurons_conv[0][0])
                 iters = 0
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
