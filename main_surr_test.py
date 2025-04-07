@@ -649,30 +649,12 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
         xs = jnp.concatenate([imgs_list[i], temp, 1-temp], axis=0)
     return xs
 
-def custom_sampler(shape, threshold, boundaries_a, boundaries_b):
-    """
-    Sample values based on a two-stage uniform process.
-    
-    Parameters:
-      shape: tuple - Desired output shape.
-      threshold: float - Threshold in [0, 1] to decide which distribution to sample from.
-      boundaries_a: tuple - (low, high) for the first uniform distribution.
-      boundaries_b: tuple - (low, high) for the second uniform distribution.
-    
-    Returns:
-      A JAX array of samples with the given shape.
-    """
-    key = random.randint(0, 10000)
-    decision = jax.random.uniform(jax.random.key(key), shape=shape)
-    key = random.randint(0, 10000)
-    samples_a = jax.random.uniform(jax.random.key(key), shape=shape,
-                                   minval=boundaries_a[0],
-                                   maxval=boundaries_a[1])
-    key = random.randint(0, 10000)
-    samples_b = jax.random.uniform(jax.random.key(key), shape=shape,
-                                   minval=boundaries_b[0],
-                                   maxval=boundaries_b[1])
-    return jnp.where(decision < threshold, samples_a, samples_b)
+def custom_sampler(shape, n):
+    alpha = 1.0
+    beta = n - 1.0
+    p_samples = jax.random.beta(jax.random.key(key), a=alpha, b=beta, shape=shape)
+    p_samples = jnp.clip(p_samples, epsilon, 1-epsilon)
+    return jnp.log(p_samples / (1 - p_samples))
 
 def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndarray) -> jnp.ndarray:
     """
@@ -700,8 +682,9 @@ def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndar
     n = old_c*w**2
     print("n:", n)
     # return custom_sampler((c, old_c, w, w), 1/n, (1,2), (-2,-1))
-    mu = jsp_special.ndtri(1.0 / n)
+    # mu = jsp_special.ndtri(1.0 / n)
     # mu = -jnp.log(n-1)/k
+    return custom_sampler((c, old_c, w, w), n)
     return jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
     return sigma * jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
 
@@ -758,14 +741,17 @@ def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray)
     if layer == 1 or layer == 2 or layer == len(arch)-1:
         for i in range(layer):
             inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu
+            inner_layer = custom_sampler(shape=(arch[i],), n=n)
             weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[i]), mode="constant", constant_values=-jnp.inf))
             key = random.randint(0, 10000)
     else:
         inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[0])) + mu
+        inner_layer = custom_sampler(shape=(arch[0],), n=n)
         weights = weights.at[0].set(jnp.pad(inner_layer, (0, i_4-arch[0]), mode="constant", constant_values=-jnp.inf))
         key = random.randint(0, 10000)
         for i in range(1,3):
             inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[layer-3+i])) + mu
+            inner_layer = custom_sampler(shape=(arch[layer-3+i],), n=n)
             weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[layer-3+i]), mode="constant", constant_values=-jnp.inf))
             key = random.randint(0, 10000)
     return weights
