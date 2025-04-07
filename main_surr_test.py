@@ -754,6 +754,7 @@ def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray)
         else:
             n = arch[0] + arch[layer-2] + arch[layer-1]
     mu = -jnp.log(n-1)/k
+    mu = jsp_special.ndtri(1.0 / n)
     if layer == 1 or layer == 2 or layer == len(arch)-1:
         for i in range(layer):
             inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu
