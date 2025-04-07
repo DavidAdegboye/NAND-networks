@@ -587,7 +587,7 @@ def forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> jnp.nd
         )(jnp.arange(n))
     )(channels)
 
-@partial(jax.jit, static_argnames='n')
+# @partial(jax.jit, static_argnames='n')
 def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> jnp.ndarray:
     """
     Applies a filter of width `w` and stride `s` to the input array `xs`.
@@ -604,6 +604,7 @@ def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> j
     w = weights.shape[2]
     old_channels = xs.shape[0]
     channels = jnp.arange(weights.shape[0])
+    print(weights.shape)
     return jax.vmap(
         lambda c: jax.vmap(
             lambda i: jax.vmap(
@@ -630,7 +631,7 @@ def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.
         xs = jnp.concatenate([imgs_list[i], temp, 1-temp], axis=0)
     return xs
 
-@jax.jit
+# @jax.jit
 def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.ndarray]) -> jnp.ndarray:
     """
     Applies all of the convolutional layers to the input
@@ -1058,7 +1059,7 @@ def acc(neurons: Network) -> Tuple[float, jnp.ndarray, jnp.ndarray]:
         return jnp.sum(pred)/((2**(ins))*(outs)), trues[0], falses[0]
     return jnp.sum(pred)/((2**(ins))*(outs)), jnp.zeros(0), jnp.zeros(0)
 
-@jax.jit
+# @jax.jit
 def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     """
     calculates the accuracy, and also the masks used in the loss function
