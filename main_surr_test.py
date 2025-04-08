@@ -645,6 +645,9 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
+        if i==0:
+            print(weights)
+            print(xs)
         temp = forward_conv_disc(xs, ws, s, n)
         xs = jnp.concatenate([imgs_list[i], temp, 1-temp], axis=0)
     return xs
@@ -1329,7 +1332,7 @@ def run(timeout=config["timeout"]):
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
                     file_i = image_class_resid.save(arch, neurons_conv, neurons, convs, str(round(float(100*accuracy),2))+'%', file_i)
                     # print(neurons_conv[0][0])
-                    print(update[1][2])
+                    print(update[1][0])
                 iters = 0
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
