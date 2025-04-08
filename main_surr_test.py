@@ -632,6 +632,7 @@ def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.
     return xs
 
 # @jax.jit
+printed = False
 def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.ndarray]) -> jnp.ndarray:
     """
     Applies all of the convolutional layers to the input
@@ -645,9 +646,10 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        if i==0:
+        if i==0 and not printed:
             print(weights)
             print(xs)
+            printed = True
         temp = forward_conv_disc(xs, ws, s, n)
         xs = jnp.concatenate([imgs_list[i], temp, 1-temp], axis=0)
     return xs
