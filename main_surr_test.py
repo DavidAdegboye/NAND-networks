@@ -653,11 +653,6 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
             print(i)
             print(ws.shape)
             print(xs.shape)
-            if i==0:
-                print(jnp.all(xs[0] == 1-xs[1]))
-                print(temp.shape)
-                print(temp[0,:3,:3])
-                print(temp[1,:3,:3])
         xs = jnp.concatenate([imgs_list[i], temp, 1-temp], axis=0)
     if not printed:
         printed = True
@@ -696,11 +691,11 @@ def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndar
     n = old_c*w**2
     print("n:", n)
     # return custom_sampler((c, old_c, w, w), 1/n, (1,2), (-2,-1))
-    # mu = jsp_special.ndtri(1.0 / n)
+    mu = jsp_special.ndtri(1.0 / n)
     # mu = -jnp.log(n-1)/k
-    return custom_sampler((c, old_c, w, w), n)
+    # return custom_sampler((c, old_c, w, w), n)
     return jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
-    return sigma * jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
+    # return sigma * jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
 
 def initialise_conv(convs: List[Tuple[int, int, int, int]], sigma: jnp.ndarray, k: jnp.ndarray) -> Network:
     """
