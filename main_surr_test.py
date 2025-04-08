@@ -109,7 +109,8 @@ if add_or_img == 'i':
         print(new_ins)
     else:
         pools, pool_tests = image_class_resid.get_pools(config["pool_filters"])
-        [print(layer.shape) for layer in pools]
+        inputs = jnp.concatenate(pools, axis=1)
+        x_test = jnp.concatenate(pool_tests, axis=1)
         new_ins = true_arch[0] * 2
         scaled_train_imgs, scaled_test_imgs = [], []
     use_surr = False
@@ -591,7 +592,7 @@ def forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> jnp.nd
         )(jnp.arange(n))
     )(channels)
 
-# @partial(jax.jit, static_argnames='n')
+@partial(jax.jit, static_argnames='n')
 def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> jnp.ndarray:
     """
     Applies a filter of width `w` and stride `s` to the input array `xs`.
@@ -608,7 +609,6 @@ def forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, s: int, n: int) -> j
     w = weights.shape[2]
     old_channels = xs.shape[0]
     channels = jnp.arange(weights.shape[0])
-    print(old_channels, channels)
     return jax.vmap(
         lambda c: jax.vmap(
             lambda i: jax.vmap(
@@ -636,8 +636,7 @@ def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.
         xs = jnp.concatenate([imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
     return xs
 
-# @jax.jit
-printed = False
+@jax.jit
 def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.ndarray]) -> jnp.ndarray:
     """
     Applies all of the convolutional layers to the input
@@ -650,18 +649,9 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
     The result of applying the convolutional layers, ready to be passed into
     the dense layers
     """
-    global printed
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
         temp = forward_conv_disc(xs, ws, s, n)
-        if not printed:
-            print(i)
-            print(ws.shape)
-            print(xs.shape)
-            # print(forward_conv_disc(xs[:1], ws[:,:1], s, n).shape)
-            # print(forward_conv_disc(xs[1:], ws[:,1:], s, n).shape)
         xs = jnp.concatenate([imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
-    if not printed:
-        printed = True
     return xs
 
 def custom_sampler(shape, n):
@@ -695,12 +685,12 @@ def get_weights_conv(w: int, c: int, old_c: int, sigma: jnp.ndarray, k: jnp.ndar
     # else:
     #     n = old_c*w**2
     n = old_c*w**2
-    print("n:", n)
-    # return custom_sampler((c, old_c, w, w), 1/n, (1,2), (-2,-1))
-    # mu = jsp_special.ndtri(1.0 / n)
-    mu = -jnp.log(n-1)/k
     # return custom_sampler((c, old_c, w, w), n)
+
+    # mu = jsp_special.ndtri(1.0 / n)
     # return jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
+
+    mu = -jnp.log(n-1)/k
     return sigma * jax.random.normal(jax.random.key(key), shape=(c, old_c, w, w)) + mu #type: ignore
 
 def initialise_conv(convs: List[Tuple[int, int, int, int]], sigma: jnp.ndarray, k: jnp.ndarray) -> Network:
@@ -755,7 +745,7 @@ def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray)
     mu = jsp_special.ndtri(1.0 / n)
     if layer == 1 or layer == 2 or layer == len(arch)-1:
         for i in range(layer):
-            inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu
+            # inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[i])) + mu
             inner_layer = custom_sampler(shape=(arch[i],), n=n)
             weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[i]), mode="constant", constant_values=-jnp.inf))
             key = random.randint(0, 10000)
@@ -765,7 +755,7 @@ def get_weights(layer: int, arch: List[int], sigma: jnp.ndarray, k: jnp.ndarray)
         weights = weights.at[0].set(jnp.pad(inner_layer, (0, i_4-arch[0]), mode="constant", constant_values=-jnp.inf))
         key = random.randint(0, 10000)
         for i in range(1,3):
-            inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[layer-3+i])) + mu
+            # inner_layer = sigma * jax.random.normal(jax.random.key(key), (arch[layer-3+i])) + mu
             inner_layer = custom_sampler(shape=(arch[layer-3+i],), n=n)
             weights = weights.at[i].set(jnp.pad(inner_layer, (0, i_4-arch[layer-3+i]), mode="constant", constant_values=-jnp.inf))
             key = random.randint(0, 10000)
@@ -1091,7 +1081,7 @@ def acc(neurons: Network) -> Tuple[float, jnp.ndarray, jnp.ndarray]:
         return jnp.sum(pred)/((2**(ins))*(outs)), trues[0], falses[0]
     return jnp.sum(pred)/((2**(ins))*(outs)), jnp.zeros(0), jnp.zeros(0)
 
-# @jax.jit
+@jax.jit
 def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     """
     calculates the accuracy, and also the masks used in the loss function
@@ -1109,7 +1099,6 @@ def acc_conv(neurons: Network, neurons_conv: Network) -> List[float]:
     else:
         pred = x_test
     pred = pred.reshape(pred.shape[0], -1)
-    # print(jnp.sum(pred))
     pred = jax.vmap(feed_forward_disc, in_axes=(0, None))(pred, neurons)
     result = jax.vmap(image_class_resid.evaluate)(pred, y_test)
     return jnp.sum(result)/result.size
@@ -1176,7 +1165,6 @@ def start_run(batches, batch_size):
     if add_or_img == 'i':
         neurons = initialise(arch, true_arch, all_sigmas[sigma_i], all_ks[sigma_i])
         neurons_conv = tuple(initialise_conv(convs, all_sigmas[4], all_ks[4]))
-        print(neurons_conv[0][0])
     else:
         neurons = initialise(arch, true_arch, all_sigmas[sigma_i], all_ks[sigma_i])
     if add_or_img == 'i':
@@ -1344,7 +1332,6 @@ def run(timeout=config["timeout"]):
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
                     file_i = image_class_resid.save(arch, neurons_conv, neurons, convs, str(round(float(100*accuracy),2))+'%', file_i)
                     # print(neurons_conv[0][0])
-                    print(update[1][1])
                 iters = 0
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
