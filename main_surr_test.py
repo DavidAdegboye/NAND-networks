@@ -628,6 +628,7 @@ def feed_forward_conv(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List[jnp.
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
         temp = forward_conv(xs, ws, s, n)
+        print(temp.shape)
         xs = jnp.concatenate([imgs_list[i], temp, 1-temp], axis=0)
     return xs
 
@@ -647,13 +648,16 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
     """
     global printed
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
+        temp = forward_conv_disc(xs, ws, s, n)
         if not printed:
             print(i)
             print(ws.shape)
             print(xs.shape)
             if i==0:
-                print(xs[0] == 1-xs[1])
-        temp = forward_conv_disc(xs, ws, s, n)
+                print(jnp.all(xs[0] == 1-xs[1]))
+                print(temp.shape)
+                print(temp[0,:3,:3])
+                print(temp[1,:3,:3])
         xs = jnp.concatenate([imgs_list[i], temp, 1-temp], axis=0)
     if not printed:
         printed = True
