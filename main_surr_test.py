@@ -645,6 +645,7 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
     The result of applying the convolutional layers, ready to be passed into
     the dense layers
     """
+    global printed
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
         if i==0 and not printed:
             print(weights)
