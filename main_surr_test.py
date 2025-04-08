@@ -1329,7 +1329,7 @@ def run(timeout=config["timeout"]):
                     print(get_l2(neurons, max_fan_in), get_l2_disc(neurons, max_fan_in), max_fan_in)
                     file_i = image_class_resid.save(arch, neurons_conv, neurons, convs, str(round(float(100*accuracy),2))+'%', file_i)
                     print(neurons_conv[0][0])
-                    print(updates[1][0][0])
+                    print(update[1][0][0])
                 iters = 0
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
