@@ -94,9 +94,9 @@ def get_imgs(convs: List[Tuple[int, int, int, int]]) -> List[jnp.ndarray]:
 def apply_pooling(image: jnp.ndarray, pooling: Tuple[int, int, str]) -> jnp.ndarray:
     width, stride, min_max = pooling
     if min_max == "max":
-        return jax.lax.reduce_window(image, 0, jax.lax.max, window_dimensions=(width, width), window_strides=(stride, stride), padding='VALID')
+        return jax.lax.reduce_window(image, 0.0, jax.lax.max, window_dimensions=(width, width), window_strides=(stride, stride), padding='VALID')
     else:
-        return jax.lax.reduce_window(image, 1, jax.lax.min, window_dimensions=(width, width), window_strides=(stride, stride), padding='VALID')
+        return jax.lax.reduce_window(image, 1.0, jax.lax.min, window_dimensions=(width, width), window_strides=(stride, stride), padding='VALID')
 
 def get_pools(pool_filters: List[Tuple[int, int, str]]) -> List[jnp.ndarray]:
     pools_list = [x_train[:train_n]] + [jax.vmap(apply_pooling, in_axes=(0, None))(x_train[:train_n], pool_filter) for pool_filter in pool_filters]
