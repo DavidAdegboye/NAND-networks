@@ -109,8 +109,8 @@ if add_or_img == 'i':
         print(new_ins)
     else:
         pools, pool_tests = image_class_resid.get_pools(config["pool_filters"])
-        inputs = jnp.concatenate(pools, axis=1)
-        x_test = jnp.concatenate(pool_tests, axis=1)
+        inputs = jnp.concatenate([arr.reshape(arr.shape[0], -1) for arr in pools], axis=1)
+        x_test = jnp.concatenate([arr.reshape(arr.shape[0], -1) for arr in pool_tests], axis=1)
         new_ins = true_arch[0] * 2
         scaled_train_imgs, scaled_test_imgs = [], []
     use_surr = False
