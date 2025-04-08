@@ -87,9 +87,21 @@ def set_up_img() -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, in
 def get_imgs(convs: List[Tuple[int, int, int, int]]) -> List[jnp.ndarray]:
     imgs_list = [jnp.expand_dims(jnp.array([preprocess_image(img, (ns,ns)) for img in x_train[:train_n]]), axis=1) for _,_,_,ns in convs]
     test_list = [jnp.expand_dims(jnp.array([preprocess_image(img, (ns,ns)) for img in x_test[:test_n]]), axis=1) for _,_,_,ns in convs]
-    imgs_list = [jnp.concatenate([inputs, 1-inputs], axis=1) for inputs in imgs_list]
-    test_list = [jnp.concatenate([inputs, 1-inputs], axis=1) for inputs in test_list]
+    # imgs_list = [jnp.concatenate([inputs, 1-inputs], axis=1) for inputs in imgs_list]
+    # test_list = [jnp.concatenate([inputs, 1-inputs], axis=1) for inputs in test_list]
     return imgs_list, test_list
+
+def apply_pooling(image: jnp.ndarray, pooling: Tuple[int, int, str]) -> jnp.ndarray:
+    width, stride, min_max = pooling
+    if min_max == "max":
+        return jax.lax.reduce_window(image, 0, jax.lax.max, window_dimensions=(width, width), window_strides=(stride, stride), padding='VALID')
+    else:
+        return jax.lax.reduce_window(image, 1, jax.lax.min, window_dimensions=(width, width), window_strides=(stride, stride), padding='VALID')
+
+def get_pools(pool_filters: List[Tuple[int, int, str]]) -> List[jnp.ndarray]:
+    pools_list = [x_train[:train_n]] + [jax.vmap(apply_pooling, axis=(0, None))(x_train[:train_n], pool_filter) for pool_filter in pool_filters]
+    pools_test = [x_test[:test_n]] + [jax.vmap(apply_pooling, axis=(0, None))(x_test[:test_n], pool_filter) for pool_filter in pool_filters]
+    return pools_list, pools_test
 
 # finds the most likely output based on how many neurons are "hot"
 @jax.jit
