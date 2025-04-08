@@ -99,8 +99,8 @@ def apply_pooling(image: jnp.ndarray, pooling: Tuple[int, int, str]) -> jnp.ndar
         return jax.lax.reduce_window(image, 1.0, jax.lax.min, window_dimensions=(width, width), window_strides=(stride, stride), padding='VALID')
 
 def get_pools(pool_filters: List[Tuple[int, int, str]]) -> List[jnp.ndarray]:
-    pools_list = [x_train[:train_n]] + [jax.vmap(apply_pooling, in_axes=(0, None))(x_train[:train_n], pool_filter) for pool_filter in pool_filters]
-    pools_test = [x_test[:test_n]] + [jax.vmap(apply_pooling, in_axes=(0, None))(x_test[:test_n], pool_filter) for pool_filter in pool_filters]
+    pools_list = [x_train[:train_n]] + [1-x_train[:train_n]] + [jax.vmap(apply_pooling, in_axes=(0, None))(x_train[:train_n], pool_filter) for pool_filter in pool_filters] + [jax.vmap(apply_pooling, in_axes=(0, None))(1-x_train[:train_n], pool_filter) for pool_filter in pool_filters]
+    pools_test = [x_test[:test_n]] + [1-x_test[:test_n]] + [jax.vmap(apply_pooling, in_axes=(0, None))(x_test[:test_n], pool_filter) for pool_filter in pool_filters] + [jax.vmap(apply_pooling, in_axes=(0, None))(1-x_test[:test_n], pool_filter) for pool_filter in pool_filters]
     return pools_list, pools_test
 
 # finds the most likely output based on how many neurons are "hot"
