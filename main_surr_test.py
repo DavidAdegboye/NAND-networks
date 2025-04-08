@@ -647,12 +647,14 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
     """
     global printed
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        if i==0 and not printed:
-            print(weights)
-            print(xs)
-            printed = True
+        if not printed:
+            print(i)
+            print(ws.shape)
+            print(xs.shape)
         temp = forward_conv_disc(xs, ws, s, n)
         xs = jnp.concatenate([imgs_list[i], temp, 1-temp], axis=0)
+    if not printed:
+        printed = True
     return xs
 
 def custom_sampler(shape, n):
