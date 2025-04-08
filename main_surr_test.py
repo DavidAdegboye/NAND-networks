@@ -108,7 +108,7 @@ if add_or_img == 'i':
         new_ins = convs[-1][2] * convs[-1][3]**2
         print(new_ins)
     else:
-        pools, pool_tests = image_class_resid.get_imgs(config["pool_filters"])
+        pools, pool_tests = image_class_resid.get_pools(config["pool_filters"])
         [print(layer.shape) for layer in pools]
         new_ins = true_arch[0] * 2
         scaled_train_imgs, scaled_test_imgs = [], []
