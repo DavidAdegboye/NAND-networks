@@ -653,8 +653,8 @@ def feed_forward_conv_disc(xs: jnp.ndarray, weights:jnp.ndarray, imgs_list: List
             print(i)
             print(ws.shape)
             print(xs.shape)
-            print(forward_conv_disc(xs[:1], ws[:1], s, n).shape)
-            print(forward_conv_disc(xs[1:], ws[1:], s, n).shape)
+            print(forward_conv_disc(xs[:1], ws[:,:1], s, n).shape)
+            print(forward_conv_disc(xs[1:], ws[:,1:], s, n).shape)
         xs = jnp.concatenate([imgs_list[i], temp, 1-temp], axis=0)
     if not printed:
         printed = True
