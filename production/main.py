@@ -1318,7 +1318,7 @@ boundary_jump = 5*(max(10//batches,1)**2)*batch_size
 lr_multiplier = batch_size**0.5
 
 schedule_dense = optax.join_schedules(
-    schdeules = [optax.constant_schedule(
+    schedules = [optax.constant_schedule(
         lr*lr_multiplier) for lr in config["lr_dense"]],
     # schedules=[
     #     optax.constant_schedule(1.0*lr_multiplier),
@@ -1335,7 +1335,7 @@ optimizer_dense = optax.adam(learning_rate=schedule_dense)
 
 if convs:
     schedule_conv = optax.join_schedules(
-        schdeules = [optax.constant_schedule(
+        schedules = [optax.constant_schedule(
             lr*lr_multiplier) for lr in config["lr_conv"]],
         # schedules=[
         #     optax.constant_schedule(1.0*lr_multiplier),
