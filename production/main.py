@@ -19,6 +19,8 @@ else:  # Unix-like systems
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
 
+jax.config.update("jax_traceback_filtering", config["traceback"])
+
 new_batches = 0
 def get_optional_input_non_blocking():
     global new_batches, max_fan_in
@@ -51,7 +53,6 @@ def get_optional_input_non_blocking():
 
 # defining some types
 Network = Tuple[jnp.ndarray, ...]
-##jax.config.update("jax_traceback_filtering", "off")
 
 print(jax.devices())
 
