@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import optax
 import random
 import itertools
-from typing import List, Tuple, Set, Union, Dict
+from typing import List, Tuple, Set, Union, Dict, Callable
 import time
 import yaml
 import jax.scipy.special as jsp_special
@@ -238,7 +238,7 @@ dps = config["decimal_places"]
 def f(
     x: jnp.ndarray,
     w: jnp.ndarray,
-    weight_activation: function=jax.nn.sigmoid) -> float:
+    weight_activation: Callable[[jnp.ndarray], jnp.ndarry]=jax.nn.sigmoid) -> float:
     """
     Helper function for forward, calculates the effective input a neuron
     receives from a specific previous layer
@@ -260,7 +260,7 @@ def f(
 def forward(
     xs: jnp.ndarray,
     weights: jnp.ndarray,
-    weight_activation: function=jax.nn.sigmoid) -> float:
+    weight_activation: Callable[[jnp.ndarray], jnp.ndarry]=jax.nn.sigmoid) -> float:
     """
     The forward pass for a neuron
 
@@ -299,7 +299,7 @@ def calc_surr(xs: jnp.ndarray, layer_i: int, surr_arr: List[jnp.ndarray]
 def feed_forward(
     inputs: jnp.ndarray,
     neurons: jnp.ndarray,
-    weight_activation: function=jax.nn.sigmoid,
+    weight_activation: Callable[[jnp.ndarray], jnp.ndarry]=jax.nn.sigmoid,
     use_surr: bool=False,
     surr_arr: List[jnp.ndarray]=[]) -> jnp.ndarray:
     """
@@ -345,7 +345,7 @@ def forward_conv(
     weights:jnp.ndarray,
     s: int,
     n: int,
-    weight_activation: function=jax.nn.sigmoid) -> jnp.ndarray:
+    weight_activation: Callable[[jnp.ndarray], jnp.ndarry]=jax.nn.sigmoid) -> jnp.ndarray:
     """
     Applies a filter of width `w` and stride `s` to the input array `xs`.
     
@@ -381,7 +381,7 @@ def feed_forward_conv(
     weights:jnp.ndarray,
     imgs_list: List[jnp.ndarray],
     convs: List[Tuple[int, int, int, int]],
-    weight_activation: function=jax.nn.sigmoid) -> jnp.ndarray:
+    weight_activation: Callable[[jnp.ndarray], jnp.ndarry]=jax.nn.sigmoid) -> jnp.ndarray:
     """
     Applies all of the convolutional layers to the input
     
@@ -716,7 +716,7 @@ def get_weights_conv(
         w: int,
         c: int,
         old_c: int,
-        distribution: function,
+        distribution: Callable[[Tuple[int, ...], int, float], jnp.ndarry],
         sigma: jnp.ndarray,
         k: jnp.ndarray=None) -> jnp.ndarray:
     """
@@ -744,7 +744,7 @@ def get_weights_conv(
 
 def initialise_conv(
         convs: List[Tuple[int, int, int, int]],
-        distribution: function,
+        distribution: Callable[[Tuple[int, ...], int, float], jnp.ndarry],
         sigma: jnp.ndarray,
         k: jnp.ndarray=None) -> Network:
     """
@@ -773,7 +773,7 @@ def initialise_conv(
 def get_weights(
         layer: int,
         arch: List[int],
-        distribution: function,
+        distribution: Callable[[Tuple[int, ...], int, float], jnp.ndarry],
         sigma: jnp.ndarray,
         k: jnp.ndarray=0.) -> jnp.ndarray:
     """
@@ -835,7 +835,7 @@ def get_weights(
 def initialise(
         arch: List[int],
         true_arch: List[int],
-        distribution: function,
+        distribution: Callable[[Tuple[int, ...], int, float], jnp.ndarry],
         sigma: jnp.ndarray,
         k: jnp.ndarray=0.) -> List[jnp.ndarray]:
     """
@@ -954,7 +954,7 @@ def input_layers(layer: int) -> jnp.ndarray:
     return jnp.array([0, layer-2, layer-1])
 
 @jax.jit
-def get_used_array(neurons: Network, weight_activation: function) -> float:
+def get_used_array(neurons: Network, weight_activation: Callable[[jnp.ndarray], jnp.ndarry]) -> float:
     """
     returns an array, used, representing the network, where if
     used[layer][i] is close to 1, the neuron is used.
@@ -1030,7 +1030,7 @@ def min_gates_used_penalty(neurons: Network, min_gates: jnp.ndarray) -> float:
     return jnp.sum(jax.nn.relu(min_gates-jnp.sum(used, axis=1)))
 
 @jax.jit
-def gate_usage_by_layer(neurons: Network, weight_activation: function
+def gate_usage_by_layer(neurons: Network, weight_activation: Callable[[jnp.ndarray], jnp.ndarry]
                         ) -> float:
     # gives us the gate usage by layer
     return jnp.sum(get_used_array(neurons, weight_activation), axis=1)
@@ -1370,7 +1370,7 @@ if add_img_or_custom == 'i' and convs:
     print([layer.shape for layer in neurons_conv])
 
 @jax.jit
-def batch_comp(func: function, batch_size: int, batches: int, *args, **kwargs
+def batch_comp(func: Callable, batch_size: int, batches: int, *args, **kwargs
                ) -> List:
     """
     Takes a function and its arguments, and applies it in batches, returning a
