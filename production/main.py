@@ -404,6 +404,7 @@ def feed_forward_conv(
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
+        jax.debug.print("Debug: weight_activation is {x}", x=weight_activation)
         temp = forward_conv(xs, ws, s, n, weight_activation)
         xs = jnp.concatenate(
             [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
