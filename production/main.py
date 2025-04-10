@@ -140,6 +140,8 @@ else:
         use_surr = config["use_surr"]
         if use_surr:
             surr_arr = adders_util.update_surr_arr()
+        else:
+            surr_arr = None
     else:
         use_surr = False
     new_ins = inputs.shape[1]
