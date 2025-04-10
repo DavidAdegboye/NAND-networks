@@ -404,7 +404,6 @@ def feed_forward_conv(
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        jax.debug.print("Debug: weight_activation is {x}", x=weight_activation)
         temp = forward_conv(xs, ws, s, n, weight_activation)
         xs = jnp.concatenate(
             [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
@@ -1312,6 +1311,11 @@ def acc_conv(network: List[Network],
     Returns
     accuracy - the accuracy (may be specifically the testing accuracy)
     """
+    jax.debug.print("Debug: conv net shape is {x}", x=[layer.shape for layer in network[1]])
+    jax.debug.print("Debug: dense net shape is {x}", x=[layer.shape for layer in network[0]])
+    jax.debug.print("Debug: inputs shape is {x}", x=inputs.shape)
+    jax.debug.print("Debug: output shape is {x}", x=output.shape)
+    jax.debug.print("Debug: scaled shape is {x}", x=[img.shape for img in scaled])
     if not (convs is None):
         inputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
             inputs, network[1], scaled, convs)
