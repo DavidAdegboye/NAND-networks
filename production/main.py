@@ -208,29 +208,29 @@ num_neurons = sum(true_arch[1:])
 num_wires = sum(ns[0]*ns[1] for ns in neurons_shape)
 
 temperature = config["temperature"]
-l2_coeff = config["l2_coeff"]
-if l2_coeff == 0:
+max_fan_in_penalty_coeff = config["max_fan_in_penalty_coeff"]
+if max_fan_in_penalty_coeff == 0:
     max_fan_in = 0
 else:
-    max_fan_in = config["max_fan"]
-l3_coeff = config["l3_coeff"]
-if l3_coeff == 0:
+    max_fan_in = config["max_fan_in"]
+max_gates_used_penalty_coeff = config["max_gates_used_penalty_coeff"]
+if max_gates_used_penalty_coeff == 0:
     max_gates = jnp.array([0]*len(arch))
 else:
     max_gates = jnp.array(config["max_gates"])
-l3_coeff = l3_coeff / (sum(arch)-sum(max_gates))
-l4_coeff = config["l4_coeff"]
-l5_coeff = config["l5_coeff"]
-if l5_coeff == 0:
+max_gates_used_penalty_coeff = max_gates_used_penalty_coeff / (sum(arch)-sum(max_gates))
+continuous_penalty_coeff = config["continuous_penalty_coeff"]
+min_gates_used_penalty_coeff = config["min_gates_used_penalty_coeff"]
+if min_gates_used_penalty_coeff == 0:
     min_gates = jnp.array([0]*len(arch))
 else:
-    min_gates = jnp.array(config["max_gates"])
-    l5_coeff = float(l5_coeff / (sum(min_gates)))
-l6_coeff = config["l6_coeff"]
-if l6_coeff == 0:
+    min_gates = jnp.array(config["min_gates"])
+    min_gates_used_penalty_coeff = float(min_gates_used_penalty_coeff / (sum(min_gates)))
+mean_fan_in_penalty_coeff = config["mean_fan_in_penalty_coeff"]
+if mean_fan_in_penalty_coeff == 0:
     mean_fan_in = 0
 else:
-    mean_fan_in = config["mean_fan"]
+    mean_fan_in = config["mean_fan_in"]
 
 dps = config["decimal_places"]
 
