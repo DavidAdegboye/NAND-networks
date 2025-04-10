@@ -120,6 +120,7 @@ if add_img_or_custom == 'i':
         new_ins = true_arch[1]
         scaled_train_imgs, scaled_test_imgs = (), ()
     use_surr = False
+    surr_arr = None
 else:
     true_arch = []
     # for adders and arbitrary combinational logic circuits
