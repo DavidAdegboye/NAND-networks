@@ -643,7 +643,8 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
     print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
     return circuits[-true_arch[-1]:]
 
-def beta_sampler(shape: Tuple[int, ...], n: int, sigma: float) -> jnp.ndarray:
+def beta_sampler(shape: Tuple[int, ...], n: int, sigma: float, k: float=None
+                 ) -> jnp.ndarray:
     """
     returns a set of numbers with the appropriate distribution. sigma must be
     at most sqrt(n-1)n this distribution ensures that the expected value of the
@@ -665,7 +666,7 @@ def beta_sampler(shape: Tuple[int, ...], n: int, sigma: float) -> jnp.ndarray:
     samples = jnp.clip(samples, epsilon, 1-epsilon)
     return jnp.log(samples / (1 - samples))
 
-def normal_sampler1(shape: Tuple[int, ...], n: int, sigma: float
+def normal_sampler1(shape: Tuple[int, ...], n: int, sigma: float, k: float=None
                     ) -> jnp.ndarray:
     """
     returns a set of numbers with the appropriate distribution.
@@ -716,7 +717,7 @@ def get_weights_conv(
         w: int,
         c: int,
         old_c: int,
-        distribution: Callable[[Tuple[int, ...], int, float], jnp.ndarray],
+        distribution: Callable[[Tuple[int, ...], int, float, float], jnp.ndarray],
         sigma: jnp.ndarray,
         k: jnp.ndarray=None) -> jnp.ndarray:
     """
@@ -744,7 +745,7 @@ def get_weights_conv(
 
 def initialise_conv(
         convs: List[Tuple[int, int, int, int]],
-        distribution: Callable[[Tuple[int, ...], int, float], jnp.ndarray],
+        distribution: Callable[[Tuple[int, ...], int, float, float], jnp.ndarray],
         sigma: jnp.ndarray,
         k: jnp.ndarray=None) -> Network:
     """
@@ -773,7 +774,7 @@ def initialise_conv(
 def get_weights(
         layer: int,
         arch: List[int],
-        distribution: Callable[[Tuple[int, ...], int, float], jnp.ndarray],
+        distribution: Callable[[Tuple[int, ...], int, float, float], jnp.ndarray],
         sigma: jnp.ndarray,
         k: jnp.ndarray=0.) -> jnp.ndarray:
     """
@@ -835,7 +836,7 @@ def get_weights(
 def initialise(
         arch: List[int],
         true_arch: List[int],
-        distribution: Callable[[Tuple[int, ...], int, float], jnp.ndarray],
+        distribution: Callable[[Tuple[int, ...], int, float, float], jnp.ndarray],
         sigma: jnp.ndarray,
         k: jnp.ndarray=0.) -> List[jnp.ndarray]:
     """
