@@ -1370,7 +1370,7 @@ print([layer.shape for layer in neurons])
 if add_img_or_custom == 'i' and convs:
     print([layer.shape for layer in neurons_conv])
 
-@jax.jit
+# @jax.jit
 def batch_comp(func: Callable, batch_size: int, batches: int, *args, **kwargs
                ) -> List:
     """
