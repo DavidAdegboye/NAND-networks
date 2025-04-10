@@ -238,11 +238,14 @@ else:
 
 dps = config["decimal_places"]
 
+sig = jax.jit(jax.nn.sigmoid)
+step = jax.jit(lambda x: jnp.where(x>0, 1, 0))
+
 @jax.jit
 def f(
     x: jnp.ndarray,
     w: jnp.ndarray,
-    weight_activation: Callable[[jnp.ndarray], jnp.ndarray]=jax.nn.sigmoid) -> float:
+    weight_activation: Callable[[jnp.ndarray], jnp.ndarray]=sig) -> float:
     """
     Helper function for forward, calculates the effective input a neuron
     receives from a specific previous layer
@@ -264,7 +267,7 @@ def f(
 def forward(
     xs: jnp.ndarray,
     weights: jnp.ndarray,
-    weight_activation: Callable[[jnp.ndarray], jnp.ndarray]=jax.nn.sigmoid) -> float:
+    weight_activation: Callable[[jnp.ndarray], jnp.ndarray]=sig) -> float:
     """
     The forward pass for a neuron
 
@@ -303,7 +306,7 @@ def calc_surr(xs: jnp.ndarray, layer_i: int, surr_arr: List[jnp.ndarray]
 def feed_forward(
     inputs: jnp.ndarray,
     neurons: jnp.ndarray,
-    weight_activation: Callable[[jnp.ndarray], jnp.ndarray]=jax.nn.sigmoid,
+    weight_activation: Callable[[jnp.ndarray], jnp.ndarray]=sig,
     use_surr: bool=False,
     surr_arr: List[jnp.ndarray]=[]) -> jnp.ndarray:
     """
@@ -349,7 +352,7 @@ def forward_conv(
     weights:jnp.ndarray,
     s: int,
     n: int,
-    weight_activation: Callable[[jnp.ndarray], jnp.ndarray]=jax.nn.sigmoid) -> jnp.ndarray:
+    weight_activation: Callable[[jnp.ndarray], jnp.ndarray]=sig) -> jnp.ndarray:
     """
     Applies a filter of width `w` and stride `s` to the input array `xs`.
     
@@ -385,7 +388,7 @@ def feed_forward_conv(
     weights:jnp.ndarray,
     imgs_list: List[jnp.ndarray],
     convs: List[Tuple[int, int, int, int]],
-    weight_activation: Callable[[jnp.ndarray], jnp.ndarray]=jax.nn.sigmoid) -> jnp.ndarray:
+    weight_activation: Callable[[jnp.ndarray], jnp.ndarray]=sig) -> jnp.ndarray:
     """
     Applies all of the convolutional layers to the input
     
@@ -909,7 +912,7 @@ def max_fan_in_penalty(neurons: Network, max_fan_in: int, temperature: float
     fan_ins = jnp.array([])
     for layer in neurons:
         fan_ins = jnp.concatenate((fan_ins, jax.vmap(
-            lambda x:jnp.sum(jax.nn.sigmoid(x/temperature)))(layer)))
+            lambda x:jnp.sum(sig(x/temperature)))(layer)))
     temp = jax.nn.relu(fan_ins-max_fan_in)
     return jnp.sum(jax.nn.softmax(temp)*temp)
 
@@ -936,7 +939,7 @@ def mean_fan_in_penalty(
     fan_ins = jnp.array([])
     for layer in neurons:
         fan_ins = jnp.concatenate((fan_ins, jax.vmap(
-            lambda x:jnp.sum(jax.nn.sigmoid(x/temperature)))(layer)))
+            lambda x:jnp.sum(sig(x/temperature)))(layer)))
     temp = jnp.sum(fan_ins)/num_neurons
     return jax.nn.relu(temp-mean_fan_in)
 
@@ -1013,7 +1016,7 @@ def max_gates_used_penalty(neurons: Network, max_gates: jnp.ndarray) -> float:
     the penalty (a float, which will be multiplied by a coefficient, and added
     to the loss)
     """
-    used = get_used_array(neurons, lambda x: jax.nn.sigmoid(x/temperature))
+    used = get_used_array(neurons, lambda x: sig(x/temperature))
     return jnp.sum(jax.nn.relu(jnp.sum(used, axis=1)-max_gates))
 
 @jax.jit
@@ -1031,7 +1034,7 @@ def min_gates_used_penalty(neurons: Network, min_gates: jnp.ndarray) -> float:
     the penalty (a float, which will be multiplied by a coefficient, and added
     to the loss)
     """
-    used = get_used_array(neurons, lambda x: jax.nn.sigmoid(x/temperature))
+    used = get_used_array(neurons, lambda x: sig(x/temperature))
     return jnp.sum(jax.nn.relu(min_gates-jnp.sum(used, axis=1)))
 
 @jax.jit
@@ -1056,7 +1059,7 @@ def continuous_penalty(neurons: Network, num_wires: int) -> float:
     to the loss)
     """
     s = sum([jnp.sum(
-        1-jax.nn.sigmoid(jnp.absolute(layer))) for layer in neurons])
+        1-sig(jnp.absolute(layer))) for layer in neurons])
     return s/num_wires
 
 epsilon = 1e-7
@@ -1083,7 +1086,7 @@ def bce_loss(
     loss
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
-        inputs, neurons, jax.nn.sigmoid, use_surr, surr_arr)
+        inputs, neurons, sig, use_surr, surr_arr)
     pred = jnp.clip(pred, epsilon, 1-epsilon)
     pred_logits = jnp.log(pred) - jnp.log(1-pred)
     if mask1 != None:
@@ -1221,7 +1224,7 @@ def test(neurons: Network,
     if the network was 100% accurate
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
-        inputs, neurons, lambda x: jnp.where(x>0, 1, 0), use_surr, surr_arr)
+        inputs, neurons, step, use_surr, surr_arr)
     return jnp.all(pred==output)
 
 current_max_fan_in = -1
@@ -1279,7 +1282,7 @@ def acc(neurons: Network,
     mask2 - the mask of the samples it got wrong
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
-        inputs, neurons, lambda x: jnp.where(x>0, 1, 0), use_surr, surr_arr)
+        inputs, neurons, step, use_surr, surr_arr)
     pred = (pred == output)
     pred = jnp.sum(pred, axis=1)
     if skew_towards_falses:
@@ -1312,7 +1315,7 @@ def acc_conv(network: List[Network],
             inputs, network[1], scaled, convs)
     inputs = inputs.reshape(inputs.shape[0], -1)
     pred = jax.vmap(feed_forward, in_axes=(0, None, None))(
-        inputs, network[0], lambda x: jnp.where(x>0, 1, 0))
+        inputs, network[0], step)
     result = jax.vmap(image_util.evaluate)(pred, output)
     return jnp.sum(result)/result.size
 
@@ -1427,8 +1430,8 @@ if add_img_or_custom == 'i':
         batch_size, batches,
         inputs, output, scaled=scaled_train_imgs)
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
-    print(gate_usage_by_layer(neurons, jax.nn.sigmoid))
-    print(gate_usage_by_layer(neurons, lambda x: jnp.where(x>0, 1, 0)))
+    print(gate_usage_by_layer(neurons, sig))
+    print(gate_usage_by_layer(neurons, step))
     print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
 else:
@@ -1441,8 +1444,8 @@ else:
         batch_size, batches,
         inputs, output)
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
-    print(gate_usage_by_layer(neurons, jax.nn.sigmoid))
-    print(gate_usage_by_layer(neurons, lambda x: jnp.where(x>0, 1, 0)))
+    print(gate_usage_by_layer(neurons, sig))
+    print(gate_usage_by_layer(neurons, step))
     print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
 
@@ -1492,8 +1495,8 @@ def run(timeout=config["timeout"]) -> None:
                         batch_size, batches,
                         inputs, output, scaled=scaled_train_imgs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
-                    print(gate_usage_by_layer(neurons, jax.nn.sigmoid))
-                    print(gate_usage_by_layer(neurons, lambda x: jnp.where(x>0, 1, 0)))
+                    print(gate_usage_by_layer(neurons, sig))
+                    print(gate_usage_by_layer(neurons, step))
                     print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
                     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
                 else:
@@ -1506,8 +1509,8 @@ def run(timeout=config["timeout"]) -> None:
                         batch_size, batches,
                         inputs, output)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
-                    print(gate_usage_by_layer(neurons, jax.nn.sigmoid))
-                    print(gate_usage_by_layer(neurons, lambda x: jnp.where(x>0, 1, 0)))
+                    print(gate_usage_by_layer(neurons, sig))
+                    print(gate_usage_by_layer(neurons, step))
                     print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
                     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
                 return
@@ -1526,8 +1529,8 @@ def run(timeout=config["timeout"]) -> None:
                         batch_size, batches,
                         inputs, output, scaled=scaled_train_imgs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
-                    print(gate_usage_by_layer(neurons, jax.nn.sigmoid))
-                    print(gate_usage_by_layer(neurons, lambda x: jnp.where(x>0, 1, 0)))
+                    print(gate_usage_by_layer(neurons, sig))
+                    print(gate_usage_by_layer(neurons, step))
                     print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
                     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
                 else:
@@ -1540,8 +1543,8 @@ def run(timeout=config["timeout"]) -> None:
                         batch_size, batches,
                         inputs, output)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
-                    print(gate_usage_by_layer(neurons, jax.nn.sigmoid))
-                    print(gate_usage_by_layer(neurons, lambda x: jnp.where(x>0, 1, 0)))
+                    print(gate_usage_by_layer(neurons, sig))
+                    print(gate_usage_by_layer(neurons, step))
                     print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
                     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
                 iters = 0
