@@ -1349,20 +1349,16 @@ if convs:
     )
 
     optimizer_conv = optax.adam(learning_rate=schedule_conv)
-    optimizer = optax.multi_transform(
-        {"w1": optimizer_dense, "w2": optimizer_conv}, mask=["w1", "w2"]
-    )
-else:
-    optimizer = optimizer_dense
 
 print("Learning:\n", output, "\nwith arch:", true_arch)
 start_time = time.time()
 neurons = initialise(arch, true_arch, dense_distribution, dense_sigma, dense_k)
 if add_img_or_custom == 'i':
     neurons_conv = initialise_conv(convs, conv_distribution, conv_sigma, conv_k)
-    opt_state = optimizer.init([neurons, neurons_conv])
+    if convs:
+        opt_state_conv = optimizer_conv.init(neurons_conv)
 else:
-    opt_state = optimizer.init(neurons)
+    opt_state_dense = optimizer_dense.init(neurons)
 init_time = time.time()
 print("Took", init_time-start_time, "seconds to initialise.")
 print([layer.shape for layer in neurons])
@@ -1446,7 +1442,7 @@ else:
     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
 
 def run(timeout=config["timeout"]) -> None:
-    global inputs, output, neurons, neurons_conv, opt_state, scaled_train_imgs
+    global inputs, output, neurons, neurons_conv, opt_state_dense, opt_state_conv, scaled_train_imgs
     cont = True
     iters = 0
     file_i = -1
@@ -1468,15 +1464,17 @@ def run(timeout=config["timeout"]) -> None:
                                         output[batch*batch_size:(batch+1)*batch_size],
                                         [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs],
                                         convs, **loss_conv_kwargs)
-                    update, opt_state = optimizer.update(gradients, opt_state, [neurons, neurons_conv])
-                    neurons, neurons_conv = optax.apply_updates([neurons, neurons_conv], update)
+                    update, opt_state_dense = optimizer_dense.update(gradients[0], opt_state_dense, neurons)
+                    neurons = optax.apply_updates(neurons, update)
+                    if convs:
+                        update, opt_state_conv = optimizer_conv.update(gradients[1], opt_state_conv, neurons_conv)
+                        neurons_conv = optax.apply_updates(neurons_conv, update)
                 else:
-                    loss()
                     gradients = grad(neurons,
                                     inputs[batch*batch_size:(batch+1)*batch_size],
                                     output[batch*batch_size:(batch+1)*batch_size],
                                     **loss_kwargs)
-                    updates, opt_state = optimizer.update(gradients, opt_state, neurons)
+                    updates, opt_state_dense = optimizer_dense.update(gradients, opt_state_dense, neurons)
                     neurons = optax.apply_updates(neurons, updates)
             if time.time() - start_run_time > timeout * 60:
                 if add_img_or_custom == 'i':
@@ -1509,7 +1507,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
                 return
         if add_img_or_custom != 'i':
-            if test(neurons) and (l2_coeff==0 or test_fan_in(neurons)) or get_optional_input_non_blocking() == 2:
+            if test(neurons) and (max_fan_in_penalty_coeff==0 or test_fan_in(neurons)) or get_optional_input_non_blocking() == 2:
                 cont = False
         if cont:
             if iters == max(10//batches, 1):
