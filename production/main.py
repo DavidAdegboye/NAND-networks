@@ -1421,7 +1421,7 @@ if add_img_or_custom == 'i':
     accuracy = batch_comp(
         partial(acc_conv, network=[neurons, neurons_conv], convs=convs),
         batch_size, x_test.shape[0]//batch_size,
-        x_test, y_test, scaled=scaled_test_imgs)
+        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
     new_loss = batch_comp(
         partial(loss_conv, network=[neurons, neurons_conv], convs=convs, **loss_conv_kwargs),
         batch_size, batches,
@@ -1486,7 +1486,7 @@ def run(timeout=config["timeout"]) -> None:
                     accuracy = batch_comp(
                         partial(acc_conv, network=[neurons, neurons_conv], convs=convs),
                         batch_size, x_test.shape[0]//batch_size,
-                        x_test, y_test, scaled=scaled_test_imgs)
+                        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
                     new_loss = batch_comp(
                         partial(loss_conv, network=[neurons, neurons_conv], convs=convs, **loss_conv_kwargs),
                         batch_size, batches,
@@ -1520,7 +1520,7 @@ def run(timeout=config["timeout"]) -> None:
                     accuracy = batch_comp(
                         partial(acc_conv, network=[neurons, neurons_conv], convs=convs),
                         batch_size, x_test.shape[0]//batch_size,
-                        x_test, y_test, scaled=scaled_test_imgs)
+                        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
                     new_loss = batch_comp(
                         partial(loss_conv, network=[neurons, neurons_conv], convs=convs, **loss_conv_kwargs),
                         batch_size, batches,
