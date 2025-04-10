@@ -144,6 +144,7 @@ else:
             surr_arr = None
     else:
         use_surr = False
+        surr_arr = None
     new_ins = inputs.shape[1]
 print(true_arch)
 
