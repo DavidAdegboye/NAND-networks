@@ -1388,7 +1388,7 @@ def batch_comp(func: Callable, batch_size: int, batches: int, *args, **kwargs
     a list of the outputs computed for each batch
     """
     output = 0
-    for batch_number in batches:
+    for batch_number in range(batches):
         sliced_args = tuple(arg[
             batch_number*batch_size:(batch_number+1)*batch_size
             ] for arg in args)
