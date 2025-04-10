@@ -241,7 +241,7 @@ dps = config["decimal_places"]
 sig = jax.jit(jax.nn.sigmoid)
 step = jax.jit(lambda x: jnp.where(x>0, 1, 0))
 
-@jax.jit
+@partial(jax.jit, static_argnames="weight_activation")
 def f(
     x: jnp.ndarray,
     w: jnp.ndarray,
@@ -263,7 +263,7 @@ def f(
     return jnp.prod(1 + jnp.multiply(
         x, weight_activation(w)) - weight_activation(w))
 
-@jax.jit
+@partial(jax.jit, static_argnames="weight_activation")
 def forward(
     xs: jnp.ndarray,
     weights: jnp.ndarray,
@@ -302,7 +302,7 @@ def calc_surr(xs: jnp.ndarray, layer_i: int, surr_arr: List[jnp.ndarray]
         xs[node[:,0], node[:,1]]) for node in surr_arr[layer_i]]
     return jnp.array(start)
 
-@jax.jit
+@partial(jax.jit, static_argnames="weight_activation")
 def feed_forward(
     inputs: jnp.ndarray,
     neurons: jnp.ndarray,
@@ -346,7 +346,7 @@ def feed_forward(
 
     return jax.vmap(forward, in_axes=(None, 0))(xs, neurons[i_1-1])[:outs]
 
-@partial(jax.jit, static_argnames='n')
+@partial(jax.jit, static_argnames=('n', "weight_activation"))
 def forward_conv(
     xs: jnp.ndarray,
     weights:jnp.ndarray,
@@ -382,7 +382,7 @@ def forward_conv(
         )(jnp.arange(n))
     )(channels)
 
-@jax.jit
+@partial(jax.jit, static_argnames="weight_activation")
 def feed_forward_conv(
     xs: jnp.ndarray,
     weights:jnp.ndarray,
@@ -961,7 +961,7 @@ def input_layers(layer: int) -> jnp.ndarray:
         return jnp.arange(layer)
     return jnp.array([0, layer-2, layer-1])
 
-@jax.jit
+@partial(jax.jit, static_argnames="weight_activation")
 def get_used_array(neurons: Network, weight_activation: Callable[[jnp.ndarray], jnp.ndarray]) -> float:
     """
     returns an array, used, representing the network, where if
@@ -1037,7 +1037,7 @@ def min_gates_used_penalty(neurons: Network, min_gates: jnp.ndarray) -> float:
     used = get_used_array(neurons, lambda x: sig(x/temperature))
     return jnp.sum(jax.nn.relu(min_gates-jnp.sum(used, axis=1)))
 
-@jax.jit
+@partial(jax.jit, static_argnames="weight_activation")
 def gate_usage_by_layer(neurons: Network, weight_activation: Callable[[jnp.ndarray], jnp.ndarray]
                         ) -> float:
     # gives us the gate usage by layer
