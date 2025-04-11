@@ -393,7 +393,7 @@ def forward_conv(
 forward_conv_cont = jax.jit(partial(forward_conv, and_helper_func=and_cont))
 forward_conv_disc = jax.jit(partial(forward_conv, and_helper_func=and_disc))
 
-@partial(jax.jit, static_argnames="weight_activation")
+@partial(jax.jit, static_argnames="forward_conv_func")
 def feed_forward_conv(
     xs: jnp.ndarray,
     weights:jnp.ndarray,
