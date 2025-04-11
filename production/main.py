@@ -1299,6 +1299,45 @@ def acc(neurons: Network,
         return jnp.sum(pred)/((2**(ins))*(outs)), trues[0], falses[0]
     return jnp.sum(pred)/((2**(ins))*(outs)), None, None
 
+loss_kwargs = {"max_fan_in": max_fan_in,
+               "temperature": temperature,
+               "mean_fan_in": mean_fan_in,
+               "max_gates": max_gates,
+               "min_gates": min_gates,
+               "num_neurons": num_neurons,
+               "num_wires": num_wires,
+               "use_surr": use_surr,
+               "surr_arr": surr_arr}
+
+loss_conv_kwargs = {"max_fan_in": max_fan_in,
+                    "temperature": temperature,
+                    "mean_fan_in": mean_fan_in,
+                    "max_gates": max_gates,
+                    "min_gates": min_gates,
+                    "num_neurons": num_neurons,
+                    "num_wires": num_wires,}
+
+def filtered_mean(x: Tuple[jnp.ndarray, ...]) -> jnp.ndarray:
+    """
+    Computes the mean of x, excluding elements that are 0, inf, -inf or NaN
+    
+    Parameters:
+    x – the input array
+      
+    Returns:
+    A scalar jnp.ndarray representing the filtered mean, or NaN if no valid
+    elements.
+    """
+    total = 0
+    count = 0
+    for layer in x:
+        valid_mask = ~(jnp.isnan(layer) | jnp.isinf(layer) | (layer == 0))
+        total += jnp.sum(layer[valid_mask])
+        count += jnp.sum(valid_mask)
+    if count == 0:
+        return jnp.nan
+    return total/count
+
 if add_img_or_custom == 'i':
 
     @jax.jit
@@ -1343,9 +1382,28 @@ schedule_dense = optax.join_schedules(
 optimizer_dense = optax.adam(learning_rate=schedule_dense)
 
 if add_img_or_custom == 'i':
+    lr_convs = config["lr_dense"].copy()
+    if convs:
+        neurons_mean = 0
+        convs_mean = 0
+        for batch in range(batches):
+            gradients = grad_conv([neurons, neurons_conv],
+                                inputs[batch*batch_size:(batch+1)*batch_size],
+                                output[batch*batch_size:(batch+1)*batch_size],
+                                [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs],
+                                **loss_conv_kwargs)
+            neurons_mean += filtered_mean(gradients[0])
+            convs_mean += filtered_mean(gradients[1])
+        neurons_mean /= batches
+        convs_mean /= batches
+        print(neurons_mean, convs_mean)
+        scaling_factor = convs_mean/neurons_mean
+        lr_convs = [x*scaling_factor for x in lr_convs]
+        print(config["lr_dense"])
+        print(lr_convs)
     schedule_conv = optax.join_schedules(
         schedules = [optax.constant_schedule(
-            lr*lr_multiplier) for lr in config["lr_conv"]],
+            lr*lr_multiplier) for lr in lr_convs],
         boundaries=[(i+1)**2*boundary_jump for i in range(1)]
     )
 
@@ -1396,45 +1454,6 @@ def batch_comp(func: Callable, batch_size: int, batches: int, *args, **kwargs
         output += func(*sliced_args, **sliced_kwargs)
     return output/batches
 
-loss_kwargs = {"max_fan_in": max_fan_in,
-               "temperature": temperature,
-               "mean_fan_in": mean_fan_in,
-               "max_gates": max_gates,
-               "min_gates": min_gates,
-               "num_neurons": num_neurons,
-               "num_wires": num_wires,
-               "use_surr": use_surr,
-               "surr_arr": surr_arr}
-
-loss_conv_kwargs = {"max_fan_in": max_fan_in,
-                    "temperature": temperature,
-                    "mean_fan_in": mean_fan_in,
-                    "max_gates": max_gates,
-                    "min_gates": min_gates,
-                    "num_neurons": num_neurons,
-                    "num_wires": num_wires,}
-
-def filtered_mean(x: Tuple[jnp.ndarray, ...]) -> jnp.ndarray:
-    """
-    Computes the mean of x, excluding elements that are 0, inf, -inf or NaN
-    
-    Parameters:
-    x – the input array
-      
-    Returns:
-    A scalar jnp.ndarray representing the filtered mean, or NaN if no valid
-    elements.
-    """
-    total = 0
-    count = 0
-    for layer in x:
-        valid_mask = ~(jnp.isnan(layer) | jnp.isinf(layer) | (layer == 0))
-        total += jnp.sum(layer[valid_mask])
-        count += jnp.sum(valid_mask)
-    if count == 0:
-        return jnp.nan
-    return total/count
-
 if add_img_or_custom == 'i':
     accuracy = batch_comp(
         partial(acc_conv, network=[neurons, neurons_conv]),
@@ -1444,14 +1463,6 @@ if add_img_or_custom == 'i':
         partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
         batch_size, batches,
         inputs=inputs, output=output, scaled=scaled_train_imgs)
-    if convs:
-        for batch in range(batches):
-            gradients = grad_conv([neurons, neurons_conv],
-                                inputs[batch*batch_size:(batch+1)*batch_size],
-                                output[batch*batch_size:(batch+1)*batch_size],
-                                [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs],
-                                **loss_conv_kwargs)
-            print(filtered_mean(gradients[0]), filtered_mean(gradients[1]))
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
     print(gate_usage_by_layer(neurons, sig))
     print(gate_usage_by_layer(neurons, step))
