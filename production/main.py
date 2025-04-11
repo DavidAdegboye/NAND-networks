@@ -421,9 +421,9 @@ def feed_forward_conv(
     return xs
 
 feed_forward_conv_cont = jax.jit(partial(
-    feed_forward_conv, forward_conv_func=forward_conv_cont))
+    feed_forward_conv, forward_conv_func=forward_conv_cont, convs=convs))
 feed_forward_conv_disc = jax.jit(partial(
-    feed_forward_conv, forward_conv_func=forward_conv_disc))
+    feed_forward_conv, forward_conv_func=forward_conv_disc, convs=convs))
 
 def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
     """
