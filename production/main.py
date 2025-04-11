@@ -1489,7 +1489,7 @@ def run(timeout=config["timeout"]) -> None:
                         neurons_conv = optax.apply_updates(neurons_conv, update)
                 else:
                     for value in loss_kwargs.values():
-                        print(hash(value))
+                        print(value, hash(value))
                     gradients = grad(neurons,
                                     inputs[batch*batch_size:(batch+1)*batch_size],
                                     output[batch*batch_size:(batch+1)*batch_size],
