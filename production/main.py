@@ -1332,7 +1332,7 @@ def filtered_mean(x: Tuple[jnp.ndarray, ...]) -> jnp.ndarray:
     count = 0
     for layer in x:
         valid_mask = ~(jnp.isnan(layer) | jnp.isinf(layer) | (layer == 0))
-        total += jnp.sum(layer[valid_mask])
+        total += jnp.sum(jnp.abs(layer[valid_mask]))
         count += jnp.sum(valid_mask)
     if count == 0:
         return jnp.nan
