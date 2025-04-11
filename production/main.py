@@ -398,7 +398,6 @@ def feed_forward_conv(
     xs: jnp.ndarray,
     weights:jnp.ndarray,
     imgs_list: List[jnp.ndarray],
-    convs: List[Tuple[int, int, int, int]],
     forward_conv_func: Callable[
         [jnp.ndarray, jnp.ndarray, int, int], jnp.ndarray]) -> jnp.ndarray:
     """
@@ -421,9 +420,9 @@ def feed_forward_conv(
     return xs
 
 feed_forward_conv_cont = jax.jit(partial(
-    feed_forward_conv, forward_conv_func=forward_conv_cont, convs=convs))
+    feed_forward_conv, forward_conv_func=forward_conv_cont))
 feed_forward_conv_disc = jax.jit(partial(
-    feed_forward_conv, forward_conv_func=forward_conv_disc, convs=convs))
+    feed_forward_conv, forward_conv_func=forward_conv_disc))
 
 print(convs)
 
