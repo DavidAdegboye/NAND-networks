@@ -398,7 +398,7 @@ def feed_forward_conv(
     xs: jnp.ndarray,
     weights:jnp.ndarray,
     imgs_list: List[jnp.ndarray],
-    convs: List[Tuple[int, int, int, int]],
+    convs: Tuple[Tuple[int, int, int, int], ...],
     forward_conv_func: Callable[
         [jnp.ndarray, jnp.ndarray, int, int], jnp.ndarray]) -> jnp.ndarray:
     """
@@ -415,7 +415,9 @@ def feed_forward_conv(
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        temp = forward_conv_func(xs, ws, s, n)
+        explicit_int = int(n)
+        hash(explicit_int)
+        temp = forward_conv_func(xs, ws, s, explicit_int)
         xs = jnp.concatenate(
             [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
     return xs
