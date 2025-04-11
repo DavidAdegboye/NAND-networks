@@ -1403,7 +1403,7 @@ if add_img_or_custom == 'i':
         neurons_mean /= batches
         convs_mean /= batches
         print(neurons_mean, convs_mean)
-        scaling_factor = convs_mean/neurons_mean
+        scaling_factor = neurons_mean/convs_mean
         lr_convs = [x*scaling_factor for x in lr_convs]
         print(config["lr_dense"])
         print(lr_convs)
