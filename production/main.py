@@ -1403,6 +1403,8 @@ def batch_comp(func: Callable, batch_size: int, batches: int, *args, **kwargs
             batch_number+1)*batch_size] for imgs in v] if k=="scaled" else v[
             batch_number*batch_size:(batch_number+1)*batch_size
             ] for k, v in kwargs.items()}
+        print(sliced_args)
+        print(sliced_kwargs)
         output += func(*sliced_args, **sliced_kwargs)
     return output/batches
 
@@ -1428,7 +1430,8 @@ if add_img_or_custom == 'i':
     accuracy = batch_comp(
         partial(acc_conv, network=[neurons, neurons_conv]),
         batch_size, x_test.shape[0]//batch_size,
-        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
+        inputs=x_test, output=y_test, scaled=scaled_test_imgs)]
+    print(accuracy)
     new_loss = batch_comp(
         partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
         batch_size, batches,
