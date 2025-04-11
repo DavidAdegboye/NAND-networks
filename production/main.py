@@ -1415,7 +1415,7 @@ loss_conv_kwargs = {"max_fan_in": max_fan_in,
                     "num_wires": num_wires,}
 
 @jax.jit
-def filtered_mean(x: jnp.ndarray) -> jnp.ndarray:
+def filtered_mean(x: Tuple[jnp.ndarray, ...]) -> jnp.ndarray:
     """
     Computes the mean of x, excluding elements that are 0, inf, -inf or NaN
     
@@ -1426,9 +1426,12 @@ def filtered_mean(x: jnp.ndarray) -> jnp.ndarray:
     A scalar jnp.ndarray representing the filtered mean, or NaN if no valid
     elements.
     """
-    valid_mask = ~(jnp.isnan(x) | jnp.isinf(x) | (x == 0))
-    total = jnp.sum(x[valid_mask])
-    count = jnp.sum(valid_mask)
+    total = 0
+    count = 0
+    for layer in x:
+        valid_mask = ~(jnp.isnan(layer) | jnp.isinf(layer) | (layer == 0))
+        total += jnp.sum(layer[valid_mask])
+        count += jnp.sum(valid_mask)
     if count == 0:
         return jnp.nan
     return total/count
