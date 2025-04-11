@@ -1414,7 +1414,6 @@ loss_conv_kwargs = {"max_fan_in": max_fan_in,
                     "num_neurons": num_neurons,
                     "num_wires": num_wires,}
 
-@jax.jit
 def filtered_mean(x: Tuple[jnp.ndarray, ...]) -> jnp.ndarray:
     """
     Computes the mean of x, excluding elements that are 0, inf, -inf or NaN
