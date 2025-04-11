@@ -348,71 +348,72 @@ def feed_forward(
         forward, in_axes=(None, 0, None))(
             xs, neurons[i_1-1], weight_activation)[:outs]
 
-@partial(jax.jit, static_argnames=('n', "weight_activation"))
-def forward_conv(
-    xs: jnp.ndarray,
-    weights:jnp.ndarray,
-    s: int,
-    n: int,
-    weight_activation: str="cont") -> float:
-    """
-    Applies a filter of width `w` and stride `s` to the input array `xs`.
-    
-    Parameters:
-    xs - an array of shape (old_channels, old_n, old_n), the input data
-    weights - an array of shape (channels, old_channels, w, w), containing the
-    filter weights
-    s - the stride of the filter
-    n - the new height and width of the picture
-    weight_activation - a string which is "cont" or "disc", which determines
-    if we use a sigmoid or a step function
+if add_img_or_custom == 'i':
+    @partial(jax.jit, static_argnames=('n', "weight_activation"))
+    def forward_conv(
+        xs: jnp.ndarray,
+        weights:jnp.ndarray,
+        s: int,
+        n: int,
+        weight_activation: str="cont") -> float:
+        """
+        Applies a filter of width `w` and stride `s` to the input array `xs`.
+        
+        Parameters:
+        xs - an array of shape (old_channels, old_n, old_n), the input data
+        weights - an array of shape (channels, old_channels, w, w), containing the
+        filter weights
+        s - the stride of the filter
+        n - the new height and width of the picture
+        weight_activation - a string which is "cont" or "disc", which determines
+        if we use a sigmoid or a step function
 
-    Returns:
-    An array of shape (channels, n, n), the result of applying the filter.
-    """
-    w = weights.shape[2]
-    old_channels = xs.shape[0]
-    channels = jnp.arange(weights.shape[0])
-    return jax.vmap(
-        lambda c: jax.vmap(
-            lambda i: jax.vmap(
-                lambda j: 1-and_helper(
-                    jax.lax.dynamic_slice(xs,
-                    (0, i*s, j*s),
-                    (old_channels, w, w)),
-                    weights[c], weight_activation)
+        Returns:
+        An array of shape (channels, n, n), the result of applying the filter.
+        """
+        w = weights.shape[2]
+        old_channels = xs.shape[0]
+        channels = jnp.arange(weights.shape[0])
+        return jax.vmap(
+            lambda c: jax.vmap(
+                lambda i: jax.vmap(
+                    lambda j: 1-and_helper(
+                        jax.lax.dynamic_slice(xs,
+                        (0, i*s, j*s),
+                        (old_channels, w, w)),
+                        weights[c], weight_activation)
+                )(jnp.arange(n))
             )(jnp.arange(n))
-        )(jnp.arange(n))
-    )(channels)
+        )(channels)
 
-# depends on convs
-@partial(jax.jit, static_argnames="weight_activation")
-def feed_forward_conv(
-    xs: jnp.ndarray,
-    weights:jnp.ndarray,
-    imgs_list: List[jnp.ndarray],
-    weight_activation: str="cont") -> jnp.ndarray:
-    """
-    Applies all of the convolutional layers to the input
-    
-    Parameters:
-    xs - an array of shape (n, n), the input data
-    weights - the list of weights
-    imgs_list - a list of the scaled down images
-    weight_activation - a string which is "cont" or "disc", which determines
-    if we use a sigmoid or a step function
-    
-    Returns:
-    The result of applying the convolutional layers, ready to be passed into
-    the dense layers
-    """
-    for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        temp = forward_conv(xs, ws, s, n, weight_activation)
-        xs = jnp.concatenate(
-            [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
-    return xs
+    # depends on convs
+    @partial(jax.jit, static_argnames="weight_activation")
+    def feed_forward_conv(
+        xs: jnp.ndarray,
+        weights:jnp.ndarray,
+        imgs_list: List[jnp.ndarray],
+        weight_activation: str="cont") -> jnp.ndarray:
+        """
+        Applies all of the convolutional layers to the input
+        
+        Parameters:
+        xs - an array of shape (n, n), the input data
+        weights - the list of weights
+        imgs_list - a list of the scaled down images
+        weight_activation - a string which is "cont" or "disc", which determines
+        if we use a sigmoid or a step function
+        
+        Returns:
+        The result of applying the convolutional layers, ready to be passed into
+        the dense layers
+        """
+        for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
+            temp = forward_conv(xs, ws, s, n, weight_activation)
+            xs = jnp.concatenate(
+                [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
+        return xs
 
-convs = tuple(tuple(conv) for conv in convs)
+    convs = tuple(tuple(conv) for conv in convs)
 
 def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
     """
@@ -1168,46 +1169,48 @@ def loss(
 
 grad = jax.jit(jax.grad(loss, argnums=0))
 
-@jax.jit
-def loss_conv(
-    network: List[Network],
-    inputs: jnp.ndarray,
-    output: jnp.ndarray,
-    scaled: List[jnp.ndarray]=None,
-    max_fan_in: int=None,
-    temperature: float=None,
-    mean_fan_in: float=None,
-    max_gates: List[int]=None,
-    min_gates: List[int]=None,
-    num_neurons: int=None,
-    num_wires: int=None) -> float:
-    """
-    calculates the loss including convolutional layers
+if add_img_or_custom=='i':
 
-    Parameters
-    network - [neurons, neurons_conv], where neurons are the dense layers, and
-    neurons_conv are the convolutional
-    inputs - all of the inputs (training xs)
-    output - all of the outputs (training labels or ys)
-    
-    Returns
-    loss
-    """
-    # if convs is None:
-    #     inputs = inputs.reshape(inputs.shape[0], -1)
-    #     return loss(network[0], inputs, output, max_fan_in=max_fan_in,
-    #                 temperature=temperature, mean_fan_in=mean_fan_in,
-    #                 max_gates=max_gates, min_gates=min_gates,
-    #                 num_neurons=num_neurons, num_wires=num_wires)
-    pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(
-        inputs, network[1], scaled)
-    pred = pred.reshape(pred.shape[0], -1)
-    return loss(network[0], pred, output, max_fan_in=max_fan_in,
-                temperature=temperature, mean_fan_in=mean_fan_in,
-                max_gates=max_gates, min_gates=min_gates,
-                num_neurons=num_neurons, num_wires=num_wires)
+    @jax.jit
+    def loss_conv(
+        network: List[Network],
+        inputs: jnp.ndarray,
+        output: jnp.ndarray,
+        scaled: List[jnp.ndarray]=None,
+        max_fan_in: int=None,
+        temperature: float=None,
+        mean_fan_in: float=None,
+        max_gates: List[int]=None,
+        min_gates: List[int]=None,
+        num_neurons: int=None,
+        num_wires: int=None) -> float:
+        """
+        calculates the loss including convolutional layers
 
-grad_conv = jax.jit(jax.grad(loss_conv, argnums=0))
+        Parameters
+        network - [neurons, neurons_conv], where neurons are the dense layers, and
+        neurons_conv are the convolutional
+        inputs - all of the inputs (training xs)
+        output - all of the outputs (training labels or ys)
+        
+        Returns
+        loss
+        """
+        # if convs is None:
+        #     inputs = inputs.reshape(inputs.shape[0], -1)
+        #     return loss(network[0], inputs, output, max_fan_in=max_fan_in,
+        #                 temperature=temperature, mean_fan_in=mean_fan_in,
+        #                 max_gates=max_gates, min_gates=min_gates,
+        #                 num_neurons=num_neurons, num_wires=num_wires)
+        pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(
+            inputs, network[1], scaled)
+        pred = pred.reshape(pred.shape[0], -1)
+        return loss(network[0], pred, output, max_fan_in=max_fan_in,
+                    temperature=temperature, mean_fan_in=mean_fan_in,
+                    max_gates=max_gates, min_gates=min_gates,
+                    num_neurons=num_neurons, num_wires=num_wires)
+
+    grad_conv = jax.jit(jax.grad(loss_conv, argnums=0))
 
 @jax.jit
 def test(neurons: Network,
@@ -1296,32 +1299,34 @@ def acc(neurons: Network,
         return jnp.sum(pred)/((2**(ins))*(outs)), trues[0], falses[0]
     return jnp.sum(pred)/((2**(ins))*(outs)), None, None
 
-@jax.jit
-def acc_conv(network: List[Network],
-             inputs: jnp.ndarray,
-             output: jnp.ndarray,
-             scaled: List[jnp.ndarray]=None,
-             ) -> float:
-    """
-    calculates the accuracy for images
+if add_img_or_custom == 'i':
 
-    Parameters
-    network - [neurons, neurons_conv], where neurons are the dense layers, and
-    neurons_conv are the convolutional
-    inputs - jnp array of the inputs we're testing
-    output - jnp array of the outputs we're testing
-    
-    Returns
-    accuracy - the accuracy (may be specifically the testing accuracy)
-    """
-    if not (convs is None):
-        inputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
-            inputs, network[1], scaled, "disc")
-    inputs = inputs.reshape(inputs.shape[0], -1)
-    pred = jax.vmap(feed_forward, in_axes=(0, None, None))(
-        inputs, network[0], "disc")
-    result = jax.vmap(image_util.evaluate)(pred, output)
-    return jnp.sum(result)/result.size
+    @jax.jit
+    def acc_conv(network: List[Network],
+                inputs: jnp.ndarray,
+                output: jnp.ndarray,
+                scaled: List[jnp.ndarray]=None,
+                ) -> float:
+        """
+        calculates the accuracy for images
+
+        Parameters
+        network - [neurons, neurons_conv], where neurons are the dense layers, and
+        neurons_conv are the convolutional
+        inputs - jnp array of the inputs we're testing
+        output - jnp array of the outputs we're testing
+        
+        Returns
+        accuracy - the accuracy (may be specifically the testing accuracy)
+        """
+        if not (convs is None):
+            inputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
+                inputs, network[1], scaled, "disc")
+        inputs = inputs.reshape(inputs.shape[0], -1)
+        pred = jax.vmap(feed_forward, in_axes=(0, None, None))(
+            inputs, network[0], "disc")
+        result = jax.vmap(image_util.evaluate)(pred, output)
+        return jnp.sum(result)/result.size
 
 batches = config["batches"]
 batch_size = num_ins//batches
@@ -1345,7 +1350,7 @@ schedule_dense = optax.join_schedules(
 
 optimizer_dense = optax.adam(learning_rate=schedule_dense)
 
-if convs:
+if add_img_or_custom == 'i':
     schedule_conv = optax.join_schedules(
         schedules = [optax.constant_schedule(
             lr*lr_multiplier) for lr in config["lr_conv"]],
