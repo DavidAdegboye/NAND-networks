@@ -1435,7 +1435,7 @@ if add_img_or_custom == 'i':
     new_loss = batch_comp(
         partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
         batch_size, batches,
-        inputs, output, scaled=scaled_train_imgs)
+        inputs=inputs, output=output, scaled=scaled_train_imgs)
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
     print(gate_usage_by_layer(neurons, sig))
     print(gate_usage_by_layer(neurons, step))
