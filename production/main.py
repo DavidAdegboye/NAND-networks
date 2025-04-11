@@ -1212,7 +1212,7 @@ if add_img_or_custom=='i':
 
     grad_conv = jax.jit(jax.grad(loss_conv, argnums=0))
 
-@jax.jit
+@partial(jax.jit, static_argnames="use_surr")
 def test(neurons: Network,
          inputs: jnp.ndarray,
          output: jnp.ndarray,
@@ -1337,14 +1337,6 @@ lr_multiplier = batch_size**0.5
 schedule_dense = optax.join_schedules(
     schedules = [optax.constant_schedule(
         lr*lr_multiplier) for lr in config["lr_dense"]],
-    # schedules=[
-    #     optax.constant_schedule(1.0*lr_multiplier),
-    #     optax.constant_schedule(0.1*lr_multiplier),
-    #     optax.constant_schedule(0.03*lr_multiplier),
-    #     optax.constant_schedule(0.01*lr_multiplier),
-    #     optax.constant_schedule(0.003*lr_multiplier),
-    #     optax.constant_schedule(0.001*lr_multiplier),
-    # ],
     boundaries=[(i+1)**2*boundary_jump for i in range(1)]
 )
 
@@ -1354,14 +1346,6 @@ if add_img_or_custom == 'i':
     schedule_conv = optax.join_schedules(
         schedules = [optax.constant_schedule(
             lr*lr_multiplier) for lr in config["lr_conv"]],
-        # schedules=[
-        #     optax.constant_schedule(1.0*lr_multiplier),
-        #     optax.constant_schedule(0.1*lr_multiplier),
-        #     optax.constant_schedule(0.03*lr_multiplier),
-        #     optax.constant_schedule(0.01*lr_multiplier),
-        #     optax.constant_schedule(0.003*lr_multiplier),
-        #     optax.constant_schedule(0.001*lr_multiplier),
-        # ],
         boundaries=[(i+1)**2*boundary_jump for i in range(1)]
     )
 
