@@ -393,11 +393,12 @@ def forward_conv(
 forward_conv_cont = jax.jit(partial(forward_conv, and_helper_func=and_cont))
 forward_conv_disc = jax.jit(partial(forward_conv, and_helper_func=and_disc))
 
-@partial(jax.jit, static_argnames="forward_conv_func")
+@partial(jax.jit, static_argnames=("convs", "forward_conv_func"))
 def feed_forward_conv(
     xs: jnp.ndarray,
     weights:jnp.ndarray,
     imgs_list: List[jnp.ndarray],
+    convs: List[Tuple[int, int, int, int]],
     forward_conv_func: Callable[
         [jnp.ndarray, jnp.ndarray, int, int], jnp.ndarray]) -> jnp.ndarray:
     """
@@ -414,15 +415,15 @@ def feed_forward_conv(
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        temp = forward_conv_func(xs, ws, s, int(n))
+        temp = forward_conv_func(xs, ws, s, n)
         xs = jnp.concatenate(
             [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
     return xs
 
 feed_forward_conv_cont = jax.jit(partial(
-    feed_forward_conv, forward_conv_func=forward_conv_cont))
+    feed_forward_conv, forward_conv_func=forward_conv_cont, convs=convs))
 feed_forward_conv_disc = jax.jit(partial(
-    feed_forward_conv, forward_conv_func=forward_conv_disc))
+    feed_forward_conv, forward_conv_func=forward_conv_disc, convs=convs))
 
 print(convs)
 
