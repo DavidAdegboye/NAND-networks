@@ -242,7 +242,6 @@ dps = config["decimal_places"]
 sig = jax.jit(jax.nn.sigmoid)
 step = jax.jit(lambda x: jnp.where(x>0, 1, 0))
 weight_activation_dict = {"cont": sig, "disc": step}
-print(type(step))
 
 @partial(jax.jit, static_argnames="weight_activation")
 def and_helper(
@@ -267,13 +266,10 @@ def and_helper(
     return jnp.prod(1 + jnp.multiply(
         x, weight_activation_dict[weight_activation](w)) - weight_activation_dict[weight_activation](w))
 
-and_cont = jax.jit(partial(and_helper, weight_activation="cont"))
-and_disc = jax.jit(partial(and_helper, weight_activation="disc"))
-
-@partial(jax.jit, static_argnames="and_helper_func")
+@partial(jax.jit, static_argnames="weight_activation")
 def forward(
     xs: jnp.ndarray, weights: jnp.ndarray,
-    and_helper_func: Callable[[jnp.ndarray, jnp.ndarray], float]) -> float:
+    weight_activation: str="cont") -> float:
     """
     The forward pass for a neuron
 
@@ -286,10 +282,8 @@ def forward(
     Returns
     the continuous effective output for that NAND gate
     """
-    return 1 - jnp.prod(jax.vmap(and_helper_func, in_axes=(0,0))(xs, weights))
-
-forward_cont = jax.jit(partial(forward, and_helper_func=and_cont))
-forward_disc = jax.jit(partial(forward, and_helper_func=and_disc))
+    return 1 - jnp.prod(jax.vmap(
+        and_helper, in_axes=(0,0, None))(xs, weights, weight_activation))
 
 @partial(jax.jit, static_argnames="layer_i")
 def calc_surr(xs: jnp.ndarray, layer_i: int, surr_arr: List[jnp.ndarray]
@@ -310,11 +304,11 @@ def calc_surr(xs: jnp.ndarray, layer_i: int, surr_arr: List[jnp.ndarray]
         xs[node[:,0], node[:,1]]) for node in surr_arr[layer_i]]
     return jnp.array(start)
 
-@partial(jax.jit, static_argnames="forward_func")
+@partial(jax.jit, static_argnames="weight_activation")
 def feed_forward(
     inputs: jnp.ndarray,
     neurons: jnp.ndarray,
-    forward_func: Callable[[jnp.ndarray, jnp.ndarray], float],
+    weight_activation: str="cont",
     use_surr: bool=False,
     surr_arr: List[jnp.ndarray]=[]) -> jnp.ndarray:
     """
@@ -335,8 +329,8 @@ def feed_forward(
         inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
 
     for layer_i in range(min(i_1-1, 3)):
-        next = jax.vmap(forward_func, in_axes=(None, 0))(
-            xs, neurons[layer_i])
+        next = jax.vmap(forward, in_axes=(None, 0, None))(
+            xs, neurons[layer_i], weight_activation)
         if use_surr and layer_i < len(surr_arr):
             next = jnp.concatenate([calc_surr(xs, layer_i), next])
         next = jnp.array([jnp.pad(
@@ -344,26 +338,25 @@ def feed_forward(
         xs = jnp.vstack([xs, next])
 
     for layer_i in range(3, i_1-1):
-        next = jax.vmap(forward_func, in_axes=(None, 0))(
-            xs[jnp.array([0,-2,-1])], neurons[layer_i])
+        next = jax.vmap(forward, in_axes=(None, 0, None))(
+            xs[jnp.array([0,-2,-1])], neurons[layer_i], weight_activation)
         if use_surr and layer_i < len(surr_arr):
             next = jnp.concatenate([calc_surr(xs, layer_i), next])
         next = jnp.array([jnp.pad(
             next,(0, i_4-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
 
-    return jax.vmap(forward_func, in_axes=(None, 0))(xs, neurons[i_1-1])[:outs]
+    return jax.vmap(
+        forward, in_axes=(None, 0, None))(
+            xs, neurons[i_1-1], weight_activation)[:outs]
 
-feed_forward_cont = jax.jit(partial(feed_forward, forward_func=forward_cont))
-feed_forward_disc = jax.jit(partial(feed_forward, forward_func=forward_disc))
-
-@partial(jax.jit, static_argnames=('n', "and_helper_func"))
+@partial(jax.jit, static_argnames=('n', "weight_activation"))
 def forward_conv(
     xs: jnp.ndarray,
     weights:jnp.ndarray,
     s: int,
     n: int,
-    and_helper_func: Callable[[jnp.ndarray, jnp.ndarray], float]) -> float:
+    weight_activation: str="cont") -> float:
     """
     Applies a filter of width `w` and stride `s` to the input array `xs`.
     
@@ -384,25 +377,22 @@ def forward_conv(
     return jax.vmap(
         lambda c: jax.vmap(
             lambda i: jax.vmap(
-                lambda j: 1-and_helper_func(jax.lax.dynamic_slice(
-                    xs,
+                lambda j: 1-and_helper(
+                    jax.lax.dynamic_slice(xs,
                     (0, i*s, j*s),
-                    (old_channels, w, w)), weights[c])
+                    (old_channels, w, w)),
+                    weights[c], weight_activation)
             )(jnp.arange(n))
         )(jnp.arange(n))
     )(channels)
 
-forward_conv_cont = jax.jit(partial(forward_conv, and_helper_func=and_cont))
-forward_conv_disc = jax.jit(partial(forward_conv, and_helper_func=and_disc))
-
-@partial(jax.jit, static_argnames=("convs", "forward_conv_func"))
+# depends on convs
+@partial(jax.jit, static_argnames="weight_activation")
 def feed_forward_conv(
     xs: jnp.ndarray,
     weights:jnp.ndarray,
     imgs_list: List[jnp.ndarray],
-    convs: Tuple[Tuple[int, int, int, int], ...],
-    forward_conv_func: Callable[
-        [jnp.ndarray, jnp.ndarray, int, int], jnp.ndarray]) -> jnp.ndarray:
+    weight_activation: str="cont") -> jnp.ndarray:
     """
     Applies all of the convolutional layers to the input
     
@@ -410,7 +400,6 @@ def feed_forward_conv(
     xs - an array of shape (n, n), the input data
     weights - the list of weights
     imgs_list - a list of the scaled down images
-    convs - a list of the convolutions we're applying
     forward_conv_func - a function to apply the convolutions
     
     Returns:
@@ -418,18 +407,12 @@ def feed_forward_conv(
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        temp = forward_conv_func(xs, ws, s, n)
+        temp = forward_conv(xs, ws, s, n, weight_activation)
         xs = jnp.concatenate(
             [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
     return xs
 
 convs = tuple(tuple(conv) for conv in convs)
-
-feed_forward_conv_cont = jax.jit(partial(
-    feed_forward_conv, forward_conv_func=forward_conv_cont, convs=convs))
-feed_forward_conv_disc = jax.jit(partial(
-    feed_forward_conv, forward_conv_func=forward_conv_disc, convs=convs))
-
 
 def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
     """
@@ -1108,7 +1091,7 @@ def bce_loss(
     Returns
     loss
     """
-    pred = jax.vmap(feed_forward_cont, in_axes=(0, None, None, None, None))(
+    pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
         inputs, neurons, sig, use_surr, surr_arr)
     pred = jnp.clip(pred, epsilon, 1-epsilon)
     pred_logits = jnp.log(pred) - jnp.log(1-pred)
@@ -1216,7 +1199,7 @@ def loss_conv(
     #                 temperature=temperature, mean_fan_in=mean_fan_in,
     #                 max_gates=max_gates, min_gates=min_gates,
     #                 num_neurons=num_neurons, num_wires=num_wires)
-    pred = jax.vmap(feed_forward_conv_cont, in_axes=(0, None, 0))(
+    pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(
         inputs, network[1], scaled)
     pred = pred.reshape(pred.shape[0], -1)
     return loss(network[0], pred, output, max_fan_in=max_fan_in,
@@ -1245,8 +1228,8 @@ def test(neurons: Network,
     Returns
     if the network was 100% accurate
     """
-    pred = jax.vmap(feed_forward_disc, in_axes=(0, None, None, None, None))(
-        inputs, neurons, step, use_surr, surr_arr)
+    pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None, None))(
+        inputs, neurons, step, "disc", use_surr, surr_arr)
     return jnp.all(pred==output)
 
 current_max_fan_in = -1
@@ -1303,8 +1286,8 @@ def acc(neurons: Network,
     mask1 - the mask of the samples it got right
     mask2 - the mask of the samples it got wrong
     """
-    pred = jax.vmap(feed_forward_disc, in_axes=(0, None, None, None, None))(
-        inputs, neurons, step, use_surr, surr_arr)
+    pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
+        inputs, neurons, "disc", use_surr, surr_arr)
     pred = (pred == output)
     pred = jnp.sum(pred, axis=1)
     if skew_towards_falses:
@@ -1332,11 +1315,11 @@ def acc_conv(network: List[Network],
     accuracy - the accuracy (may be specifically the testing accuracy)
     """
     if not (convs is None):
-        inputs = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, 0))(
-            inputs, network[1], scaled)
+        inputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
+            inputs, network[1], scaled, "disc")
     inputs = inputs.reshape(inputs.shape[0], -1)
-    pred = jax.vmap(feed_forward_disc, in_axes=(0, None, None))(
-        inputs, network[0])
+    pred = jax.vmap(feed_forward, in_axes=(0, None, None))(
+        inputs, network[0], "disc")
     result = jax.vmap(image_util.evaluate)(pred, output)
     return jnp.sum(result)/result.size
 
