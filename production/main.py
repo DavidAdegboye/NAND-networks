@@ -1311,14 +1311,9 @@ def acc_conv(network: List[Network],
     Returns
     accuracy - the accuracy (may be specifically the testing accuracy)
     """
-    jax.debug.print("Debug: conv net shape is {x}", x=[layer.shape for layer in network[1]])
-    jax.debug.print("Debug: dense net shape is {x}", x=[layer.shape for layer in network[0]])
-    jax.debug.print("Debug: inputs shape is {x}", x=inputs.shape)
-    jax.debug.print("Debug: output shape is {x}", x=output.shape)
-    jax.debug.print("Debug: scaled shape is {x}", x=[img.shape for img in scaled])
     if not (convs is None):
-        inputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
-            inputs, network[1], scaled, convs)
+        inputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None, None))(
+            inputs, network[1], scaled, convs, step)
     inputs = inputs.reshape(inputs.shape[0], -1)
     pred = jax.vmap(feed_forward, in_axes=(0, None, None))(
         inputs, network[0], step)
