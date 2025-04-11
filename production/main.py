@@ -1120,7 +1120,7 @@ def bce_loss(
             optax.sigmoid_binary_cross_entropy(pred_logits, output))
     
 epsilon = 1e-7
-@jax.jit
+@partial(jax.jit, static_argnames="use_surr")
 def loss(
     neurons: Network,
     inputs: jnp.ndarray,
@@ -1263,7 +1263,7 @@ def test_fan_in(neurons: Network) -> bool:
         return False
     return True
 
-@partial(jax.jit, static_argnames="skew_towards_falses")
+@partial(jax.jit, static_argnames=("skew_towards_falses", "use_surr"))
 def acc(neurons: Network,
         inputs: jnp.ndarray,
         output: jnp.ndarray,
