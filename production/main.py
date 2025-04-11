@@ -1297,7 +1297,7 @@ def acc(neurons: Network,
         trues = jnp.where(pred == outs)
         falses = jnp.where(pred < outs)
         return jnp.sum(pred)/((2**(ins))*(outs)), trues[0], falses[0]
-    return jnp.sum(pred)/((2**(ins))*(outs))
+    return jnp.sum(pred)/((2**(ins))*(outs)), None, None
 
 if add_img_or_custom == 'i':
 
@@ -1429,7 +1429,7 @@ if add_img_or_custom == 'i':
     print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
 else:
-    accuracy = acc(neurons, inputs, output, use_surr, surr_arr, False)
+    accuracy = acc(neurons, inputs, output, use_surr, surr_arr, False)[0]
     new_loss = loss(neurons, inputs, output, **loss_kwargs)
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
     print(gate_usage_by_layer(neurons, sig))
@@ -1488,14 +1488,8 @@ def run(timeout=config["timeout"]) -> None:
                     print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
                     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
                 else:
-                    accuracy = batch_comp(
-                        partial(acc, neurons=neurons, use_surr=use_surr, surr_arr=surr_arr, skew_towards_falses=False),
-                        batch_size, batches,
-                        inputs=inputs, output=output)
-                    new_loss = batch_comp(
-                        partial(loss, neurons=neurons, **loss_kwargs),
-                        batch_size, batches,
-                        inputs=inputs, output=output)
+                    accuracy = acc(neurons, inputs, output, use_surr, surr_arr, False)[0]
+                    new_loss = loss(neurons, inputs, output, **loss_kwargs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
@@ -1522,14 +1516,8 @@ def run(timeout=config["timeout"]) -> None:
                     print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
                     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
                 else:
-                    accuracy = batch_comp(
-                        partial(acc, neurons=neurons, use_surr=use_surr, surr_arr=surr_arr, skew_towards_falses=False),
-                        batch_size, batches,
-                        inputs=inputs, output=output)
-                    new_loss = batch_comp(
-                        partial(loss, neurons=neurons, **loss_kwargs),
-                        batch_size, batches,
-                        inputs=inputs, output=output)
+                    accuracy = acc(neurons, inputs, output, use_surr, surr_arr, False)[0]
+                    new_loss = loss(neurons, inputs, output, **loss_kwargs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
