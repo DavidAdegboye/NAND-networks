@@ -332,7 +332,7 @@ def feed_forward(
         next = jax.vmap(forward, in_axes=(None, 0, None))(
             xs, neurons[layer_i], weight_activation)
         if use_surr and layer_i < len(surr_arr):
-            next = jnp.concatenate([calc_surr(xs, layer_i), next])
+            next = jnp.concatenate([calc_surr(xs, layer_i, surr_arr), next])
         next = jnp.array([jnp.pad(
             next,(0, i_4-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
@@ -340,7 +340,7 @@ def feed_forward(
         next = jax.vmap(forward, in_axes=(None, 0, None))(
             xs[jnp.array([0,-2,-1])], neurons[layer_i], weight_activation)
         if use_surr and layer_i < len(surr_arr):
-            next = jnp.concatenate([calc_surr(xs, layer_i), next])
+            next = jnp.concatenate([calc_surr(xs, layer_i, surr_arr), next])
         next = jnp.array([jnp.pad(
             next,(0, i_4-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
