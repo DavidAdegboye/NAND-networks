@@ -1151,7 +1151,6 @@ def loss(
     loss
     """
     l = bce_loss(neurons, inputs, output, mask1, mask2, use_surr, surr_arr)
-    jax.debug.print("bce loss={x}", x=l)
     if max_fan_in_penalty_coeff:
         l += (max_fan_in_penalty_coeff
               * max_fan_in_penalty(neurons, max_fan_in, temperature))
@@ -1205,6 +1204,7 @@ def loss_conv(
     pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(
         inputs, network[1], scaled)
     pred = pred.reshape(pred.shape[0], -1)
+    jax.debug.print("input to conv layer={x}", x=pred)
     return loss(network[0], pred, output, max_fan_in=max_fan_in,
                 temperature=temperature, mean_fan_in=mean_fan_in,
                 max_gates=max_gates, min_gates=min_gates,
