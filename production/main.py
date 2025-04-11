@@ -393,8 +393,6 @@ def forward_conv(
 forward_conv_cont = jax.jit(partial(forward_conv, and_helper_func=and_cont))
 forward_conv_disc = jax.jit(partial(forward_conv, and_helper_func=and_disc))
 
-hash(forward_conv_disc)
-
 @partial(jax.jit, static_argnames=("convs", "forward_conv_func"))
 def feed_forward_conv(
     xs: jnp.ndarray,
@@ -1442,10 +1440,11 @@ loss_conv_kwargs = {"max_fan_in": max_fan_in,
                     "num_wires": num_wires,}
 
 if add_img_or_custom == 'i':
-    accuracy = batch_comp(
-        partial(acc_conv, network=[neurons, neurons_conv]),
-        batch_size, x_test.shape[0]//batch_size,
-        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
+    accuracy = acc_conv([neurons, neurons_conv], x_test, y_test, scaled_test_imgs)
+    # accuracy = batch_comp(
+    #     partial(acc_conv, network=[neurons, neurons_conv]),
+    #     batch_size, x_test.shape[0]//batch_size,
+    #     inputs=x_test, output=y_test, scaled=scaled_test_imgs)
     new_loss = batch_comp(
         partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
         batch_size, batches,
