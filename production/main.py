@@ -1430,7 +1430,7 @@ if add_img_or_custom == 'i':
     accuracy = batch_comp(
         partial(acc_conv, network=[neurons, neurons_conv]),
         batch_size, x_test.shape[0]//batch_size,
-        inputs=x_test, output=y_test, scaled=scaled_test_imgs)]
+        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
     print(accuracy)
     new_loss = batch_comp(
         partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
