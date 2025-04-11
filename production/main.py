@@ -414,7 +414,7 @@ def feed_forward_conv(
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        temp = forward_conv_func(xs, ws, s, n)
+        temp = forward_conv_func(xs, ws, s, int(n))
         xs = jnp.concatenate(
             [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
     return xs
