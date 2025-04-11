@@ -1373,12 +1373,18 @@ batch_size = num_ins//batches
 boundary_jump = 5*(max(10//batches,1)**2)*batch_size
 lr_multiplier = batch_size**0.5
 
+print("Learning:\n", output, "\nwith arch:", true_arch)
+start_time = time.time()
+
+neurons = initialise(arch, true_arch, dense_distribution, dense_sigma, dense_k)
+if add_img_or_custom == 'i':
+    neurons_conv = initialise_conv(convs, conv_distribution, conv_sigma, conv_k)
+
 schedule_dense = optax.join_schedules(
     schedules = [optax.constant_schedule(
         lr*lr_multiplier) for lr in config["lr_dense"]],
     boundaries=[(i+1)**2*boundary_jump for i in range(1)]
 )
-
 optimizer_dense = optax.adam(learning_rate=schedule_dense)
 
 if add_img_or_custom == 'i':
@@ -1406,19 +1412,15 @@ if add_img_or_custom == 'i':
             lr*lr_multiplier) for lr in lr_convs],
         boundaries=[(i+1)**2*boundary_jump for i in range(1)]
     )
-
     optimizer_conv = optax.adam(learning_rate=schedule_conv)
 
-print("Learning:\n", output, "\nwith arch:", true_arch)
-start_time = time.time()
-neurons = initialise(arch, true_arch, dense_distribution, dense_sigma, dense_k)
 opt_state_dense = optimizer_dense.init(neurons)
-if add_img_or_custom == 'i':
-    neurons_conv = initialise_conv(convs, conv_distribution, conv_sigma, conv_k)
-    if convs:
-        opt_state_conv = optimizer_conv.init(neurons_conv)
+if add_img_or_custom =='i' and convs:
+    opt_state_conv = optimizer_conv.init(neurons_conv)
+
 init_time = time.time()
 print("Took", init_time-start_time, "seconds to initialise.")
+
 print([layer.shape for layer in neurons])
 if add_img_or_custom == 'i' and convs:
     print([layer.shape for layer in neurons_conv])
