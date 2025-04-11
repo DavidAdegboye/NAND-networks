@@ -1231,8 +1231,8 @@ def test(neurons: Network,
     Returns
     if the network was 100% accurate
     """
-    pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None, None))(
-        inputs, neurons, step, "disc", use_surr, surr_arr)
+    pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
+        inputs, neurons, "disc", use_surr, surr_arr)
     return jnp.all(pred==output)
 
 current_max_fan_in = -1
