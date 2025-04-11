@@ -1360,7 +1360,7 @@ schedule_dense = optax.join_schedules(
 
 optimizer_dense = optax.adam(learning_rate=schedule_dense)
 
-if convs:
+if add_img_or_custom=='i':
     schedule_conv = optax.join_schedules(
         schedules = [optax.constant_schedule(
             lr*lr_multiplier) for lr in config["lr_conv"]],
@@ -1382,8 +1382,7 @@ start_time = time.time()
 neurons = initialise(arch, true_arch, dense_distribution, dense_sigma, dense_k)
 if add_img_or_custom == 'i':
     neurons_conv = initialise_conv(convs, conv_distribution, conv_sigma, conv_k)
-    if convs:
-        opt_state_conv = optimizer_conv.init(neurons_conv)
+    opt_state_conv = optimizer_conv.init(neurons_conv)
 else:
     opt_state_dense = optimizer_dense.init(neurons)
 init_time = time.time()
@@ -1493,9 +1492,8 @@ def run(timeout=config["timeout"]) -> None:
                                         **loss_conv_kwargs)
                     update, opt_state_dense = optimizer_dense.update(gradients[0], opt_state_dense, neurons)
                     neurons = optax.apply_updates(neurons, update)
-                    if convs:
-                        update, opt_state_conv = optimizer_conv.update(gradients[1], opt_state_conv, neurons_conv)
-                        neurons_conv = optax.apply_updates(neurons_conv, update)
+                    update, opt_state_conv = optimizer_conv.update(gradients[1], opt_state_conv, neurons_conv)
+                    neurons_conv = optax.apply_updates(neurons_conv, update)
                 else:
                     gradients = grad(neurons,
                                     inputs[batch*batch_size:(batch+1)*batch_size],
