@@ -1167,7 +1167,7 @@ def loss(
         l += continuous_penalty_coeff * continuous_penalty(neurons, num_wires)
     return l
 
-grad = jax.jit(jax.grad(loss, argnums=0))
+grad = jax.jit(jax.grad(loss, argnums=0), static_argnames="use_surr")
 
 if add_img_or_custom=='i':
 
@@ -1488,11 +1488,6 @@ def run(timeout=config["timeout"]) -> None:
                         update, opt_state_conv = optimizer_conv.update(gradients[1], opt_state_conv, neurons_conv)
                         neurons_conv = optax.apply_updates(neurons_conv, update)
                 else:
-                    for k, v in loss_kwargs.items():
-                        try:
-                            print(k, hash(v))
-                        except TypeError:
-                            print(k)
                     gradients = grad(neurons,
                                     inputs[batch*batch_size:(batch+1)*batch_size],
                                     output[batch*batch_size:(batch+1)*batch_size],
