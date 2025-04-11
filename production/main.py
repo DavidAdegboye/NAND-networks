@@ -257,8 +257,8 @@ def and_helper(
     x - could be inputs, could be outputs from a previous NAND gate,
     importantly it's a jnp array all from the same layer
     w - the weights of those wires connecting x to the NAND gate
-    weight_activation - will be either sigmoid for the continuous version we
-    use in training, or a step function for testing accuracy
+    weight_activation - a string which is "cont" or "disc", which determines
+    if we use a sigmoid or a step function
     
     Returns
     the effective input from that layer for the NAND gate
@@ -1070,7 +1070,7 @@ def continuous_penalty(neurons: Network, num_wires: int) -> float:
     return s/num_wires
 
 epsilon = 1e-7
-@jax.jit
+@partial(jax.jit, static_argnames="use_surr")
 def bce_loss(
     neurons: Network,
     inputs: jnp.ndarray,
