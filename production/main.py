@@ -420,7 +420,7 @@ def feed_forward_conv(
             [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
     return xs
 
-convs = tuple(convs)
+convs = tuple(tuple(conv) for conv in convs)
 
 feed_forward_conv_cont = jax.jit(partial(
     feed_forward_conv, forward_conv_func=forward_conv_cont, convs=convs))
