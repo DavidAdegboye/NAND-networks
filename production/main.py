@@ -241,13 +241,14 @@ dps = config["decimal_places"]
 
 sig = jax.jit(jax.nn.sigmoid)
 step = jax.jit(lambda x: jnp.where(x>0, 1, 0))
+weight_activation_dict = {"cont": sig, "disc": step}
 print(type(step))
 
 @partial(jax.jit, static_argnames="weight_activation")
 def and_helper(
     x: jnp.ndarray,
     w: jnp.ndarray,
-    weight_activation: Callable[[jnp.ndarray], jnp.ndarray]) -> float:
+    weight_activation: str="cont") -> float:
     """
     Helper function for forward, calculates the effective input a neuron
     receives from a specific previous layer (which is effectively a logical
@@ -264,10 +265,10 @@ def and_helper(
     the effective input from that layer for the NAND gate
     """
     return jnp.prod(1 + jnp.multiply(
-        x, weight_activation(w)) - weight_activation(w))
+        x, weight_activation_dict[weight_activation](w)) - weight_activation_dict[weight_activation](w))
 
-and_cont = jax.jit(partial(and_helper, weight_activation=sig))
-and_disc = jax.jit(partial(and_helper, weight_activation=step))
+and_cont = jax.jit(partial(and_helper, weight_activation="cont"))
+and_disc = jax.jit(partial(and_helper, weight_activation="disc"))
 
 @partial(jax.jit, static_argnames="and_helper_func")
 def forward(
