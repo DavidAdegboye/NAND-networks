@@ -1211,8 +1211,8 @@ def loss_conv(
                     temperature=temperature, mean_fan_in=mean_fan_in,
                     max_gates=max_gates, min_gates=min_gates,
                     num_neurons=num_neurons, num_wires=num_wires)
-    pred = jax.vmap(feed_forward_conv_cont, in_axes=(0, None, 0, None))(
-        inputs, network[1], scaled, convs)
+    pred = jax.vmap(feed_forward_conv_cont, in_axes=(0, None, 0))(
+        inputs, network[1], scaled)
     pred = pred.reshape(pred.shape[0], -1)
     return loss(network[0], pred, output, max_fan_in=max_fan_in,
                 temperature=temperature, mean_fan_in=mean_fan_in,
@@ -1328,8 +1328,8 @@ def acc_conv(network: List[Network],
     accuracy - the accuracy (may be specifically the testing accuracy)
     """
     if not (convs is None):
-        inputs = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, 0, None))(
-            inputs, network[1], scaled, convs)
+        inputs = jax.vmap(feed_forward_conv_disc, in_axes=(0, None, 0))(
+            inputs, network[1], scaled)
     inputs = inputs.reshape(inputs.shape[0], -1)
     pred = jax.vmap(feed_forward_disc, in_axes=(0, None, None))(
         inputs, network[0])
