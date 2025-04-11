@@ -276,7 +276,7 @@ def forward(
     Parameters
     xs - a 2d jnp array of all the values on those wires
     weights - a 2d jnp array of all the wires going into it
-    and_helper_func - function we use to compute the logical AND
+    weight_activation - will be either sigmoid for the continuous version we
     use in training, or a step function for testing accuracy
     
     Returns
@@ -304,7 +304,7 @@ def calc_surr(xs: jnp.ndarray, layer_i: int, surr_arr: List[jnp.ndarray]
         xs[node[:,0], node[:,1]]) for node in surr_arr[layer_i]]
     return jnp.array(start)
 
-@partial(jax.jit, static_argnames="weight_activation")
+@partial(jax.jit, static_argnames=("weight_activation", "use_surr"))
 def feed_forward(
     inputs: jnp.ndarray,
     neurons: jnp.ndarray,
@@ -317,7 +317,7 @@ def feed_forward(
     Parameters
     inputs - the input data
     neurons - the network
-    forward_func - function used for calculating the next layer's output
+    weight_activation - will be either sigmoid for the continuous version we
     use in training, or a step function for testing accuracy
     use_surr - boolean value for if we're adding surrogate bits
     surr_arr - how to calculate the surrogate bits for if we're using them
@@ -366,7 +366,8 @@ def forward_conv(
     filter weights
     s - the stride of the filter
     n - the new height and width of the picture
-    and_helper_func - function we use to compute the logical AND
+    weight_activation - will be either sigmoid for the continuous version we
+    use in training, or a step function for testing accuracy
 
     Returns:
     An array of shape (channels, n, n), the result of applying the filter.
