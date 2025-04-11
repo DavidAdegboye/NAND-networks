@@ -276,8 +276,8 @@ def forward(
     Parameters
     xs - a 2d jnp array of all the values on those wires
     weights - a 2d jnp array of all the wires going into it
-    weight_activation - will be either sigmoid for the continuous version we
-    use in training, or a step function for testing accuracy
+    weight_activation - a string which is "cont" or "disc", which determines
+    if we use a sigmoid or a step function
     
     Returns
     the continuous effective output for that NAND gate
@@ -317,8 +317,8 @@ def feed_forward(
     Parameters
     inputs - the input data
     neurons - the network
-    weight_activation - will be either sigmoid for the continuous version we
-    use in training, or a step function for testing accuracy
+    weight_activation - a string which is "cont" or "disc", which determines
+    if we use a sigmoid or a step function
     use_surr - boolean value for if we're adding surrogate bits
     surr_arr - how to calculate the surrogate bits for if we're using them
     
@@ -366,8 +366,8 @@ def forward_conv(
     filter weights
     s - the stride of the filter
     n - the new height and width of the picture
-    weight_activation - will be either sigmoid for the continuous version we
-    use in training, or a step function for testing accuracy
+    weight_activation - a string which is "cont" or "disc", which determines
+    if we use a sigmoid or a step function
 
     Returns:
     An array of shape (channels, n, n), the result of applying the filter.
@@ -401,7 +401,8 @@ def feed_forward_conv(
     xs - an array of shape (n, n), the input data
     weights - the list of weights
     imgs_list - a list of the scaled down images
-    forward_conv_func - a function to apply the convolutions
+    weight_activation - a string which is "cont" or "disc", which determines
+    if we use a sigmoid or a step function
     
     Returns:
     The result of applying the convolutional layers, ready to be passed into
@@ -1150,6 +1151,7 @@ def loss(
     loss
     """
     l = bce_loss(neurons, inputs, output, mask1, mask2, use_surr, surr_arr)
+    jax.debug.print("bce loss={x}", x=l)
     if max_fan_in_penalty_coeff:
         l += (max_fan_in_penalty_coeff
               * max_fan_in_penalty(neurons, max_fan_in, temperature))
@@ -1366,12 +1368,11 @@ if convs:
 print("Learning:\n", output, "\nwith arch:", true_arch)
 start_time = time.time()
 neurons = initialise(arch, true_arch, dense_distribution, dense_sigma, dense_k)
+opt_state_dense = optimizer_dense.init(neurons)
 if add_img_or_custom == 'i':
     neurons_conv = initialise_conv(convs, conv_distribution, conv_sigma, conv_k)
     if convs:
         opt_state_conv = optimizer_conv.init(neurons_conv)
-else:
-    opt_state_dense = optimizer_dense.init(neurons)
 init_time = time.time()
 print("Took", init_time-start_time, "seconds to initialise.")
 print([layer.shape for layer in neurons])
