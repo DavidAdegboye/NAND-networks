@@ -1403,8 +1403,8 @@ def batch_comp(func: Callable, batch_size: int, batches: int, *args, **kwargs
             batch_number+1)*batch_size] for imgs in v] if k=="scaled" else v[
             batch_number*batch_size:(batch_number+1)*batch_size
             ] for k, v in kwargs.items()}
-        print(sliced_args)
-        print(sliced_kwargs)
+        # print(sliced_args)
+        # print(sliced_kwargs)
         output += func(*sliced_args, **sliced_kwargs)
     return output/batches
 
