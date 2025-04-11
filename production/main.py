@@ -1446,7 +1446,7 @@ if add_img_or_custom == 'i':
     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
 else:
     accuracy = batch_comp(
-        partial(acc, neurons=neurons, use_surr=use_surr, surr_arr=surr_arr, skew_towards_false=False),
+        partial(acc, neurons=neurons, use_surr=use_surr, surr_arr=surr_arr, skew_towards_falses=False),
         batch_size, batches,
         inputs=inputs, output=output)
     new_loss = batch_comp(
@@ -1511,7 +1511,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
                 else:
                     accuracy = batch_comp(
-                        partial(acc, neurons=neurons, use_surr=use_surr, surr_arr=surr_arr, skew_towards_false=False),
+                        partial(acc, neurons=neurons, use_surr=use_surr, surr_arr=surr_arr, skew_towards_falses=False),
                         batch_size, batches,
                         inputs=inputs, output=output)
                     new_loss = batch_comp(
@@ -1545,7 +1545,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
                 else:
                     accuracy = batch_comp(
-                        partial(acc, neurons=neurons, use_surr=use_surr, surr_arr=surr_arr, skew_towards_false=False),
+                        partial(acc, neurons=neurons, use_surr=use_surr, surr_arr=surr_arr, skew_towards_falses=False),
                         batch_size, batches,
                         inputs=inputs, output=output)
                     new_loss = batch_comp(
