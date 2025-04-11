@@ -241,6 +241,7 @@ dps = config["decimal_places"]
 
 sig = jax.jit(jax.nn.sigmoid)
 step = jax.jit(lambda x: jnp.where(x>0, 1, 0))
+print(type(step))
 
 @partial(jax.jit, static_argnames="weight_activation")
 def and_helper(
@@ -407,15 +408,16 @@ def feed_forward_conv(
     Parameters:
     xs - an array of shape (n, n), the input data
     weights - the list of weights
-    weight_activation - will be either sigmoid for the continuous version we
-    use in training, or a step function for testing accuracy
+    imgs_list - a list of the scaled down images
+    convs - a list of the convolutions we're applying
+    forward_conv_func - a function to apply the convolutions
     
     Returns:
     The result of applying the convolutional layers, ready to be passed into
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        temp = forward_conv_func(xs, ws, 18, 27)
+        temp = forward_conv_func(xs, ws, s, n)
         xs = jnp.concatenate(
             [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
     return xs
@@ -427,7 +429,6 @@ feed_forward_conv_cont = jax.jit(partial(
 feed_forward_conv_disc = jax.jit(partial(
     feed_forward_conv, forward_conv_func=forward_conv_disc, convs=convs))
 
-print(convs)
 
 def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
     """
