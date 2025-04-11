@@ -420,7 +420,7 @@ def feed_forward_conv(
             [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
     return xs
 
-convs = jnp.array(convs)
+convs = tuple(convs)
 
 feed_forward_conv_cont = jax.jit(partial(
     feed_forward_conv, forward_conv_func=forward_conv_cont, convs=convs))
@@ -1360,7 +1360,7 @@ schedule_dense = optax.join_schedules(
 
 optimizer_dense = optax.adam(learning_rate=schedule_dense)
 
-if add_img_or_custom=='i':
+if convs:
     schedule_conv = optax.join_schedules(
         schedules = [optax.constant_schedule(
             lr*lr_multiplier) for lr in config["lr_conv"]],
@@ -1382,13 +1382,14 @@ start_time = time.time()
 neurons = initialise(arch, true_arch, dense_distribution, dense_sigma, dense_k)
 if add_img_or_custom == 'i':
     neurons_conv = initialise_conv(convs, conv_distribution, conv_sigma, conv_k)
-    opt_state_conv = optimizer_conv.init(neurons_conv)
+    if convs:
+        opt_state_conv = optimizer_conv.init(neurons_conv)
 else:
     opt_state_dense = optimizer_dense.init(neurons)
 init_time = time.time()
 print("Took", init_time-start_time, "seconds to initialise.")
 print([layer.shape for layer in neurons])
-if add_img_or_custom == 'i':
+if add_img_or_custom == 'i' and convs:
     print([layer.shape for layer in neurons_conv])
 
 # @jax.jit
@@ -1481,7 +1482,7 @@ def run(timeout=config["timeout"]) -> None:
                 shuffled_indices = jax.random.permutation(key, inputs.shape[0])
                 inputs = inputs[shuffled_indices]
                 output = output[shuffled_indices]
-                if add_img_or_custom == 'i':
+                if add_img_or_custom == 'i' and convs:
                     scaled_train_imgs = [imgs[shuffled_indices] for imgs in scaled_train_imgs]
             for batch in range(batches):
                 if add_img_or_custom == 'i':
@@ -1492,8 +1493,9 @@ def run(timeout=config["timeout"]) -> None:
                                         **loss_conv_kwargs)
                     update, opt_state_dense = optimizer_dense.update(gradients[0], opt_state_dense, neurons)
                     neurons = optax.apply_updates(neurons, update)
-                    update, opt_state_conv = optimizer_conv.update(gradients[1], opt_state_conv, neurons_conv)
-                    neurons_conv = optax.apply_updates(neurons_conv, update)
+                    if convs:
+                        update, opt_state_conv = optimizer_conv.update(gradients[1], opt_state_conv, neurons_conv)
+                        neurons_conv = optax.apply_updates(neurons_conv, update)
                 else:
                     gradients = grad(neurons,
                                     inputs[batch*batch_size:(batch+1)*batch_size],
