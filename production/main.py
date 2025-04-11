@@ -1449,7 +1449,7 @@ if add_img_or_custom == 'i':
                                 output[batch*batch_size:(batch+1)*batch_size],
                                 [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs],
                                 **loss_conv_kwargs)
-            print(filtered_mean(gradients[0]) filtered_mean(gradients[1]))
+            print(filtered_mean(gradients[0]), filtered_mean(gradients[1]))
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
     print(gate_usage_by_layer(neurons, sig))
     print(gate_usage_by_layer(neurons, step))
