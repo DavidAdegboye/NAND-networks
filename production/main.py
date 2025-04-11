@@ -1414,6 +1414,25 @@ loss_conv_kwargs = {"max_fan_in": max_fan_in,
                     "num_neurons": num_neurons,
                     "num_wires": num_wires,}
 
+@jax.jit
+def filtered_mean(x: jnp.ndarray) -> jnp.ndarray:
+    """
+    Computes the mean of x, excluding elements that are 0, inf, -inf or NaN
+    
+    Parameters:
+    x – the input array
+      
+    Returns:
+    A scalar jnp.ndarray representing the filtered mean, or NaN if no valid
+    elements.
+    """
+    valid_mask = ~(jnp.isnan(x) | jnp.isinf(x) | (x == 0))
+    total = jnp.sum(x[valid_mask])
+    count = jnp.sum(valid_mask)
+    if count == 0:
+        return jnp.nan
+    return total/count
+
 if add_img_or_custom == 'i':
     accuracy = batch_comp(
         partial(acc_conv, network=[neurons, neurons_conv]),
@@ -1423,6 +1442,14 @@ if add_img_or_custom == 'i':
         partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
         batch_size, batches,
         inputs=inputs, output=output, scaled=scaled_train_imgs)
+    if convs:
+        for batch in range(batches):
+            gradients = grad_conv([neurons, neurons_conv],
+                                inputs[batch*batch_size:(batch+1)*batch_size],
+                                output[batch*batch_size:(batch+1)*batch_size],
+                                [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs],
+                                **loss_conv_kwargs)
+            print(filtered_mean(gradients[0], gradients[1]))
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
     print(gate_usage_by_layer(neurons, sig))
     print(gate_usage_by_layer(neurons, step))
