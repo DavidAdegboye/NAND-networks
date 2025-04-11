@@ -425,6 +425,8 @@ feed_forward_conv_cont = jax.jit(partial(
 feed_forward_conv_disc = jax.jit(partial(
     feed_forward_conv, forward_conv_func=forward_conv_disc, convs=convs))
 
+print(convs)
+
 def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
     """
     Finds the number of neurons actually used by the network in each layer
