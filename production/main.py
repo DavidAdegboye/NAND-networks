@@ -1092,7 +1092,7 @@ def bce_loss(
     loss
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
-        inputs, neurons, sig, use_surr, surr_arr)
+        inputs, neurons, "cont", use_surr, surr_arr)
     pred = jnp.clip(pred, epsilon, 1-epsilon)
     pred_logits = jnp.log(pred) - jnp.log(1-pred)
     if mask1 != None:
@@ -1431,7 +1431,6 @@ if add_img_or_custom == 'i':
         partial(acc_conv, network=[neurons, neurons_conv]),
         batch_size, x_test.shape[0]//batch_size,
         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
-    print(accuracy)
     new_loss = batch_comp(
         partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
         batch_size, batches,
@@ -1449,7 +1448,7 @@ else:
     new_loss = batch_comp(
         partial(loss, network=[neurons, neurons_conv], **loss_kwargs),
         batch_size, batches,
-        inputs, output)
+        inputs=inputs, output=output)
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
     print(gate_usage_by_layer(neurons, sig))
     print(gate_usage_by_layer(neurons, step))
@@ -1500,7 +1499,7 @@ def run(timeout=config["timeout"]) -> None:
                     new_loss = batch_comp(
                         partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
                         batch_size, batches,
-                        inputs, output, scaled=scaled_train_imgs)
+                        inputs=inputs, output=output, scaled=scaled_train_imgs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
@@ -1510,11 +1509,11 @@ def run(timeout=config["timeout"]) -> None:
                     accuracy = batch_comp(
                         partial(acc, neurons=neurons, use_surr=use_surr, surr_arr=surr_arr),
                         batch_size, batches,
-                        inputs, output, False)
+                        inputs=inputs, output=output, skew_towards_falses=False)
                     new_loss = batch_comp(
                         partial(loss, network=[neurons, neurons_conv], **loss_kwargs),
                         batch_size, batches,
-                        inputs, output)
+                        inputs=inputs, output=output)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
@@ -1534,7 +1533,7 @@ def run(timeout=config["timeout"]) -> None:
                     new_loss = batch_comp(
                         partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
                         batch_size, batches,
-                        inputs, output, scaled=scaled_train_imgs)
+                        inputs=inputs, output=output, scaled=scaled_train_imgs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
@@ -1544,11 +1543,11 @@ def run(timeout=config["timeout"]) -> None:
                     accuracy = batch_comp(
                         partial(acc, neurons=neurons, use_surr=use_surr, surr_arr=surr_arr),
                         batch_size, batches,
-                        inputs, output, False)
+                        inputs=inputs, output=output, skew_towards_falses=False)
                     new_loss = batch_comp(
                         partial(loss, network=[neurons, neurons_conv], **loss_kwargs),
                         batch_size, batches,
-                        inputs, output)
+                        inputs=inputs, output=output)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
