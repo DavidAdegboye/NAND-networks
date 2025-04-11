@@ -1450,7 +1450,7 @@ else:
         batch_size, batches,
         inputs=inputs, output=output)
     new_loss = batch_comp(
-        partial(loss, network=[neurons, neurons_conv], **loss_kwargs),
+        partial(loss, neurons=neurons, **loss_kwargs),
         batch_size, batches,
         inputs=inputs, output=output)
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
@@ -1515,7 +1515,7 @@ def run(timeout=config["timeout"]) -> None:
                         batch_size, batches,
                         inputs=inputs, output=output)
                     new_loss = batch_comp(
-                        partial(loss, network=[neurons, neurons_conv], **loss_kwargs),
+                        partial(loss, neurons=neurons, **loss_kwargs),
                         batch_size, batches,
                         inputs=inputs, output=output)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
@@ -1549,7 +1549,7 @@ def run(timeout=config["timeout"]) -> None:
                         batch_size, batches,
                         inputs=inputs, output=output)
                     new_loss = batch_comp(
-                        partial(loss, network=[neurons, neurons_conv], **loss_kwargs),
+                        partial(loss, neurons=neurons, **loss_kwargs),
                         batch_size, batches,
                         inputs=inputs, output=output)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
