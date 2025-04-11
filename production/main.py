@@ -1096,6 +1096,7 @@ def bce_loss(
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
         inputs, neurons, "cont", use_surr, surr_arr)
     pred = jnp.clip(pred, epsilon, 1-epsilon)
+    jax.debug.print("output={x}", x=pred)
     pred_logits = jnp.log(pred) - jnp.log(1-pred)
     if mask1 != None:
         # separately calculating the loss of the correct and incorrect outputs.
@@ -1204,7 +1205,6 @@ def loss_conv(
     pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(
         inputs, network[1], scaled)
     pred = pred.reshape(pred.shape[0], -1)
-    jax.debug.print("input to conv layer={x}", x=pred)
     return loss(network[0], pred, output, max_fan_in=max_fan_in,
                 temperature=temperature, mean_fan_in=mean_fan_in,
                 max_gates=max_gates, min_gates=min_gates,
