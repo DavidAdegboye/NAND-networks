@@ -417,6 +417,7 @@ def feed_forward_conv(
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
         explicit_int = int(n)
         hash(explicit_int)
+        hash(forward_conv_func)
         temp = forward_conv_func(xs, ws, s, explicit_int)
         xs = jnp.concatenate(
             [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
