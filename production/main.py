@@ -1187,7 +1187,6 @@ def loss_conv(
     inputs: jnp.ndarray,
     output: jnp.ndarray,
     scaled: List[jnp.ndarray]=None,
-    convs: List[Tuple[int, int, int, int]]=None,
     max_fan_in: int=None,
     temperature: float=None,
     mean_fan_in: float=None,
@@ -1207,12 +1206,12 @@ def loss_conv(
     Returns
     loss
     """
-    if convs is None:
-        inputs = inputs.reshape(inputs.shape[0], -1)
-        return loss(network[0], inputs, output, max_fan_in=max_fan_in,
-                    temperature=temperature, mean_fan_in=mean_fan_in,
-                    max_gates=max_gates, min_gates=min_gates,
-                    num_neurons=num_neurons, num_wires=num_wires)
+    # if convs is None:
+    #     inputs = inputs.reshape(inputs.shape[0], -1)
+    #     return loss(network[0], inputs, output, max_fan_in=max_fan_in,
+    #                 temperature=temperature, mean_fan_in=mean_fan_in,
+    #                 max_gates=max_gates, min_gates=min_gates,
+    #                 num_neurons=num_neurons, num_wires=num_wires)
     pred = jax.vmap(feed_forward_conv_cont, in_axes=(0, None, 0))(
         inputs, network[1], scaled)
     pred = pred.reshape(pred.shape[0], -1)
@@ -1315,7 +1314,6 @@ def acc_conv(network: List[Network],
              inputs: jnp.ndarray,
              output: jnp.ndarray,
              scaled: List[jnp.ndarray]=None,
-             convs: List[Tuple[int, int, int, int]]=None
              ) -> float:
     """
     calculates the accuracy for images
@@ -1441,11 +1439,11 @@ loss_conv_kwargs = {"max_fan_in": max_fan_in,
 
 if add_img_or_custom == 'i':
     accuracy = batch_comp(
-        partial(acc_conv, network=[neurons, neurons_conv], convs=convs),
+        partial(acc_conv, network=[neurons, neurons_conv]),
         batch_size, x_test.shape[0]//batch_size,
         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
     new_loss = batch_comp(
-        partial(loss_conv, network=[neurons, neurons_conv], convs=convs, **loss_conv_kwargs),
+        partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
         batch_size, batches,
         inputs, output, scaled=scaled_train_imgs)
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
@@ -1490,7 +1488,7 @@ def run(timeout=config["timeout"]) -> None:
                                         inputs[batch*batch_size:(batch+1)*batch_size],
                                         output[batch*batch_size:(batch+1)*batch_size],
                                         [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs],
-                                        convs, **loss_conv_kwargs)
+                                        **loss_conv_kwargs)
                     update, opt_state_dense = optimizer_dense.update(gradients[0], opt_state_dense, neurons)
                     neurons = optax.apply_updates(neurons, update)
                     if convs:
@@ -1506,11 +1504,11 @@ def run(timeout=config["timeout"]) -> None:
             if time.time() - start_run_time > timeout * 60:
                 if add_img_or_custom == 'i':
                     accuracy = batch_comp(
-                        partial(acc_conv, network=[neurons, neurons_conv], convs=convs),
+                        partial(acc_conv, network=[neurons, neurons_conv]),
                         batch_size, x_test.shape[0]//batch_size,
                         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
                     new_loss = batch_comp(
-                        partial(loss_conv, network=[neurons, neurons_conv], convs=convs, **loss_conv_kwargs),
+                        partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
                         batch_size, batches,
                         inputs, output, scaled=scaled_train_imgs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
@@ -1540,11 +1538,11 @@ def run(timeout=config["timeout"]) -> None:
             if iters == max(10//batches, 1):
                 if add_img_or_custom == 'i':
                     accuracy = batch_comp(
-                        partial(acc_conv, network=[neurons, neurons_conv], convs=convs),
+                        partial(acc_conv, network=[neurons, neurons_conv]),
                         batch_size, x_test.shape[0]//batch_size,
                         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
                     new_loss = batch_comp(
-                        partial(loss_conv, network=[neurons, neurons_conv], convs=convs, **loss_conv_kwargs),
+                        partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
                         batch_size, batches,
                         inputs, output, scaled=scaled_train_imgs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
