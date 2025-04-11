@@ -1094,8 +1094,8 @@ def bce_loss(
     Returns
     loss
     """
-    pred = jax.vmap(feed_forward, in_axes=(0, None, None, None))(
-        inputs, neurons, use_surr, surr_arr)
+    pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
+        inputs, neurons, "cont", use_surr, surr_arr)
     pred = jnp.clip(pred, epsilon, 1-epsilon)
     pred_logits = jnp.log(pred) - jnp.log(1-pred)
     if mask1 != None:
