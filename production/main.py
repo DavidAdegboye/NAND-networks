@@ -263,8 +263,9 @@ def and_helper(
     Returns
     the effective input from that layer for the NAND gate
     """
-    return jnp.prod(1 + jnp.multiply(
-        x, weight_activation_dict[weight_activation](w)) - weight_activation_dict[weight_activation](w))
+    return jnp.prod(
+        1 + jnp.multiply(x, weight_activation_dict[weight_activation](w))
+          - weight_activation_dict[weight_activation](w))
 
 @partial(jax.jit, static_argnames="weight_activation")
 def forward(
@@ -283,7 +284,7 @@ def forward(
     the continuous effective output for that NAND gate
     """
     return 1 - jnp.prod(jax.vmap(
-        and_helper, in_axes=(0,0, None))(xs, weights, weight_activation))
+        and_helper, in_axes=(0, 0, None))(xs, weights, weight_activation))
 
 @partial(jax.jit, static_argnames="layer_i")
 def calc_surr(xs: jnp.ndarray, layer_i: int, surr_arr: List[jnp.ndarray]
@@ -327,7 +328,7 @@ def feed_forward(
     """
     xs = jnp.array([jnp.pad(
         inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
-
+    jax.debug.print("Initial xs{x}", x=xs)
     for layer_i in range(min(i_1-1, 3)):
         next = jax.vmap(forward, in_axes=(None, 0, None))(
             xs, neurons[layer_i], weight_activation)
@@ -336,7 +337,7 @@ def feed_forward(
         next = jnp.array([jnp.pad(
             next,(0, i_4-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
-
+    jax.debug.print("Intermediate xs{x}", x=xs)
     for layer_i in range(3, i_1-1):
         next = jax.vmap(forward, in_axes=(None, 0, None))(
             xs[jnp.array([0,-2,-1])], neurons[layer_i], weight_activation)
@@ -345,7 +346,7 @@ def feed_forward(
         next = jnp.array([jnp.pad(
             next,(0, i_4-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
-
+    jax.debug.print("Almost out xs{x}", x=xs)
     return jax.vmap(
         forward, in_axes=(None, 0, None))(
             xs, neurons[i_1-1], weight_activation)[:outs]
@@ -1093,10 +1094,9 @@ def bce_loss(
     Returns
     loss
     """
-    pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
-        inputs, neurons, "cont", use_surr, surr_arr)
+    pred = jax.vmap(feed_forward, in_axes=(0, None, None, None))(
+        inputs, neurons, use_surr, surr_arr)
     pred = jnp.clip(pred, epsilon, 1-epsilon)
-    jax.debug.print("output={x}", x=pred)
     pred_logits = jnp.log(pred) - jnp.log(1-pred)
     if mask1 != None:
         # separately calculating the loss of the correct and incorrect outputs.
