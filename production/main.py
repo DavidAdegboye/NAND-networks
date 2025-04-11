@@ -1388,7 +1388,7 @@ else:
 init_time = time.time()
 print("Took", init_time-start_time, "seconds to initialise.")
 print([layer.shape for layer in neurons])
-if add_img_or_custom == 'i' and convs:
+if add_img_or_custom == 'i':
     print([layer.shape for layer in neurons_conv])
 
 # @jax.jit
@@ -1481,7 +1481,7 @@ def run(timeout=config["timeout"]) -> None:
                 shuffled_indices = jax.random.permutation(key, inputs.shape[0])
                 inputs = inputs[shuffled_indices]
                 output = output[shuffled_indices]
-                if add_img_or_custom == 'i' and convs:
+                if add_img_or_custom == 'i':
                     scaled_train_imgs = [imgs[shuffled_indices] for imgs in scaled_train_imgs]
             for batch in range(batches):
                 if add_img_or_custom == 'i':
