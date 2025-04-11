@@ -415,7 +415,7 @@ def feed_forward_conv(
     the dense layers
     """
     for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
-        temp = forward_conv_func(xs, ws, s, n)
+        temp = forward_conv_func(xs, ws, s, 27)
         xs = jnp.concatenate(
             [imgs_list[i], 1-imgs_list[i], temp, 1-temp], axis=0)
     return xs
@@ -1440,11 +1440,10 @@ loss_conv_kwargs = {"max_fan_in": max_fan_in,
                     "num_wires": num_wires,}
 
 if add_img_or_custom == 'i':
-    accuracy = acc_conv([neurons, neurons_conv], x_test, y_test, scaled_test_imgs)
-    # accuracy = batch_comp(
-    #     partial(acc_conv, network=[neurons, neurons_conv]),
-    #     batch_size, x_test.shape[0]//batch_size,
-    #     inputs=x_test, output=y_test, scaled=scaled_test_imgs)
+    accuracy = batch_comp(
+        partial(acc_conv, network=[neurons, neurons_conv]),
+        batch_size, x_test.shape[0]//batch_size,
+        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
     new_loss = batch_comp(
         partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
         batch_size, batches,
