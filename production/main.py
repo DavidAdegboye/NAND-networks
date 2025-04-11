@@ -355,7 +355,7 @@ def feed_forward(
 feed_forward_cont = jax.jit(partial(feed_forward, forward_func=forward_cont))
 feed_forward_disc = jax.jit(partial(feed_forward, forward_func=forward_disc))
 
-@partial(jax.jit, static_argnames=("and_helper_func")) # add n back in
+@partial(jax.jit, static_argnames=('n', "and_helper_func"))
 def forward_conv(
     xs: jnp.ndarray,
     weights:jnp.ndarray,
