@@ -1463,7 +1463,7 @@ if add_img_or_custom == 'i':
 batches = config["batches"]
 batch_size = num_ins//batches
 
-boundary_jump = 5*(max(10//batches,1)**2)*batch_size
+boundary_jump = 5*(max(10//batches,1)**2)*batch_size*config["schedule_scale"]
 lr_multiplier = batch_size**0.5
 
 print("Learning:\n", output, "\nwith arch:", true_arch)
