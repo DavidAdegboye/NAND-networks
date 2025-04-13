@@ -243,7 +243,10 @@ dps = config["decimal_places"]
 
 sig = jax.jit(jax.nn.sigmoid)
 step = jax.jit(lambda x: jnp.where(x>0, 1, 0))
-weight_activation_dict = {"cont": sig, "disc": step}
+rand = jax.jit(lambda x: jax.random.bernoulli(
+    jax.random.key(random.randint(0, 10000)),
+    jax.nn.sigmoid(x)))
+weight_activation_dict = {"cont": sig, "disc": step, "rand": rand}
 
 @partial(jax.jit, static_argnames="weight_activation")
 def and_helper(
@@ -1330,6 +1333,38 @@ def acc(neurons: Network,
         return jnp.sum(pred)/((2**(ins))*(outs)), trues[0], falses[0]
     return jnp.sum(pred)/((2**(ins))*(outs)), None, None
 
+@partial(jax.jit, static_argnames=("skew_towards_falses", "use_surr"))
+def rand_acc(neurons: Network,
+        inputs: jnp.ndarray,
+        output: jnp.ndarray,
+        use_surr: bool=False,
+        surr_arr: List[jnp.ndarray]=[],
+        skew_towards_falses=False
+        ) -> float:
+    """
+    calculates the accuracy, and also the masks used in the loss function
+
+    Parameters
+    neurons - the network
+    inputs - jnp array of the inputs we're testing
+    output - jnp array of the outputs we're testing
+    use_surr - boolean telling us if we're using surrogate bits
+    surr_arr - data structure of how to calculate surrogate bits
+    skew_towards_false - boolean telling us if we're gonna need to calculate
+    the masks (which we use to bias the gradients more towards what it's
+    getting wrong)
+    
+    Returns
+    accuracy - the accuracy (may be specifically the testing accuracy)
+    mask1 - the mask of the samples it got right
+    mask2 - the mask of the samples it got wrong
+    """
+    pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
+        inputs, neurons, "rand", use_surr, surr_arr)
+    pred = (pred == output)
+    pred = jnp.sum(pred, axis=1)
+    return jnp.sum(pred)/((2**(ins))*(outs))
+
 loss_kwargs = {"max_fan_in": max_fan_in,
                "temperature": temperature,
                "mean_fan_in": mean_fan_in,
@@ -1395,6 +1430,33 @@ if add_img_or_custom == 'i':
         inputs = inputs.reshape(inputs.shape[0], -1)
         pred = jax.vmap(feed_forward, in_axes=(0, None, None))(
             inputs, network[0], "disc")
+        result = jax.vmap(image_util.evaluate)(pred, output)
+        return jnp.sum(result)/result.size
+
+    @jax.jit
+    def rand_acc_conv(network: List[Network],
+                inputs: jnp.ndarray,
+                output: jnp.ndarray,
+                scaled: List[jnp.ndarray]=None,
+                ) -> float:
+        """
+        calculates the accuracy for images
+
+        Parameters
+        network - [neurons, neurons_conv], where neurons are the dense layers,
+        and neurons_conv are the convolutional
+        inputs - jnp array of the inputs we're testing
+        output - jnp array of the outputs we're testing
+        
+        Returns
+        accuracy - the accuracy (may be specifically the testing accuracy)
+        """
+        if not (convs is None):
+            inputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
+                inputs, network[1], scaled, "rand")
+        inputs = inputs.reshape(inputs.shape[0], -1)
+        pred = jax.vmap(feed_forward, in_axes=(0, None, None))(
+            inputs, network[0], "rand")
         result = jax.vmap(image_util.evaluate)(pred, output)
         return jnp.sum(result)/result.size
 
@@ -1493,11 +1555,15 @@ if add_img_or_custom == 'i':
         partial(acc_conv, network=[neurons, neurons_conv]),
         batch_size, x_test.shape[0]//batch_size,
         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
+    rand_accuracy = batch_comp(
+        partial(rand_acc_conv, network=[neurons, neurons_conv]),
+        batch_size, x_test.shape[0]//batch_size,
+        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
     new_loss = batch_comp(
         partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
         batch_size, batches,
         inputs=inputs, output=output, scaled=scaled_train_imgs)
-    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
+    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
     print(gate_usage_by_layer(neurons, sig))
     print(gate_usage_by_layer(neurons, step))
     print(max_fan_in_penalty(neurons, 0, temperature),
@@ -1505,8 +1571,9 @@ if add_img_or_custom == 'i':
     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
 else:
     accuracy = acc(neurons, inputs, output, use_surr, surr_arr, False)[0]
+    rand_accuracy = rand_acc(neurons, inputs, output, use_surr, surr_arr, False)
     new_loss = loss(neurons, inputs, output, **loss_kwargs)
-    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
+    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
     print(gate_usage_by_layer(neurons, sig))
     print(gate_usage_by_layer(neurons, step))
     print(max_fan_in_penalty(neurons, 0, temperature),
@@ -1558,12 +1625,16 @@ def run(timeout=config["timeout"]) -> None:
                         partial(acc_conv, network=[neurons, neurons_conv]),
                         batch_size, x_test.shape[0]//batch_size,
                         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
+                    rand_accuracy = batch_comp(
+                        partial(rand_acc_conv, network=[neurons, neurons_conv]),
+                        batch_size, x_test.shape[0]//batch_size,
+                        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
                     new_loss = batch_comp(
                         partial(loss_conv, network=[neurons, neurons_conv],
                                 **loss_conv_kwargs),
                         batch_size, batches,
                         inputs=inputs, output=output, scaled=scaled_train_imgs)
-                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
+                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
                     print(max_fan_in_penalty(neurons, 0, temperature),
@@ -1573,8 +1644,10 @@ def run(timeout=config["timeout"]) -> None:
                 else:
                     accuracy = acc(neurons, inputs, output,
                                    use_surr, surr_arr, False)[0]
+                    rand_accuracy = rand_acc(neurons, inputs, output,
+                                             use_surr, surr_arr, False)
                     new_loss = loss(neurons, inputs, output, **loss_kwargs)
-                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
+                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
                     print(max_fan_in_penalty(neurons, 0, temperature),
@@ -1594,11 +1667,15 @@ def run(timeout=config["timeout"]) -> None:
                         partial(acc_conv, network=[neurons, neurons_conv]),
                         batch_size, x_test.shape[0]//batch_size,
                         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
+                    rand_accuracy = batch_comp(
+                        partial(rand_acc_conv, network=[neurons, neurons_conv]),
+                        batch_size, x_test.shape[0]//batch_size,
+                        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
                     new_loss = batch_comp(
                         partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
                         batch_size, batches,
                         inputs=inputs, output=output, scaled=scaled_train_imgs)
-                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
+                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
                     print(max_fan_in_penalty(neurons, 0, temperature),
@@ -1608,8 +1685,10 @@ def run(timeout=config["timeout"]) -> None:
                 else:
                     accuracy = acc(neurons, inputs, output,
                                    use_surr, surr_arr, False)[0]
+                    rand_accuracy = rand_acc(neurons, inputs, output,
+                                             use_surr, surr_arr, False)
                     new_loss = loss(neurons, inputs, output, **loss_kwargs)
-                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
+                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
                     print(max_fan_in_penalty(neurons, 0, temperature),
