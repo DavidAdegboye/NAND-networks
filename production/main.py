@@ -223,14 +223,16 @@ if max_gates_used_penalty_coeff == 0:
     max_gates = jnp.array([0]*len(arch))
 else:
     max_gates = jnp.array(config["max_gates"])
-max_gates_used_penalty_coeff = max_gates_used_penalty_coeff / (sum(arch)-sum(max_gates))
+max_gates_used_penalty_coeff = float(max_gates_used_penalty_coeff
+                                     / (sum(arch)-sum(max_gates)))
 continuous_penalty_coeff = config["continuous_penalty_coeff"]
 min_gates_used_penalty_coeff = config["min_gates_used_penalty_coeff"]
 if min_gates_used_penalty_coeff == 0:
     min_gates = jnp.array([0]*len(arch))
 else:
     min_gates = jnp.array(config["min_gates"])
-    min_gates_used_penalty_coeff = float(min_gates_used_penalty_coeff / (sum(min_gates)))
+    min_gates_used_penalty_coeff = float(min_gates_used_penalty_coeff
+                                         / (sum(min_gates)))
 mean_fan_in_penalty_coeff = config["mean_fan_in_penalty_coeff"]
 if mean_fan_in_penalty_coeff == 0:
     mean_fan_in = 0
@@ -361,12 +363,12 @@ if add_img_or_custom == 'i':
         
         Parameters:
         xs - an array of shape (old_channels, old_n, old_n), the input data
-        weights - an array of shape (channels, old_channels, w, w), containing the
-        filter weights
+        weights - an array of shape (channels, old_channels, w, w), containing
+        the filter weights
         s - the stride of the filter
         n - the new height and width of the picture
-        weight_activation - a string which is "cont" or "disc", which determines
-        if we use a sigmoid or a step function
+        weight_activation - a string which is "cont" or "disc", which
+        determines if we use a sigmoid or a step function
 
         Returns:
         An array of shape (channels, n, n), the result of applying the filter.
@@ -400,12 +402,12 @@ if add_img_or_custom == 'i':
         xs - an array of shape (n, n), the input data
         weights - the list of weights
         imgs_list - a list of the scaled down images
-        weight_activation - a string which is "cont" or "disc", which determines
-        if we use a sigmoid or a step function
+        weight_activation - a string which is "cont" or "disc", which
+        determines if we use a sigmoid or a step function
         
         Returns:
-        The result of applying the convolutional layers, ready to be passed into
-        the dense layers
+        The result of applying the convolutional layers, ready to be passed
+        into the dense layers
         """
         for i, (ws, (_,_,s,n)) in enumerate(zip(weights, convs)):
             temp = forward_conv(xs, ws, s, n, weight_activation)
@@ -447,8 +449,24 @@ def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
     output.append(current)
     return output
 
-def clean_connected(connetecteds: Dict[int, List[int]], used_list: List[int], arch: List[int]) -> List[List[jnp.ndarray]]:
-    # converts our somewhat clean connecteds dictionary, into a List of jnp arrays representing the learnt NAND network
+def clean_connected(connetecteds: Dict[int, List[int]],
+                    used_list: List[int],
+                    arch: List[int]) -> List[List[jnp.ndarray]]:
+    """
+    Converts our connected dictionary, along with a list of the nodes that we
+    used, into a data structure representing the learnt NAND network
+
+    Parameters
+    connecteds - A dictionary mapping the global index of the NAND gates to the
+    list of nodes that connect to it
+    used_list - a list of the global indices of nodes used in the learnt NAND
+    network
+    arch - a list of how many nodes are in each layer of the NAND network
+
+    Returns
+    a data structure representing the learnt NAND network, that can be used
+    for simulating inference (see calc_surr for example).
+    """
     upper_bounds = []
     node_count = 0
     for layer in arch:
@@ -472,23 +490,26 @@ def clean_connected(connetecteds: Dict[int, List[int]], used_list: List[int], ar
             node_to_true_index[node] = [current_layer, layer_index]
             layer_index += 1
         if current_layer != 0:
-            connections = [node_to_true_index[con] for con in connetecteds[node]]
+            connections = [
+                node_to_true_index[con] for con in connetecteds[node]]
             layer.append(connections)
     net.append(layer)
     return net[1:]
 
-def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[str]:
+def output_circuit(neurons: Network, verbose=True, super_verbose=False
+                   ) -> List[str]:
     """
-    Outputs the learnt circuit, and also prints some useful data about the network
+    Outputs the learnt circuit, and also prints some useful data about the
+    network
     
     Parameters
     neurons - the internal representation of the circuit as learnt
     verbose - a flag for printing extra info
+    super_verbose - a flag for even more debug info
     
     Returns
     circuits[-arch[-1]:] - a list of the circuit learnt for each output neuron
     """
-    # outputs the learnt circuit
     connecteds: List[List[int]] = [[] for _ in range(ins)]
     if extra_layers:
         circuits = [chr(ord('A')+i) for i in range(ins)]
@@ -512,10 +533,11 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                         connecteds.append(new_con)
             circuits += extras
         if add_img_or_custom == 'a':
-            circuits, connecteds = adders_util.update_circuits(add_adder_help, circuits, with_nots, connecteds)
+            circuits, connecteds = adders_util.update_circuits(
+                add_adder_help, circuits, with_nots, connecteds)
     else:
         circuits = [chr(ord('A')+i) for i in range(arch[0])]
-    gates:List[List[List[Union[str,Tuple[int,int]]]]] = [[[] for _ in range(arch[0])]]
+    gates = [[[] for _ in range(arch[0])]]
     c2i = dict([(x,i) for i,x in enumerate(circuits)])
     indices = dict([(i,i) for i in range(arch[0])])
     index2gate = dict([(i, (0,i)) for i in range(arch[0])])
@@ -553,7 +575,9 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                             if node[:3] == "¬¬¬":
                                 node = node[2:]
                     else:
-                        node = '¬(' + '.'.join([element[1] for element in connected]) + ')'
+                        node = ('¬(' +
+                                '.'.join([element[1] for element in connected])
+                                + ')')
                     if node in c2i.keys():
                         if layer_i == i_1-1:
                       
@@ -570,7 +594,8 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                         circuits.append(node)
                         c2i[node] = added
                         indices[added] = added
-                        gates[-1].append([index2gate[element[0]] for element in connected])
+                        gates[-1].append(
+                            [index2gate[element[0]] for element in connected])
                         index2gate[added] = (gate_i1, gate_i2)
                         gate_i2 += 1
                         if layer_i == i_1-1:
@@ -584,7 +609,8 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
             connected: Set[Tuple[int, str]] = set()
             for inner_layer_i in range(layer_i+1):
                 for weight_i in range(true_arch[inner_layer_i]):
-                    if neurons[layer_i][neuron_i,inner_layer_i,weight_i] > 0 and indices[i] not in empties:
+                    if (neurons[layer_i][neuron_i,inner_layer_i,weight_i] > 0
+                        and indices[i] not in empties):
                         connected.add((indices[i], circuits[indices[i]]))
                     i += 1
             added += 1
@@ -604,7 +630,8 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                         if node[:3] == "¬¬¬":
                             node = node[2:]
                 else:
-                    node = '¬(' + '.'.join([element[1] for element in sorted_connected]) + ')'
+                    node = '¬(' + '.'.join(
+                        [element[1] for element in sorted_connected]) + ')'
                 if node in c2i.keys():
                     if layer_i == i_1-1:
                         circuits.append(node)
@@ -620,7 +647,8 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False) -> List[
                     circuits.append(node)
                     c2i[node] = added
                     indices[added] = added
-                    gates[-1].append([index2gate[element[0]] for element in sorted_connected])
+                    gates[-1].append([index2gate[element[0]]
+                                      for element in sorted_connected])
                     index2gate[added] = (gate_i1, gate_i2)
                     gate_i2 += 1
                     if layer_i == i_1-1:
@@ -748,7 +776,8 @@ def get_weights_conv(
     relation isn't clear, so I pass it in separately)
     
     Returns
-    a 2d jnp array of the weights, which represents the wires going into a certain neuron
+    a 2d jnp array of the weights, which represents the wires going into a
+    certain neuron
     """
     global key
     key = random.randint(0, 10000)
@@ -969,7 +998,9 @@ def input_layers(layer: int) -> jnp.ndarray:
     return jnp.array([0, layer-2, layer-1])
 
 @partial(jax.jit, static_argnames="weight_activation")
-def get_used_array(neurons: Network, weight_activation: Callable[[jnp.ndarray], jnp.ndarray]) -> float:
+def get_used_array(
+    neurons: Network, weight_activation: Callable[[jnp.ndarray], jnp.ndarray]
+    ) -> float:
     """
     returns an array, used, representing the network, where if
     used[layer][i] is close to 1, the neuron is used.
@@ -1188,8 +1219,8 @@ if add_img_or_custom=='i':
         calculates the loss including convolutional layers
 
         Parameters
-        network - [neurons, neurons_conv], where neurons are the dense layers, and
-        neurons_conv are the convolutional
+        network - [neurons, neurons_conv], where neurons are the dense layers,
+        and neurons_conv are the convolutional
         inputs - all of the inputs (training xs)
         output - all of the outputs (training labels or ys)
         
@@ -1350,8 +1381,8 @@ if add_img_or_custom == 'i':
         calculates the accuracy for images
 
         Parameters
-        network - [neurons, neurons_conv], where neurons are the dense layers, and
-        neurons_conv are the convolutional
+        network - [neurons, neurons_conv], where neurons are the dense layers,
+        and neurons_conv are the convolutional
         inputs - jnp array of the inputs we're testing
         output - jnp array of the outputs we're testing
         
@@ -1396,7 +1427,8 @@ if add_img_or_custom == 'i':
             gradients = grad_conv([neurons, neurons_conv],
                                 inputs[batch*batch_size:(batch+1)*batch_size],
                                 output[batch*batch_size:(batch+1)*batch_size],
-                                [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs],
+                                [imgs[batch*batch_size:(batch+1)*batch_size]
+                                 for imgs in scaled_train_imgs],
                                 **loss_conv_kwargs)
             neurons_mean += filtered_mean(gradients[0])
             convs_mean += filtered_mean(gradients[1])
@@ -1468,7 +1500,8 @@ if add_img_or_custom == 'i':
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
     print(gate_usage_by_layer(neurons, sig))
     print(gate_usage_by_layer(neurons, step))
-    print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
+    print(max_fan_in_penalty(neurons, 0, temperature),
+          max_fan_in_penalty_disc(neurons, 0))
     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
 else:
     accuracy = acc(neurons, inputs, output, use_surr, surr_arr, False)[0]
@@ -1476,14 +1509,14 @@ else:
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
     print(gate_usage_by_layer(neurons, sig))
     print(gate_usage_by_layer(neurons, step))
-    print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
+    print(max_fan_in_penalty(neurons, 0, temperature),
+          max_fan_in_penalty_disc(neurons, 0))
     print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
 
 def run(timeout=config["timeout"]) -> None:
     global inputs, output, neurons, neurons_conv, opt_state_dense, opt_state_conv, scaled_train_imgs
     cont = True
     iters = 0
-    file_i = -1
     start_run_time = time.time()
     while cont:
         iters += 1
@@ -1494,25 +1527,30 @@ def run(timeout=config["timeout"]) -> None:
                 inputs = inputs[shuffled_indices]
                 output = output[shuffled_indices]
                 if add_img_or_custom == 'i' and convs:
-                    scaled_train_imgs = [imgs[shuffled_indices] for imgs in scaled_train_imgs]
+                    scaled_train_imgs = [imgs[shuffled_indices]
+                                         for imgs in scaled_train_imgs]
             for batch in range(batches):
                 if add_img_or_custom == 'i':
                     gradients = grad_conv([neurons, neurons_conv],
-                                        inputs[batch*batch_size:(batch+1)*batch_size],
-                                        output[batch*batch_size:(batch+1)*batch_size],
-                                        [imgs[batch*batch_size:(batch+1)*batch_size] for imgs in scaled_train_imgs],
-                                        **loss_conv_kwargs)
-                    update, opt_state_dense = optimizer_dense.update(gradients[0], opt_state_dense, neurons)
+                                          inputs[batch*batch_size:(batch+1)*batch_size],
+                                          output[batch*batch_size:(batch+1)*batch_size],
+                                          [imgs[batch*batch_size:(batch+1)*batch_size]
+                                           for imgs in scaled_train_imgs],
+                                          **loss_conv_kwargs)
+                    update, opt_state_dense = optimizer_dense.update(
+                        gradients[0], opt_state_dense, neurons)
                     neurons = optax.apply_updates(neurons, update)
                     if convs:
-                        update, opt_state_conv = optimizer_conv.update(gradients[1], opt_state_conv, neurons_conv)
+                        update, opt_state_conv = optimizer_conv.update(
+                            gradients[1], opt_state_conv, neurons_conv)
                         neurons_conv = optax.apply_updates(neurons_conv, update)
                 else:
                     gradients = grad(neurons,
                                     inputs[batch*batch_size:(batch+1)*batch_size],
                                     output[batch*batch_size:(batch+1)*batch_size],
                                     **loss_kwargs)
-                    updates, opt_state_dense = optimizer_dense.update(gradients, opt_state_dense, neurons)
+                    updates, opt_state_dense = optimizer_dense.update(
+                        gradients, opt_state_dense, neurons)
                     neurons = optax.apply_updates(neurons, updates)
             if time.time() - start_run_time > timeout * 60:
                 if add_img_or_custom == 'i':
@@ -1521,25 +1559,33 @@ def run(timeout=config["timeout"]) -> None:
                         batch_size, x_test.shape[0]//batch_size,
                         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
                     new_loss = batch_comp(
-                        partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
+                        partial(loss_conv, network=[neurons, neurons_conv],
+                                **loss_conv_kwargs),
                         batch_size, batches,
                         inputs=inputs, output=output, scaled=scaled_train_imgs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
-                    print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
-                    print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
+                    print(max_fan_in_penalty(neurons, 0, temperature),
+                          max_fan_in_penalty_disc(neurons, 0))
+                    print(mean_fan_in_penalty(neurons, 0, temperature,
+                                              num_neurons))
                 else:
-                    accuracy = acc(neurons, inputs, output, use_surr, surr_arr, False)[0]
+                    accuracy = acc(neurons, inputs, output,
+                                   use_surr, surr_arr, False)[0]
                     new_loss = loss(neurons, inputs, output, **loss_kwargs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
-                    print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
-                    print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
+                    print(max_fan_in_penalty(neurons, 0, temperature),
+                          max_fan_in_penalty_disc(neurons, 0))
+                    print(mean_fan_in_penalty(neurons, 0, temperature,
+                                              num_neurons))
                 return
         if add_img_or_custom != 'i':
-            if test(neurons, inputs, output, use_surr, surr_arr) and (max_fan_in_penalty_coeff==0 or test_fan_in(neurons)) or get_optional_input_non_blocking() == 2:
+            if (test(neurons, inputs, output, use_surr, surr_arr) and
+                (max_fan_in_penalty_coeff==0 or test_fan_in(neurons))
+                or get_optional_input_non_blocking() == 2):
                 cont = False
         if cont:
             if iters == max(10//batches, 1):
@@ -1555,16 +1601,21 @@ def run(timeout=config["timeout"]) -> None:
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
-                    print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
-                    print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
+                    print(max_fan_in_penalty(neurons, 0, temperature),
+                          max_fan_in_penalty_disc(neurons, 0))
+                    print(mean_fan_in_penalty(neurons, 0, temperature,
+                                              num_neurons))
                 else:
-                    accuracy = acc(neurons, inputs, output, use_surr, surr_arr, False)[0]
+                    accuracy = acc(neurons, inputs, output,
+                                   use_surr, surr_arr, False)[0]
                     new_loss = loss(neurons, inputs, output, **loss_kwargs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}")
                     print(gate_usage_by_layer(neurons, sig))
                     print(gate_usage_by_layer(neurons, step))
-                    print(max_fan_in_penalty(neurons, 0, temperature), max_fan_in_penalty_disc(neurons, 0))
-                    print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
+                    print(max_fan_in_penalty(neurons, 0, temperature),
+                          max_fan_in_penalty_disc(neurons, 0))
+                    print(mean_fan_in_penalty(neurons, 0, temperature,
+                                               num_neurons))
                 iters = 0
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
