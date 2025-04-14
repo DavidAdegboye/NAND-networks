@@ -692,8 +692,8 @@ def beta_sampler(shape: Tuple[int, ...], n: int, sigma: float, k: float=None
                  ) -> jnp.ndarray:
     """
     returns a set of numbers with the appropriate distribution. sigma must be
-    at most sqrt(n-1)n this distribution ensures that the expected value of the
-    sigmoid is 1/n
+    at most sqrt(n-1)/n.
+    This distribution ensures that the expected value of the sigmoid is 1/n
     
     Parameters
     shape - the shape of the array we want to return
@@ -839,7 +839,6 @@ def get_weights(
     a 2d jnp array of the weights, which represents the wires going into a
     certain neuron
     """
-    global key
     if layer == 1 or layer == 2 or layer == len(arch)-1:
         weights = jnp.ones((layer, i_4)) * -jnp.inf
     else:
@@ -861,14 +860,12 @@ def get_weights(
                 inner_layer,
                 (0, i_4-arch[i]),
                 mode="constant", constant_values=-jnp.inf))
-            key = random.randint(0, 10000)
     else:
         inner_layer = distribution(shape=(arch[0],), n=n, sigma=sigma, k=k)
         weights = weights.at[0].set(jnp.pad(
             inner_layer,
             (0, i_4-arch[0]),
             mode="constant", constant_values=-jnp.inf))
-        key = random.randint(0, 10000)
         for i in range(1,3):
             inner_layer = distribution(
                 shape=(arch[layer-3+i],), n=n, sigma=sigma, k=k)
@@ -876,7 +873,6 @@ def get_weights(
                 inner_layer,
                 (0, i_4-arch[layer-3+i]),
                 mode="constant", constant_values=-jnp.inf))
-            key = random.randint(0, 10000)
     return weights
 
 def initialise(
@@ -902,9 +898,9 @@ def initialise(
     neurons = []
     for i1 in range(1, len(arch)):
         if i1 == 1 or i1 == 2 or i1 == len(arch) - 1:
-            layer = jnp.ones((arch[i1], i1, i_4))
+            layer = jnp.ones((arch[i1], i1, i_4)) * (-jnp.inf)
         else:
-            layer = jnp.ones((arch[i1], 3, i_4))
+            layer = jnp.ones((arch[i1], 3, i_4)) * (-jnp.inf)
         for i2 in range(arch[i1]):
             layer = layer.at[i2].set(get_weights(
                 i1, true_arch, distribution, sigma, k))
