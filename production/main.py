@@ -727,7 +727,7 @@ def normal_sampler1(shape: Tuple[int, ...], n: int, sigma: float, k: float=None
     the weights
     """
     key = random.randint(0, 10000)
-    mu = jsp_special.ndtri(1.0 / n)
+    mu = (-sigma)*jsp_special.ndtri((n-1) / n)
     return sigma * jax.random.normal(jax.random.key(key), shape=shape) + mu
 
 def normal_sampler2(shape: Tuple[int, ...], n: int, sigma: float, k: float
