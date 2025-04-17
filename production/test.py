@@ -189,8 +189,6 @@ def run_test(updates: Dict[str, any]):
         arch = [new_ins] + [
             round(starting_width-i*layer_diff) for i in range(hidden)] + [outs]
 
-    arch = tuple(arch)
-
     true_arch = arch.copy()
 
     if use_surr:
@@ -200,8 +198,6 @@ def run_test(updates: Dict[str, any]):
                 true_arch[i+1] += len(layer)
                 surr_copy.append(layer)
         surr_arr = surr_copy.copy()
-
-    true_arch = tuple(true_arch)
 
     i_0 = len(true_arch) - 1
     # i_1 = max(true_arch[1:])
