@@ -689,7 +689,7 @@ def run_test(variables: Dict[str, any]):
         with open(config["output_file"], "a") as f:
             f.write(str(variables)+'\n')
             f.write(f"used:\n{learnt_arch}\nout of:\n{true_arch}\n")
-            f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}\n")
+            f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {sum(fan_ins)/len(fan_ins)}\n")
             for circ in circuits[-true_arch[-1]:]:
                 f.write(f"{circ}\n")
         print("used:\n", learnt_arch, "\nout of:\n", true_arch)
@@ -1703,9 +1703,12 @@ def run_test(variables: Dict[str, any]):
 
 true_start = time.time()
 for _ in range(20):
-    run_test({"output": [[random.randint(0,1)] for i in range(16)]})
+    run_start = time.time()
+    run_test({"output": [[random.randint(0,1)] for _ in range(16)]})
+    run_end = time.time()
+    f.write(f"Total time for test: {run_end - run_start} seconds.")
 true_end = time.time()
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
 with open(config["output_file"], "a") as f:
-    f.write(f"Total time for 20 tests: {true_end - true_start} seconds.")
+    f.write(f"Total time for 20 tests: {true_end - true_start} seconds.\n")
