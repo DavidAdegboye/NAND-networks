@@ -16,11 +16,11 @@ if os.name == 'nt':  # Windows
 else:  # Unix-like systems
     import select
 
-def run_test(updates: Dict[str, any]):
+def run_test(variables: Dict[str, any]):
     with open("set-up.yaml", "r") as f:
         config = yaml.safe_load(f)
 
-    for k,v in updates.items():
+    for k,v in variables.items():
         config[k] = v
 
     jax.config.update("jax_traceback_filtering", config["traceback"])
@@ -687,7 +687,7 @@ def run_test(updates: Dict[str, any]):
             if node_index >= learnt_arch[0]:
                 fan_ins.append(len(connecteds[node_index]))
         with open(config["output_file"], "a") as f:
-            f.write(str(updates)+'\n')
+            f.write(str(variables)+'\n')
             f.write(f"used:\n{learnt_arch}\nout of:\n{true_arch}\n")
             f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}\n")
             for circ in circuits[-true_arch[-1]:]:
@@ -1634,7 +1634,7 @@ def run_test(updates: Dict[str, any]):
                     print(mean_fan_in_penalty(weights, 0, temperature,
                                             num_neurons))
                     with open(config["output_file"], "a") as f:
-                        f.write(str(updates)+'\n')
+                        f.write(str(variables)+'\n')
                         f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                         f.write(f"Gate usage: {gate_usage_disc}\n")
                         f.write(f"Max fan-in: {max_fan}\n")
