@@ -1701,12 +1701,19 @@ def run_test(variables: Dict[str, any]):
         [print(circ) for circ in circuit]
     return
 
+with open("set-up.yaml", "r") as f:
+    config = yaml.safe_load(f)
+with open(config["output_file"], "w") as f:
+    f.write(f"New test:\n")
 true_start = time.time()
 for _ in range(20):
     run_start = time.time()
     run_test({"output": [[random.randint(0,1)] for _ in range(16)]})
     run_end = time.time()
-    f.write(f"Total time for test: {run_end - run_start} seconds.")
+    with open("set-up.yaml", "r") as f:
+        config = yaml.safe_load(f)
+    with open(config["output_file"], "a") as f:
+        f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
