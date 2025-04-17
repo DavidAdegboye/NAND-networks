@@ -22,6 +22,8 @@ def run_test(variables: Dict[str, any]):
 
     for k,v in variables.items():
         config[k] = v
+    
+    print(variables)
 
     jax.config.update("jax_traceback_filtering", config["traceback"])
 
