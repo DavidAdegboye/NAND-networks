@@ -20,8 +20,7 @@ def run_test(updates: Dict[str, any]):
     with open("set-up.yaml", "r") as f:
         config = yaml.safe_load(f)
 
-    print(updates.keys())
-    for k,v in updates.keys():
+    for k,v in updates.items():
         config[k] = v
 
     jax.config.update("jax_traceback_filtering", config["traceback"])
