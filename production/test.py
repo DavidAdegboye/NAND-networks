@@ -20,7 +20,7 @@ def run_test(updates: Dict[str, any]):
     with open("set-up.yaml", "r") as f:
         config = yaml.safe_load(f)
 
-    print(type(updates))
+    print(updates.keys())
     for k,v in updates.keys():
         config[k] = v
 
