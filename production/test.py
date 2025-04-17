@@ -1701,5 +1701,11 @@ def run_test(updates: Dict[str, any]):
         [print(circ) for circ in circuit]
     return
 
+true_start = time.time()
 for _ in range(20):
     run_test({"output": [[random.randint(0,1)] for i in range(16)]})
+true_end = time.time()
+with open("set-up.yaml", "r") as f:
+    config = yaml.safe_load(f)
+with open(config["output_file"], "a") as f:
+    f.write(f"Total time for 20 tests: {true_end - true_start} seconds.")
