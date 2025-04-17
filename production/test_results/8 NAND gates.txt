@@ -1,0 +1,361 @@
+{'output': [[0], [0], [1], [1], [0], [0], [0], [0], [0], [1], [0], [0], [0], [0], [1], [0]]}
+Without PTO:
+used:
+[8, 3, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.75
+¬(¬(A.B.C.¬D).¬(A.D.¬B.¬C).¬(C.¬A.¬B).¬(C.¬A.¬B))
+With PTO
+used:
+[8, 3, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.5
+¬(¬(A.B.C.¬D).¬(A.D.¬B.¬C).¬(C.¬A.¬B))
+Total time for test: 32.19575071334839 seconds.
+{'output': [[0], [0], [0], [0], [1], [0], [0], [0], [0], [0], [1], [0], [0], [0], [1], [0]]}
+Without PTO:
+used:
+[7, 2, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 2.5
+¬(¬(A.C.¬D).¬(B.¬A.¬C.¬D))
+With PTO
+used:
+[7, 2, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 2.5
+¬(¬(A.C.¬D).¬(B.¬A.¬C.¬D))
+Total time for test: 23.335144758224487 seconds.
+{'output': [[1], [1], [1], [0], [0], [0], [1], [0], [1], [1], [0], [0], [1], [0], [0], [0]]}
+Without PTO:
+used:
+[8, 3, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.0
+¬(¬(C.¬A.¬D).¬(A.¬C.¬D).¬(A.¬C.¬D).¬(¬B.¬C))
+With PTO
+used:
+[8, 3, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 3
+Average fan-in: 2.75
+¬(¬(C.¬A.¬D).¬(A.¬C.¬D).¬(¬B.¬C))
+Total time for test: 24.49090313911438 seconds.
+{'output': [[0], [1], [0], [0], [1], [1], [0], [1], [0], [1], [0], [0], [1], [0], [1], [0]]}
+Without PTO:
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.2
+¬(¬(B.¬C.¬D).¬(B.D.¬A).¬(D.¬B.¬C).¬(A.B.¬D))
+With PTO
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.2
+¬(¬(B.¬C.¬D).¬(B.D.¬A).¬(D.¬B.¬C).¬(A.B.¬D))
+Total time for test: 24.491674423217773 seconds.
+{'output': [[1], [0], [1], [1], [1], [1], [1], [0], [1], [0], [0], [1], [1], [1], [1], [1]]}
+Without PTO:
+used:
+[8, 6, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 7
+Average fan-in: 2.857142857142857
+¬(¬(B.¬C).¬(C.D.¬B).¬(¬A.¬D).¬(B.¬D).¬(B.¬D).¬(¬C.¬D).¬(A.B))
+With PTO
+used:
+[8, 6, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 6
+Average fan-in: 2.7142857142857144
+¬(¬(B.¬C).¬(C.D.¬B).¬(¬A.¬D).¬(B.¬D).¬(¬C.¬D).¬(A.B))
+Total time for test: 21.6025390625 seconds.
+{'output': [[1], [0], [1], [1], [1], [0], [1], [0], [0], [0], [1], [0], [0], [1], [1], [0]]}
+Without PTO:
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 6
+Average fan-in: 3.4
+¬(¬(C.¬A.¬B).¬(C.¬A.¬B).¬(A.B.D.¬C).¬(A.B.D.¬C).¬(C.¬D).¬(¬A.¬D))
+With PTO
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.0
+¬(¬(C.¬A.¬B).¬(A.B.D.¬C).¬(C.¬D).¬(¬A.¬D))
+Total time for test: 26.90527868270874 seconds.
+{'output': [[1], [0], [0], [1], [0], [1], [1], [0], [1], [0], [1], [0], [1], [0], [0], [0]]}
+Without PTO:
+used:
+[8, 5, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 5
+Average fan-in: 3.8333333333333335
+¬(¬(¬A.¬B.¬C.¬D).¬(C.D.¬A.¬B).¬(A.¬B.¬D).¬(B.D.¬A.¬C).¬(A.¬C.¬D))
+With PTO
+used:
+[8, 5, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 5
+Average fan-in: 3.8333333333333335
+¬(¬(¬A.¬B.¬C.¬D).¬(C.D.¬A.¬B).¬(A.¬B.¬D).¬(B.D.¬A.¬C).¬(A.¬C.¬D))
+Total time for test: 123.74946069717407 seconds.
+{'output': [[0], [0], [1], [0], [0], [0], [1], [1], [0], [0], [1], [0], [1], [1], [0], [1]]}
+Without PTO:
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.2
+¬(¬(C.¬A.¬D).¬(B.C.D).¬(C.¬B.¬D).¬(A.B.¬C))
+With PTO
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.2
+¬(¬(C.¬A.¬D).¬(B.C.D).¬(C.¬B.¬D).¬(A.B.¬C))
+Total time for test: 31.33761715888977 seconds.
+{'output': [[0], [1], [0], [1], [1], [1], [0], [0], [0], [1], [1], [0], [0], [1], [1], [0]]}
+Without PTO:
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 5
+Average fan-in: 3.4
+¬(¬(D.¬C).¬(B.¬A.¬C.¬D).¬(A.C.¬D).¬(A.C.¬D).¬(D.¬A.¬B))
+With PTO
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.2
+¬(¬(D.¬C).¬(B.¬A.¬C.¬D).¬(A.C.¬D).¬(D.¬A.¬B))
+Total time for test: 24.635475158691406 seconds.
+{'output': [[0], [1], [1], [0], [1], [0], [0], [0], [1], [0], [0], [0], [0], [1], [0], [1]]}
+Without PTO:
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.8
+¬(¬(B.¬A.¬C.¬D).¬(A.¬B.¬C.¬D).¬(A.B.D).¬(C.¬A.¬B.¬D))
+With PTO
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.8
+¬(¬(B.¬A.¬C.¬D).¬(A.¬B.¬C.¬D).¬(A.B.D).¬(C.¬A.¬B.¬D))
+Total time for test: 123.48508429527283 seconds.
+{'output': [[0], [1], [1], [1], [1], [0], [1], [1], [0], [0], [0], [0], [1], [0], [1], [1]]}
+Without PTO:
+used:
+[7, 3, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 5
+Average fan-in: 2.6
+¬(¬(B.¬D).¬(B.¬D).¬(C.¬A.¬B).¬(B.C).¬(B.C))
+With PTO
+used:
+[7, 3, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 3
+Average fan-in: 2.2
+¬(¬(B.¬D).¬(C.¬A.¬B).¬(B.C))
+Total time for test: 123.6710250377655 seconds.
+{'output': [[1], [0], [1], [1], [1], [1], [0], [0], [1], [1], [1], [1], [1], [1], [1], [1]]}
+Without PTO:
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 7
+Average fan-in: 3.2
+¬(¬A.¬A.¬A.¬(C.¬B).¬(B.¬C).¬(¬B.¬D).¬(A.¬C.¬D))
+With PTO
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 5
+Average fan-in: 2.8
+¬(¬A.¬(C.¬B).¬(B.¬C).¬(¬B.¬D).¬(A.¬C.¬D))
+Total time for test: 24.262489795684814 seconds.
+{'output': [[1], [1], [1], [0], [1], [0], [1], [1], [1], [1], [1], [1], [0], [1], [1], [0]]}
+Without PTO:
+used:
+[8, 6, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 6
+Average fan-in: 2.857142857142857
+¬(¬(¬B.¬C).¬(A.¬B).¬(A.D.¬C).¬(¬A.¬D).¬(B.C.¬A).¬(C.¬D))
+With PTO
+used:
+[8, 6, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 6
+Average fan-in: 2.857142857142857
+¬(¬(¬B.¬C).¬(A.¬B).¬(A.D.¬C).¬(¬A.¬D).¬(B.C.¬A).¬(C.¬D))
+Total time for test: 18.85698175430298 seconds.
+{'output': [[1], [0], [1], [0], [0], [1], [0], [1], [1], [1], [1], [0], [1], [0], [0], [0]]}
+Without PTO:
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.0
+¬(¬(A.¬C.¬D).¬(A.¬B.¬C).¬(¬B.¬D).¬(B.D.¬A))
+With PTO
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.0
+¬(¬(A.¬C.¬D).¬(A.¬B.¬C).¬(¬B.¬D).¬(B.D.¬A))
+Total time for test: 23.35894227027893 seconds.
+{'output': [[0], [1], [0], [0], [0], [1], [0], [0], [0], [0], [1], [0], [1], [1], [0], [0]]}
+Without PTO:
+used:
+[8, 3, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.5
+¬(¬(A.C.¬B.¬D).¬(D.¬A.¬C).¬(D.¬A.¬C).¬(A.B.¬C))
+With PTO
+used:
+[8, 3, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.25
+¬(¬(A.C.¬B.¬D).¬(D.¬A.¬C).¬(A.B.¬C))
+Total time for test: 21.021963119506836 seconds.
+{'output': [[1], [0], [1], [0], [1], [1], [1], [0], [0], [1], [1], [0], [0], [1], [1], [0]]}
+Without PTO:
+used:
+[7, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 2.5
+¬(¬(A.D.¬C).¬(¬A.¬D).¬(B.¬A.¬C).¬(C.¬D))
+With PTO
+used:
+[7, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 2.5
+¬(¬(A.D.¬C).¬(¬A.¬D).¬(B.¬A.¬C).¬(C.¬D))
+Total time for test: 36.50801110267639 seconds.
+{'output': [[0], [0], [1], [0], [1], [0], [1], [1], [1], [1], [0], [1], [1], [0], [0], [0]]}
+Without PTO:
+used:
+[8, 5, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 5
+Average fan-in: 3.3333333333333335
+¬(¬(B.C.¬A).¬(C.¬A.¬D).¬(A.¬B.¬C).¬(B.¬C.¬D).¬(A.D.¬B))
+With PTO
+used:
+[8, 5, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 5
+Average fan-in: 3.3333333333333335
+¬(¬(B.C.¬A).¬(C.¬A.¬D).¬(A.¬B.¬C).¬(B.¬C.¬D).¬(A.D.¬B))
+Total time for test: 22.496637105941772 seconds.
+{'output': [[0], [0], [0], [0], [1], [1], [1], [0], [0], [0], [0], [1], [0], [1], [1], [0]]}
+Without PTO:
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.6
+¬(¬(A.C.D.¬B).¬(A.B.C.¬D).¬(B.¬A.¬D).¬(B.D.¬C))
+With PTO
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.6
+¬(¬(A.C.D.¬B).¬(A.B.C.¬D).¬(B.¬A.¬D).¬(B.D.¬C))
+Total time for test: 60.12063431739807 seconds.
+{'output': [[1], [0], [1], [1], [0], [1], [0], [0], [0], [0], [0], [0], [1], [1], [1], [1]]}
+Without PTO:
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 5
+Average fan-in: 3.6
+¬(¬(A.B).¬(A.B).¬(B.D.¬A.¬C).¬(¬A.¬B.¬C.¬D).¬(C.¬A.¬B))
+With PTO
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 3.4
+¬(¬(A.B).¬(B.D.¬A.¬C).¬(¬A.¬B.¬C.¬D).¬(C.¬A.¬B))
+Total time for test: 38.26383113861084 seconds.
+{'output': [[0], [1], [1], [0], [0], [1], [1], [0], [0], [1], [1], [1], [0], [1], [0], [1]]}
+Without PTO:
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 5
+Average fan-in: 3.0
+¬(¬(A.C.¬B).¬(A.C.¬B).¬(C.¬A.¬D).¬(A.D).¬(D.¬C))
+With PTO
+used:
+[8, 4, 1]
+out of:
+[8, 8, 1]
+Max fan-in: 4
+Average fan-in: 2.8
+¬(¬(A.C.¬B).¬(C.¬A.¬D).¬(A.D).¬(D.¬C))
+Total time for test: 21.544362545013428 seconds.
+Total time for 20 tests: 847.4295856952667 seconds.

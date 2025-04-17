@@ -1834,13 +1834,18 @@ def run_test(variables: Dict[str, any]):
                     new_loss = loss(weights, inputs, output, **loss_kwargs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(weights, "cont"))
-                    print(gate_usage_by_layer(weights, "disc"))
+                    gate_usage_disc = gate_usage_by_layer(weights, "disc")
+                    print(gate_usage_disc)
+                    max_fan = max_fan_in_penalty_disc(weights, 0)
                     print(max_fan_in_penalty(weights, 0, temperature),
-                        max_fan_in_penalty_disc(weights, 0))
+                        max_fan)
                     print(mean_fan_in_penalty(weights, 0, temperature,
                                             num_neurons))
-                    output_circuit_inefficient(weights, True, True)
-                    output_circuit(weights, True, True)
+                    with open(config["output_file"], "a") as f:
+                        f.write(str(variables)+'\n')
+                        f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
+                        f.write(f"Gate usage: {gate_usage_disc}\n")
+                        f.write(f"Max fan-in: {max_fan}\n")
                 return
         if add_img_or_custom != 'i':
             if (test(weights, inputs, output, use_surr, surr_arr) and
