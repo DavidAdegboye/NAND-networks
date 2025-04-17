@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import optax
 import random
 import itertools
-from typing import List, Tuple, Set, Union, Dict, Callable
+from typing import List, Tuple, Set, Dict, Callable
 import time
 import yaml
 import jax.scipy.special as jsp_special
@@ -53,6 +53,7 @@ def get_optional_input_non_blocking():
 
 # defining some types
 Network = Tuple[jnp.ndarray, ...]
+Shape = Tuple[int, ...]
 
 print(jax.devices())
 
@@ -184,6 +185,8 @@ else:
     arch = [new_ins] + [
         round(starting_width-i*layer_diff) for i in range(hidden)] + [outs]
 
+arch = tuple(arch)
+
 true_arch = arch.copy()
 
 if use_surr:
@@ -194,23 +197,25 @@ if use_surr:
             surr_copy.append(layer)
     surr_arr = surr_copy.copy()
 
-i_1 = len(true_arch) - 1
-# i_2 = max(true_arch[1:])
-# i_3 = i_1
-i_4 = max(true_arch)
+true_arch = tuple(true_arch)
 
-neurons_shape = []
+i_0 = len(true_arch) - 1
+# i_1 = max(true_arch[1:])
+# i_2 = i_0
+i_3 = max(true_arch)
+
+weights_shape = []
 for i in range(1, len(true_arch)):
     if i <= 3 or i == len(true_arch)-1:
-        neurons_shape.append((sum(true_arch[:i]), true_arch[i]))
+        weights_shape.append((sum(true_arch[:i]), true_arch[i]))
     else:
-        neurons_shape.append(
+        weights_shape.append(
             (true_arch[0]+true_arch[i-2]+true_arch[i-1], true_arch[i]))
-global_n = (sum(ns[0]*ns[1] for ns in neurons_shape) 
-            / sum(ns[1] for ns in neurons_shape))
+global_n = (sum(ns[0]*ns[1] for ns in weights_shape) 
+            / sum(ns[1] for ns in weights_shape))
 
 num_neurons = sum(true_arch[1:])
-num_wires = sum(ns[0]*ns[1] for ns in neurons_shape)
+num_wires = sum(ns[0]*ns[1] for ns in weights_shape)
 
 temperature = config["temperature"]
 max_fan_in_penalty_coeff = config["max_fan_in_penalty_coeff"]
@@ -241,12 +246,15 @@ else:
 
 dps = config["decimal_places"]
 
-sig = jax.jit(jax.nn.sigmoid)
 step = jax.jit(lambda x: jnp.where(x>0, 1, 0))
-rand = jax.jit(lambda x: jax.random.bernoulli(
+bern = jax.jit(lambda x: jax.random.bernoulli(
     jax.random.key(random.randint(0, 10000)),
     jax.nn.sigmoid(x)))
-weight_activation_dict = {"cont": sig, "disc": step, "rand": rand}
+temp = jax.jit(lambda x: jax.nn.sigmoid(x/temperature))
+weight_activation_dict = {"cont": jax.nn.sigmoid,
+                          "disc": step,
+                          "rand": bern,
+                          "temp": temp}
 
 @partial(jax.jit, static_argnames="weight_activation")
 def and_helper(
@@ -274,14 +282,13 @@ def and_helper(
 
 @partial(jax.jit, static_argnames="weight_activation")
 def forward(
-    xs: jnp.ndarray, weights: jnp.ndarray,
-    weight_activation: str="cont") -> float:
+    xs: jnp.ndarray, ws: jnp.ndarray, weight_activation: str="cont") -> float:
     """
     The forward pass for a neuron
 
     Parameters
     xs - a 2d jnp array of all the values on those wires
-    weights - a 2d jnp array of all the wires going into it
+    ws - a 2d jnp array of all the wires going into it
     weight_activation - a string which is "cont" or "disc", which determines
     if we use a sigmoid or a step function
     
@@ -289,7 +296,7 @@ def forward(
     the continuous effective output for that NAND gate
     """
     return 1 - jnp.prod(jax.vmap(
-        and_helper, in_axes=(0, 0, None))(xs, weights, weight_activation))
+        and_helper, in_axes=(0, 0, None))(xs, ws, weight_activation))
 
 @partial(jax.jit, static_argnames="layer_i")
 def calc_surr(xs: jnp.ndarray, layer_i: int, surr_arr: List[jnp.ndarray]
@@ -313,7 +320,7 @@ def calc_surr(xs: jnp.ndarray, layer_i: int, surr_arr: List[jnp.ndarray]
 @partial(jax.jit, static_argnames=("weight_activation", "use_surr"))
 def feed_forward(
     inputs: jnp.ndarray,
-    neurons: jnp.ndarray,
+    weights: jnp.ndarray,
     weight_activation: str="cont",
     use_surr: bool=False,
     surr_arr: List[jnp.ndarray]=[]) -> jnp.ndarray:
@@ -322,7 +329,7 @@ def feed_forward(
 
     Parameters
     inputs - the input data
-    neurons - the network
+    weights - the network
     weight_activation - a string which is "cont" or "disc", which determines
     if we use a sigmoid or a step function
     use_surr - boolean value for if we're adding surrogate bits
@@ -332,26 +339,26 @@ def feed_forward(
     the output of the network
     """
     xs = jnp.array([jnp.pad(
-        inputs,(0, i_4-len(inputs)), mode="constant", constant_values=1)])
-    for layer_i in range(min(i_1-1, 3)):
+        inputs,(0, i_3-len(inputs)), mode="constant", constant_values=1)])
+    for layer_i in range(min(i_0-1, 3)):
         next = jax.vmap(forward, in_axes=(None, 0, None))(
-            xs, neurons[layer_i], weight_activation)
+            xs, weights[layer_i], weight_activation)
         if use_surr and layer_i < len(surr_arr):
             next = jnp.concatenate([calc_surr(xs, layer_i, surr_arr), next])
         next = jnp.array([jnp.pad(
-            next,(0, i_4-len(next)), mode="constant", constant_values=1)])
+            next,(0, i_3-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
-    for layer_i in range(3, i_1-1):
+    for layer_i in range(3, i_0-1):
         next = jax.vmap(forward, in_axes=(None, 0, None))(
-            xs[jnp.array([0,-2,-1])], neurons[layer_i], weight_activation)
+            xs[jnp.array([0,-2,-1])], weights[layer_i], weight_activation)
         if use_surr and layer_i < len(surr_arr):
             next = jnp.concatenate([calc_surr(xs, layer_i, surr_arr), next])
         next = jnp.array([jnp.pad(
-            next,(0, i_4-len(next)), mode="constant", constant_values=1)])
+            next,(0, i_3-len(next)), mode="constant", constant_values=1)])
         xs = jnp.vstack([xs, next])
     return jax.vmap(
         forward, in_axes=(None, 0, None))(
-            xs, neurons[i_1-1], weight_activation)[:outs]
+            xs, weights[i_0-1], weight_activation)[:outs]
 
 if add_img_or_custom == 'i':
     @partial(jax.jit, static_argnames=('n', "weight_activation"))
@@ -420,7 +427,7 @@ if add_img_or_custom == 'i':
 
     convs = tuple(tuple(conv) for conv in convs)
 
-def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
+def get_used(used: List[int], arch: Tuple[int, ...], verbose: bool) -> List[int]:
     """
     Finds the number of neurons actually used by the network in each layer
 
@@ -454,7 +461,7 @@ def get_used(used: List[int], arch: List[int], verbose: bool) -> List[int]:
 
 def clean_connected(connetecteds: Dict[int, List[int]],
                     used_list: List[int],
-                    arch: List[int]) -> List[List[jnp.ndarray]]:
+                    arch: Tuple[int, ...]) -> List[List[jnp.ndarray]]:
     """
     Converts our connected dictionary, along with a list of the nodes that we
     used, into a data structure representing the learnt NAND network
@@ -499,14 +506,14 @@ def clean_connected(connetecteds: Dict[int, List[int]],
     net.append(layer)
     return net[1:]
 
-def output_circuit(neurons: Network, verbose=True, super_verbose=False
+def output_circuit(weights: Network, verbose=True, super_verbose=False
                    ) -> List[str]:
     """
     Outputs the learnt circuit, and also prints some useful data about the
     network
     
     Parameters
-    neurons - the internal representation of the circuit as learnt
+    weights - the internal representation of the circuit as learnt
     verbose - a flag for printing extra info
     super_verbose - a flag for even more debug info
     
@@ -553,7 +560,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False
         for layer in true_arch:
             sum_arch.append(sums)
             sums += layer
-    for layer_i in range(i_1):
+    for layer_i in range(i_0):
         gates.append([])
         gate_i1 = layer_i+1
         gate_i2 = 0
@@ -582,7 +589,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False
                                 '.'.join([element[1] for element in connected])
                                 + ')')
                     if node in c2i.keys():
-                        if layer_i == i_1-1:
+                        if layer_i == i_0-1:
                       
                             circuits.append(node)
                             gates[-1].append(["=", index2gate[c2i[node]]])
@@ -601,7 +608,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False
                             [index2gate[element[0]] for element in connected])
                         index2gate[added] = (gate_i1, gate_i2)
                         gate_i2 += 1
-                        if layer_i == i_1-1:
+                        if layer_i == i_0-1:
                             for prev_node in connected:
                                 used.add(prev_node[0])
                             used.add(added)
@@ -612,7 +619,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False
             connected: Set[Tuple[int, str]] = set()
             for inner_layer_i in range(layer_i+1):
                 for weight_i in range(true_arch[inner_layer_i]):
-                    if (neurons[layer_i][neuron_i,inner_layer_i,weight_i] > 0
+                    if (weights[layer_i][neuron_i,inner_layer_i,weight_i] > 0
                         and indices[i] not in empties):
                         connected.add((indices[i], circuits[indices[i]]))
                     i += 1
@@ -636,7 +643,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False
                     node = '¬(' + '.'.join(
                         [element[1] for element in sorted_connected]) + ')'
                 if node in c2i.keys():
-                    if layer_i == i_1-1:
+                    if layer_i == i_0-1:
                         circuits.append(node)
                         gates[-1].append(["=", index2gate[c2i[node]]])
                         index2gate[added] = (gate_i1, gate_i2)
@@ -654,7 +661,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False
                                       for element in sorted_connected])
                     index2gate[added] = (gate_i1, gate_i2)
                     gate_i2 += 1
-                    if layer_i == i_1-1:
+                    if layer_i == i_0-1:
                         for prev_node in sorted_connected:
                             used.add(prev_node[0])
                         used.add(added)
@@ -688,7 +695,7 @@ def output_circuit(neurons: Network, verbose=True, super_verbose=False
     print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
     return circuits[-true_arch[-1]:]
 
-def beta_sampler(shape: Tuple[int, ...], n: int, sigma: float, k: float=None
+def beta_sampler(shape: Shape, n: int, sigma: float, k: float=None
                  ) -> jnp.ndarray:
     """
     returns a set of numbers with the appropriate distribution. sigma must be
@@ -705,13 +712,13 @@ def beta_sampler(shape: Tuple[int, ...], n: int, sigma: float, k: float=None
     """
     key = random.randint(0, 10000)
     alpha = ((n-1)/(n**2*sigma**2)-1)/n
-    beta = alpha * (n - 1.0)
+    beta = alpha * (n - 1)
     samples = jax.random.beta(
         jax.random.key(key), a=alpha, b=beta, shape=shape)
     samples = jnp.clip(samples, epsilon, 1-epsilon)
     return jnp.log(samples / (1 - samples))
 
-def normal_sampler1(shape: Tuple[int, ...], n: int, sigma: float, k: float=None
+def normal_sampler1(shape: Shape, n: int, sigma: float, k: float=None
                     ) -> jnp.ndarray:
     """
     returns a set of numbers with the appropriate distribution.
@@ -730,7 +737,7 @@ def normal_sampler1(shape: Tuple[int, ...], n: int, sigma: float, k: float=None
     mu = (-sigma)*jsp_special.ndtri((n-1) / n)
     return sigma * jax.random.normal(jax.random.key(key), shape=shape) + mu
 
-def normal_sampler2(shape: Tuple[int, ...], n: int, sigma: float, k: float
+def normal_sampler2(shape: Shape, n: int, sigma: float, k: float
                     ) -> jnp.ndarray:
     """
     returns a set of numbers with the appropriate distribution.
@@ -762,7 +769,7 @@ def get_weights_conv(
         w: int,
         c: int,
         old_c: int,
-        distribution: Callable[[Tuple[int, ...], int, float, float], jnp.ndarray],
+        distribution: Callable[[Shape, int, float, float], jnp.ndarray],
         sigma: jnp.ndarray,
         k: jnp.ndarray=None) -> jnp.ndarray:
     """
@@ -785,13 +792,11 @@ def get_weights_conv(
     global key
     key = random.randint(0, 10000)
     n = old_c*w**2
-    if k is None:
-        return distribution(shape=(c, old_c, w, w), n=n, sigma=sigma, k=k)
-    return normal_sampler2(shape=(c, old_c, w, w), n=n, sigma=sigma, k=k)
+    return distribution(shape=(c, old_c, w, w), n=n, sigma=sigma, k=k)
 
 def initialise_conv(
         convs: List[Tuple[int, int, int, int]],
-        distribution: Callable[[Tuple[int, ...], int, float, float], jnp.ndarray],
+        distribution: Callable[[Shape, int, float, float], jnp.ndarray],
         sigma: jnp.ndarray,
         k: jnp.ndarray=None) -> Network:
     """
@@ -808,19 +813,19 @@ def initialise_conv(
     Returns
     the convolutional layers of the network
     """
-    neurons = []
+    weights = []
     current_c = 2
     for w,_,c,_ in convs:
-        weights = get_weights_conv(
+        layer_weights = get_weights_conv(
             w, c//2-1, current_c, distribution, sigma, k)
-        neurons.append(weights)
+        weights.append(layer_weights)
         current_c = c
-    return tuple(neurons)
+    return tuple(weights)
 
 def get_weights(
         layer: int,
-        arch: List[int],
-        distribution: Callable[[Tuple[int, ...], int, float, float], jnp.ndarray],
+        arch: Tuple[int, ...],
+        distribution: Callable[[Shape, int, float, float], jnp.ndarray],
         sigma: jnp.ndarray,
         k: jnp.ndarray=0.) -> jnp.ndarray:
     """
@@ -840,9 +845,9 @@ def get_weights(
     certain neuron
     """
     if layer == 1 or layer == 2 or layer == len(arch)-1:
-        weights = jnp.ones((layer, i_4)) * -jnp.inf
+        weights = jnp.ones((layer, i_3)) * -jnp.inf
     else:
-        weights = jnp.ones((3,i_4)) * -jnp.inf
+        weights = jnp.ones((3,i_3)) * -jnp.inf
     # layer lists, each with arch[i] elements
     # so this is a 2D list of floats
     # or a 1D list of jnp arrays
@@ -858,27 +863,27 @@ def get_weights(
             inner_layer = distribution(shape=(arch[i],), n=n, sigma=sigma, k=k)
             weights = weights.at[i].set(jnp.pad(
                 inner_layer,
-                (0, i_4-arch[i]),
+                (0, i_3-arch[i]),
                 mode="constant", constant_values=-jnp.inf))
     else:
         inner_layer = distribution(shape=(arch[0],), n=n, sigma=sigma, k=k)
         weights = weights.at[0].set(jnp.pad(
             inner_layer,
-            (0, i_4-arch[0]),
+            (0, i_3-arch[0]),
             mode="constant", constant_values=-jnp.inf))
         for i in range(1,3):
             inner_layer = distribution(
                 shape=(arch[layer-3+i],), n=n, sigma=sigma, k=k)
             weights = weights.at[i].set(jnp.pad(
                 inner_layer,
-                (0, i_4-arch[layer-3+i]),
+                (0, i_3-arch[layer-3+i]),
                 mode="constant", constant_values=-jnp.inf))
     return weights
 
 def initialise(
-        arch: List[int],
-        true_arch: List[int],
-        distribution: Callable[[Tuple[int, ...], int, float, float], jnp.ndarray],
+        arch: Tuple[int, ...],
+        true_arch: Tuple[int, ...],
+        distribution: Callable[[Shape, int, float, float], jnp.ndarray],
         sigma: jnp.ndarray,
         k: jnp.ndarray=0.) -> List[jnp.ndarray]:
     """
@@ -895,48 +900,48 @@ def initialise(
     Returns
     the network
     """
-    neurons = []
+    weights = []
     for i1 in range(1, len(arch)):
         if i1 == 1 or i1 == 2 or i1 == len(arch) - 1:
-            layer = jnp.ones((arch[i1], i1, i_4)) * (-jnp.inf)
+            layer = jnp.ones((arch[i1], i1, i_3)) * (-jnp.inf)
         else:
-            layer = jnp.ones((arch[i1], 3, i_4)) * (-jnp.inf)
+            layer = jnp.ones((arch[i1], 3, i_3)) * (-jnp.inf)
         for i2 in range(arch[i1]):
             layer = layer.at[i2].set(get_weights(
                 i1, true_arch, distribution, sigma, k))
-        neurons.append(layer)
-    return tuple(neurons)
+        weights.append(layer)
+    return tuple(weights)
 
 @jax.jit
-def max_fan_in_penalty_disc(neurons: Network, max_fan_in: int) -> float:
+def max_fan_in_penalty_disc(weights: Network, max_fan_in: int) -> float:
     """
     calculates a penalty, which is minimised for any maximum fan-in under or
     equal to "max_fan_in"
     this doesn't account for duplicate gates, and this is the discrete version.
 
     Parameters
-    neurons - the network
+    weights - the network
     max_fan_in - the desired maximum fan-in
     
     Returns
     the penalty
     """
     fan_ins = jnp.array([])
-    for layer in neurons:
+    for layer in weights:
         fan_ins = jnp.concatenate((fan_ins, jax.vmap(
             lambda x:jnp.sum(jnp.where(x>0, 1, 0)))(layer)))
     temp = jax.nn.relu(fan_ins-max_fan_in)
     return jnp.max(temp)
 
 @jax.jit
-def max_fan_in_penalty(neurons: Network, max_fan_in: int, temperature: float
+def max_fan_in_penalty(weights: Network, max_fan_in: int, temperature: float
                        ) -> float:
     """
     calculates a penalty, which is minimised for any maximum fan-in under or
     equal to "max_fan_in". This doesn't account for duplicate gates
 
     Parameters
-    neurons - the network
+    weights - the network
     max_fan_in - the desired maximum fan-in
     temperature - lower makes it closer to discrete
     
@@ -945,15 +950,15 @@ def max_fan_in_penalty(neurons: Network, max_fan_in: int, temperature: float
     to the loss)
     """
     fan_ins = jnp.array([])
-    for layer in neurons:
+    for layer in weights:
         fan_ins = jnp.concatenate((fan_ins, jax.vmap(
-            lambda x:jnp.sum(sig(x/temperature)))(layer)))
+            lambda x:jnp.sum(jax.nn.sigmoid(x/temperature)))(layer)))
     temp = jax.nn.relu(fan_ins-max_fan_in)
     return jnp.sum(jax.nn.softmax(temp)*temp)
 
 @jax.jit
 def mean_fan_in_penalty(
-    neurons: Network,
+    weights: Network,
     mean_fan_in: float,
     temperature: float,
     num_neurons: int) -> float:
@@ -962,7 +967,7 @@ def mean_fan_in_penalty(
     to "mean_fan_in". This doesn't account for duplicate gates
 
     Parameters
-    neurons - the network
+    weights - the network
     mean_fan_in - the desired mean fan-in
     temperature - lower makes it closer to discrete
     num_neurons - the number of neurons in the network
@@ -972,9 +977,9 @@ def mean_fan_in_penalty(
     to the loss)
     """
     fan_ins = jnp.array([])
-    for layer in neurons:
+    for layer in weights:
         fan_ins = jnp.concatenate((fan_ins, jax.vmap(
-            lambda x:jnp.sum(sig(x/temperature)))(layer)))
+            lambda x:jnp.sum(jax.nn.sigmoid(x/temperature)))(layer)))
     temp = jnp.sum(fan_ins)/num_neurons
     return jax.nn.relu(temp-mean_fan_in)
 
@@ -997,9 +1002,7 @@ def input_layers(layer: int) -> jnp.ndarray:
     return jnp.array([0, layer-2, layer-1])
 
 @partial(jax.jit, static_argnames="weight_activation")
-def get_used_array(
-    neurons: Network, weight_activation: Callable[[jnp.ndarray], jnp.ndarray]
-    ) -> float:
+def get_used_array(weights: Network, weight_activation: str) -> float:
     """
     returns an array, used, representing the network, where if
     used[layer][i] is close to 1, the neuron is used.
@@ -1009,18 +1012,18 @@ def get_used_array(
     the doesn't account for duplicate gates
 
     Parameters
-    neurons - the network
+    weights - the network
     weight_activation - sigmoid with temperature or step function
     
     Returns
     the array
     """
-    sig_neurons = [weight_activation(layer) for layer in neurons]
-    used_back = jnp.zeros(shape=(len(arch), i_4))
+    prob_weights = [
+        weight_activation_dict[weight_activation](layer) for layer in weights]
+    used_back = jnp.zeros(shape=(len(arch), i_3))
     used_back = used_back.at[len(arch)-1, :outs].set(jnp.ones(shape=outs))
-    # outputs are used by outputs
     for layer in range(len(arch)-1, 0, -1):
-        temp = (sig_neurons[layer-1]
+        temp = (prob_weights[layer-1]
                 * used_back[layer, :arch[layer]][:, jnp.newaxis, jnp.newaxis])
         # this is a 2D matrix, the LHS of the * is how much each neuron to the
         # left of this neuron is used by this neuron. The RHS of the * is a
@@ -1028,10 +1031,10 @@ def get_used_array(
         temp = cont_or_arr(temp, axis=0)
         used_back = used_back.at[input_layers(layer)].set(
             cont_or(used_back[input_layers(layer)], temp))
-    used_for = jnp.zeros(shape=(len(arch), i_4))
+    used_for = jnp.zeros(shape=(len(arch), i_3))
     used_for = used_for.at[0, :new_ins].set(jnp.ones(shape=new_ins))
     for layer in range(1, len(arch)):
-        temp = (sig_neurons[layer-1][:arch[layer]]
+        temp = (prob_weights[layer-1][:arch[layer]]
                 * used_for[input_layers(layer)][jnp.newaxis,:,:])
         temp = cont_or_arr(temp, axis=(1,2))
         used_for = used_for.at[layer, :arch[layer]].set(
@@ -1039,13 +1042,13 @@ def get_used_array(
     return used_back*used_for
 
 @jax.jit
-def max_gates_used_penalty(neurons: Network, max_gates: jnp.ndarray) -> float:
+def max_gates_used_penalty(weights: Network, max_gates: jnp.ndarray) -> float:
     """
     calculates a penalty, which is maximised for any gate usage less than or
     equal to "max_gates" this doesn't account for duplicate gates.
 
     Parameters
-    neurons - the network
+    weights - the network
     max_gates - an array specifying the max number of nodes in each layer.
     weight_activation - sigmoid with a temperature or step function
     
@@ -1053,17 +1056,17 @@ def max_gates_used_penalty(neurons: Network, max_gates: jnp.ndarray) -> float:
     the penalty (a float, which will be multiplied by a coefficient, and added
     to the loss)
     """
-    used = get_used_array(neurons, lambda x: sig(x/temperature))
+    used = get_used_array(weights, "temp")
     return jnp.sum(jax.nn.relu(jnp.sum(used, axis=1)-max_gates))
 
 @jax.jit
-def min_gates_used_penalty(neurons: Network, min_gates: jnp.ndarray) -> float:
+def min_gates_used_penalty(weights: Network, min_gates: jnp.ndarray) -> float:
     """
     calculates a penalty, which is maximised for any gate usage greater than or
     equal to "min_gates". This doesn't account for duplicate gates.
 
     Parameters
-    neurons - the network
+    weights - the network
     min_gates - an array specifying the min number of nodes in each layer.
     weight_activation - sigmoid with a temperature or step function
     
@@ -1071,24 +1074,23 @@ def min_gates_used_penalty(neurons: Network, min_gates: jnp.ndarray) -> float:
     the penalty (a float, which will be multiplied by a coefficient, and added
     to the loss)
     """
-    used = get_used_array(neurons, lambda x: sig(x/temperature))
+    used = get_used_array(weights, "temp")
     return jnp.sum(jax.nn.relu(min_gates-jnp.sum(used, axis=1)))
 
 @partial(jax.jit, static_argnames="weight_activation")
-def gate_usage_by_layer(neurons: Network, weight_activation: Callable[[jnp.ndarray], jnp.ndarray]
-                        ) -> float:
+def gate_usage_by_layer(weights: Network, weight_activation: str) -> float:
     # gives us the gate usage by layer
-    return jnp.sum(get_used_array(neurons, weight_activation), axis=1)
+    return jnp.sum(get_used_array(weights, weight_activation), axis=1)
 
 @jax.jit
-def continuous_penalty(neurons: Network, num_wires: int) -> float:
+def continuous_penalty(weights: Network, num_wires: int) -> float:
     """
     calculates a penalty which is minimised when the weights have a high
     magnitude. Adding this to the loss can lead to networks where a low loss is
     more strongly correlated with a high accuracy
 
     Parameters
-    neurons - the network
+    weights - the network
     total - the number of weights in the network
     
     Returns
@@ -1096,13 +1098,13 @@ def continuous_penalty(neurons: Network, num_wires: int) -> float:
     to the loss)
     """
     s = sum([jnp.sum(
-        1-sig(jnp.absolute(layer))) for layer in neurons])
+        1-jax.nn.sigmoid(jnp.absolute(layer))) for layer in weights])
     return s/num_wires
 
 epsilon = 1e-7
 @partial(jax.jit, static_argnames="use_surr")
 def bce_loss(
-    neurons: Network,
+    weights: Network,
     inputs: jnp.ndarray,
     output: jnp.ndarray,
     mask1: jnp.ndarray=None,
@@ -1113,17 +1115,17 @@ def bce_loss(
     calculates the binary cross entropy loss
 
     Parameters
-    neurons - the network
+    weights - the network
     inputs - all of the inputs (training xs)
     output - all of the outputs (training labels or ys)
     mask1 - a mask for samples we got right
     mask2 - a mask for the samples we got wrong
     
     Returns
-    loss
+    bce loss
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
-        inputs, neurons, "cont", use_surr, surr_arr)
+        inputs, weights, "cont", use_surr, surr_arr)
     pred = jnp.clip(pred, epsilon, 1-epsilon)
     pred_logits = jnp.log(pred) - jnp.log(1-pred)
     if mask1 != None:
@@ -1149,10 +1151,9 @@ def bce_loss(
         return jnp.mean(
             optax.sigmoid_binary_cross_entropy(pred_logits, output))
     
-epsilon = 1e-7
 @partial(jax.jit, static_argnames="use_surr")
 def loss(
-    neurons: Network,
+    weights: Network,
     inputs: jnp.ndarray,
     output: jnp.ndarray,
     mask1: jnp.ndarray=None,
@@ -1162,15 +1163,15 @@ def loss(
     max_fan_in: int=None,
     temperature: float=None,
     mean_fan_in: float=None,
-    max_gates: List[int]=None,
-    min_gates: List[int]=None,
+    max_gates: jnp.ndarray=None,
+    min_gates: jnp.ndarray=None,
     num_neurons: int=None,
     num_wires: int=None) -> float:
     """
     calculates the loss
 
     Parameters
-    neurons - the network
+    weights - the network
     inputs - all of the inputs (training xs)
     output - all of the outputs (training labels or ys)
     mask1 - a mask for samples we got right
@@ -1179,25 +1180,25 @@ def loss(
     Returns
     loss
     """
-    l = bce_loss(neurons, inputs, output, mask1, mask2, use_surr, surr_arr)
+    l = bce_loss(weights, inputs, output, mask1, mask2, use_surr, surr_arr)
     if max_fan_in_penalty_coeff:
         l += (max_fan_in_penalty_coeff
-              * max_fan_in_penalty(neurons, max_fan_in, temperature))
+              * max_fan_in_penalty(weights, max_fan_in, temperature))
     if mean_fan_in_penalty_coeff:
         l += (mean_fan_in_penalty_coeff
               * mean_fan_in_penalty(
-                  neurons, mean_fan_in, temperature, num_neurons))
+                  weights, mean_fan_in, temperature, num_neurons))
     if max_gates_used_penalty_coeff:
         l += (max_gates_used_penalty_coeff
-              * max_gates_used_penalty(neurons, max_gates))
+              * max_gates_used_penalty(weights, max_gates))
     if min_gates_used_penalty_coeff:
         l += (min_gates_used_penalty_coeff
-              * min_gates_used_penalty(neurons, min_gates))
+              * min_gates_used_penalty(weights, min_gates))
     if continuous_penalty_coeff:
-        l += continuous_penalty_coeff * continuous_penalty(neurons, num_wires)
+        l += continuous_penalty_coeff * continuous_penalty(weights, num_wires)
     return l
 
-grad = jax.jit(jax.grad(loss, argnums=0), static_argnames="use_surr")
+grad = jax.jit(jax.grad(loss), static_argnames="use_surr")
 
 if add_img_or_custom=='i':
 
@@ -1210,28 +1211,22 @@ if add_img_or_custom=='i':
         max_fan_in: int=None,
         temperature: float=None,
         mean_fan_in: float=None,
-        max_gates: List[int]=None,
-        min_gates: List[int]=None,
+        max_gates: jnp.ndarray=None,
+        min_gates: jnp.ndarray=None,
         num_neurons: int=None,
         num_wires: int=None) -> float:
         """
         calculates the loss including convolutional layers
 
         Parameters
-        network - [neurons, neurons_conv], where neurons are the dense layers,
-        and neurons_conv are the convolutional
+        network - [weights, weights_conv], where weights are the dense layers,
+        and weights_conv are the convolutional
         inputs - all of the inputs (training xs)
         output - all of the outputs (training labels or ys)
         
         Returns
         loss
         """
-        # if convs is None:
-        #     inputs = inputs.reshape(inputs.shape[0], -1)
-        #     return loss(network[0], inputs, output, max_fan_in=max_fan_in,
-        #                 temperature=temperature, mean_fan_in=mean_fan_in,
-        #                 max_gates=max_gates, min_gates=min_gates,
-        #                 num_neurons=num_neurons, num_wires=num_wires)
         pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(
             inputs, network[1], scaled)
         pred = pred.reshape(pred.shape[0], -1)
@@ -1240,10 +1235,10 @@ if add_img_or_custom=='i':
                     max_gates=max_gates, min_gates=min_gates,
                     num_neurons=num_neurons, num_wires=num_wires)
 
-    grad_conv = jax.jit(jax.grad(loss_conv, argnums=0))
+    grad_conv = jax.jit(jax.grad(loss_conv))
 
 @partial(jax.jit, static_argnames="use_surr")
-def test(neurons: Network,
+def test(weights: Network,
          inputs: jnp.ndarray,
          output: jnp.ndarray,
          use_surr: bool=False,
@@ -1252,7 +1247,7 @@ def test(neurons: Network,
     is true iff the network is 100% accurate
 
     Parameters
-    neurons - the network
+    weights - the network
     inputs - jnp array of the inputs we're testing
     output - jnp array of the outputs we're testing
     use_surr - boolean telling us if we're using surrogate bits
@@ -1262,24 +1257,24 @@ def test(neurons: Network,
     if the network was 100% accurate
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
-        inputs, neurons, "disc", use_surr, surr_arr)
+        inputs, weights, "disc", use_surr, surr_arr)
     return jnp.all(pred==output)
 
 current_max_fan_in = -1
-def test_fan_in(neurons: Network) -> bool:
+def test_fan_in(weights: Network) -> bool:
     """
     is true iff the max fan-in is less than what the user specified (ignoring
     duplicates)
 
     Parameters
-    neurons - the network
+    weights - the network
     
     Returns
     if the max fan-in is less than what the user specified
     """
     global current_max_fan_in
     temp = 0
-    for layer in neurons:
+    for layer in weights:
         # this can include gates that aren't used and have a fan-in greater
         # so if the circuit printed is better, we can stop the search anyway
         fan_ins = jax.vmap(lambda x:jnp.sum(jnp.where(x>0, 1, 0)))(layer)
@@ -1287,14 +1282,14 @@ def test_fan_in(neurons: Network) -> bool:
     if temp > max_fan_in:
         if (temp < current_max_fan_in or current_max_fan_in == -1):
             print(temp, max_fan_in)
-            [print(circ) for circ in (output_circuit(neurons, True, True))]
+            [print(circ) for circ in (output_circuit(weights, True, True))]
             print("Max fan-in not good enough")
             current_max_fan_in = temp
         return False
     return True
 
 @partial(jax.jit, static_argnames=("skew_towards_falses", "use_surr"))
-def acc(neurons: Network,
+def acc(weights: Network,
         inputs: jnp.ndarray,
         output: jnp.ndarray,
         use_surr: bool=False,
@@ -1305,7 +1300,7 @@ def acc(neurons: Network,
     calculates the accuracy, and also the masks used in the loss function
 
     Parameters
-    neurons - the network
+    weights - the network
     inputs - jnp array of the inputs we're testing
     output - jnp array of the outputs we're testing
     use_surr - boolean telling us if we're using surrogate bits
@@ -1320,7 +1315,7 @@ def acc(neurons: Network,
     mask2 - the mask of the samples it got wrong
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
-        inputs, neurons, "disc", use_surr, surr_arr)
+        inputs, weights, "disc", use_surr, surr_arr)
     pred = (pred == output)
     pred = jnp.sum(pred, axis=1)
     if skew_towards_falses:
@@ -1330,7 +1325,7 @@ def acc(neurons: Network,
     return jnp.sum(pred)/((2**(ins))*(outs)), None, None
 
 @partial(jax.jit, static_argnames=("skew_towards_falses", "use_surr"))
-def rand_acc(neurons: Network,
+def rand_acc(weights: Network,
         inputs: jnp.ndarray,
         output: jnp.ndarray,
         use_surr: bool=False,
@@ -1341,7 +1336,7 @@ def rand_acc(neurons: Network,
     calculates the accuracy, and also the masks used in the loss function
 
     Parameters
-    neurons - the network
+    weights - the network
     inputs - jnp array of the inputs we're testing
     output - jnp array of the outputs we're testing
     use_surr - boolean telling us if we're using surrogate bits
@@ -1356,7 +1351,7 @@ def rand_acc(neurons: Network,
     mask2 - the mask of the samples it got wrong
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
-        inputs, neurons, "rand", use_surr, surr_arr)
+        inputs, weights, "rand", use_surr, surr_arr)
     pred = (pred == output)
     pred = jnp.sum(pred, axis=1)
     return jnp.sum(pred)/((2**(ins))*(outs))
@@ -1412,8 +1407,8 @@ if add_img_or_custom == 'i':
         calculates the accuracy for images
 
         Parameters
-        network - [neurons, neurons_conv], where neurons are the dense layers,
-        and neurons_conv are the convolutional
+        network - [weights, weights_conv], where weights are the dense layers,
+        and weights_conv are the convolutional
         inputs - jnp array of the inputs we're testing
         output - jnp array of the outputs we're testing
         
@@ -1439,8 +1434,8 @@ if add_img_or_custom == 'i':
         calculates the accuracy for images
 
         Parameters
-        network - [neurons, neurons_conv], where neurons are the dense layers,
-        and neurons_conv are the convolutional
+        network - [weights, weights_conv], where weights are the dense layers,
+        and weights_conv are the convolutional
         inputs - jnp array of the inputs we're testing
         output - jnp array of the outputs we're testing
         
@@ -1465,9 +1460,9 @@ lr_multiplier = batch_size**0.5
 print("Learning:\n", output, "\nwith arch:", true_arch)
 start_time = time.time()
 
-neurons = initialise(arch, true_arch, dense_distribution, dense_sigma, dense_k)
+weights = initialise(arch, true_arch, dense_distribution, dense_sigma, dense_k)
 if add_img_or_custom == 'i':
-    neurons_conv = initialise_conv(convs, conv_distribution, conv_sigma, conv_k)
+    weights_conv = initialise_conv(convs, conv_distribution, conv_sigma, conv_k)
 
 schedule_dense = optax.join_schedules(
     schedules = [optax.constant_schedule(
@@ -1479,21 +1474,21 @@ optimizer_dense = optax.adam(learning_rate=schedule_dense)
 if add_img_or_custom == 'i':
     lr_convs = config["lr_dense"].copy()
     if convs:
-        neurons_mean = 0
+        dense_mean = 0
         convs_mean = 0
         for batch in range(batches):
-            gradients = grad_conv([neurons, neurons_conv],
+            gradients = grad_conv([weights, weights_conv],
                                 inputs[batch*batch_size:(batch+1)*batch_size],
                                 output[batch*batch_size:(batch+1)*batch_size],
                                 [imgs[batch*batch_size:(batch+1)*batch_size]
                                  for imgs in scaled_train_imgs],
                                 **loss_conv_kwargs)
-            neurons_mean += filtered_mean(gradients[0])
+            dense_mean += filtered_mean(gradients[0])
             convs_mean += filtered_mean(gradients[1])
-        neurons_mean /= batches
+        dense_mean /= batches
         convs_mean /= batches
-        print(neurons_mean, convs_mean)
-        scaling_factor = neurons_mean/convs_mean
+        print(dense_mean, convs_mean)
+        scaling_factor = dense_mean/convs_mean
         lr_convs = [x*scaling_factor for x in lr_convs]
         print(config["lr_dense"])
         print(lr_convs)
@@ -1504,16 +1499,16 @@ if add_img_or_custom == 'i':
     )
     optimizer_conv = optax.adam(learning_rate=schedule_conv)
 
-opt_state_dense = optimizer_dense.init(neurons)
+opt_state_dense = optimizer_dense.init(weights)
 if add_img_or_custom =='i' and convs:
-    opt_state_conv = optimizer_conv.init(neurons_conv)
+    opt_state_conv = optimizer_conv.init(weights_conv)
 
 init_time = time.time()
 print("Took", init_time-start_time, "seconds to initialise.")
 
-print([layer.shape for layer in neurons])
+print([layer.shape for layer in weights])
 if add_img_or_custom == 'i' and convs:
-    print([layer.shape for layer in neurons_conv])
+    print([layer.shape for layer in weights_conv])
 
 # @jax.jit
 def batch_comp(func: Callable, batch_size: int, batches: int, *args, **kwargs
@@ -1548,36 +1543,36 @@ def batch_comp(func: Callable, batch_size: int, batches: int, *args, **kwargs
 
 if add_img_or_custom == 'i':
     accuracy = batch_comp(
-        partial(acc_conv, network=[neurons, neurons_conv]),
+        partial(acc_conv, network=[weights, weights_conv]),
         batch_size, x_test.shape[0]//batch_size,
         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
     rand_accuracy = batch_comp(
-        partial(rand_acc_conv, network=[neurons, neurons_conv]),
+        partial(rand_acc_conv, network=[weights, weights_conv]),
         batch_size, x_test.shape[0]//batch_size,
         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
     new_loss = batch_comp(
-        partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
+        partial(loss_conv, network=[weights, weights_conv], **loss_conv_kwargs),
         batch_size, batches,
         inputs=inputs, output=output, scaled=scaled_train_imgs)
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
-    print(gate_usage_by_layer(neurons, sig))
-    print(gate_usage_by_layer(neurons, step))
-    print(max_fan_in_penalty(neurons, 0, temperature),
-          max_fan_in_penalty_disc(neurons, 0))
-    print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
+    print(gate_usage_by_layer(weights, "cont"))
+    print(gate_usage_by_layer(weights, "disc"))
+    print(max_fan_in_penalty(weights, 0, temperature),
+          max_fan_in_penalty_disc(weights, 0))
+    print(mean_fan_in_penalty(weights, 0, temperature, num_neurons))
 else:
-    accuracy = acc(neurons, inputs, output, use_surr, surr_arr, False)[0]
-    rand_accuracy = rand_acc(neurons, inputs, output, use_surr, surr_arr, False)
-    new_loss = loss(neurons, inputs, output, **loss_kwargs)
+    accuracy = acc(weights, inputs, output, use_surr, surr_arr, False)[0]
+    rand_accuracy = rand_acc(weights, inputs, output, use_surr, surr_arr, False)
+    new_loss = loss(weights, inputs, output, **loss_kwargs)
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
-    print(gate_usage_by_layer(neurons, sig))
-    print(gate_usage_by_layer(neurons, step))
-    print(max_fan_in_penalty(neurons, 0, temperature),
-          max_fan_in_penalty_disc(neurons, 0))
-    print(mean_fan_in_penalty(neurons, 0, temperature, num_neurons))
+    print(gate_usage_by_layer(weights, "cont"))
+    print(gate_usage_by_layer(weights, "disc"))
+    print(max_fan_in_penalty(weights, 0, temperature),
+          max_fan_in_penalty_disc(weights, 0))
+    print(mean_fan_in_penalty(weights, 0, temperature, num_neurons))
 
 def run(timeout=config["timeout"]) -> None:
-    global inputs, output, neurons, neurons_conv, opt_state_dense, opt_state_conv, scaled_train_imgs
+    global inputs, output, weights, weights_conv, opt_state_dense, opt_state_conv, scaled_train_imgs
     cont = True
     iters = 0
     start_run_time = time.time()
@@ -1594,108 +1589,108 @@ def run(timeout=config["timeout"]) -> None:
                                          for imgs in scaled_train_imgs]
             for batch in range(batches):
                 if add_img_or_custom == 'i':
-                    gradients = grad_conv([neurons, neurons_conv],
+                    gradients = grad_conv([weights, weights_conv],
                                           inputs[batch*batch_size:(batch+1)*batch_size],
                                           output[batch*batch_size:(batch+1)*batch_size],
                                           [imgs[batch*batch_size:(batch+1)*batch_size]
                                            for imgs in scaled_train_imgs],
                                           **loss_conv_kwargs)
                     update, opt_state_dense = optimizer_dense.update(
-                        gradients[0], opt_state_dense, neurons)
-                    neurons = optax.apply_updates(neurons, update)
+                        gradients[0], opt_state_dense, weights)
+                    weights = optax.apply_updates(weights, update)
                     if convs:
                         update, opt_state_conv = optimizer_conv.update(
-                            gradients[1], opt_state_conv, neurons_conv)
-                        neurons_conv = optax.apply_updates(neurons_conv, update)
+                            gradients[1], opt_state_conv, weights_conv)
+                        weights_conv = optax.apply_updates(weights_conv, update)
                 else:
-                    gradients = grad(neurons,
+                    gradients = grad(weights,
                                     inputs[batch*batch_size:(batch+1)*batch_size],
                                     output[batch*batch_size:(batch+1)*batch_size],
                                     **loss_kwargs)
                     updates, opt_state_dense = optimizer_dense.update(
-                        gradients, opt_state_dense, neurons)
-                    neurons = optax.apply_updates(neurons, updates)
+                        gradients, opt_state_dense, weights)
+                    weights = optax.apply_updates(weights, updates)
             if time.time() - start_run_time > timeout * 60:
                 if add_img_or_custom == 'i':
                     accuracy = batch_comp(
-                        partial(acc_conv, network=[neurons, neurons_conv]),
+                        partial(acc_conv, network=[weights, weights_conv]),
                         batch_size, x_test.shape[0]//batch_size,
                         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
                     rand_accuracy = batch_comp(
-                        partial(rand_acc_conv, network=[neurons, neurons_conv]),
+                        partial(rand_acc_conv, network=[weights, weights_conv]),
                         batch_size, x_test.shape[0]//batch_size,
                         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
                     new_loss = batch_comp(
-                        partial(loss_conv, network=[neurons, neurons_conv],
+                        partial(loss_conv, network=[weights, weights_conv],
                                 **loss_conv_kwargs),
                         batch_size, batches,
                         inputs=inputs, output=output, scaled=scaled_train_imgs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
-                    print(gate_usage_by_layer(neurons, sig))
-                    print(gate_usage_by_layer(neurons, step))
-                    print(max_fan_in_penalty(neurons, 0, temperature),
-                          max_fan_in_penalty_disc(neurons, 0))
-                    print(mean_fan_in_penalty(neurons, 0, temperature,
+                    print(gate_usage_by_layer(weights, "cont"))
+                    print(gate_usage_by_layer(weights, "disc"))
+                    print(max_fan_in_penalty(weights, 0, temperature),
+                          max_fan_in_penalty_disc(weights, 0))
+                    print(mean_fan_in_penalty(weights, 0, temperature,
                                               num_neurons))
                 else:
-                    accuracy = acc(neurons, inputs, output,
+                    accuracy = acc(weights, inputs, output,
                                    use_surr, surr_arr, False)[0]
-                    rand_accuracy = rand_acc(neurons, inputs, output,
+                    rand_accuracy = rand_acc(weights, inputs, output,
                                              use_surr, surr_arr, False)
-                    new_loss = loss(neurons, inputs, output, **loss_kwargs)
+                    new_loss = loss(weights, inputs, output, **loss_kwargs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
-                    print(gate_usage_by_layer(neurons, sig))
-                    print(gate_usage_by_layer(neurons, step))
-                    print(max_fan_in_penalty(neurons, 0, temperature),
-                          max_fan_in_penalty_disc(neurons, 0))
-                    print(mean_fan_in_penalty(neurons, 0, temperature,
+                    print(gate_usage_by_layer(weights, "cont"))
+                    print(gate_usage_by_layer(weights, "disc"))
+                    print(max_fan_in_penalty(weights, 0, temperature),
+                          max_fan_in_penalty_disc(weights, 0))
+                    print(mean_fan_in_penalty(weights, 0, temperature,
                                               num_neurons))
                 return
         if add_img_or_custom != 'i':
-            if (test(neurons, inputs, output, use_surr, surr_arr) and
-                (max_fan_in_penalty_coeff==0 or test_fan_in(neurons))
+            if (test(weights, inputs, output, use_surr, surr_arr) and
+                (max_fan_in_penalty_coeff==0 or test_fan_in(weights))
                 or get_optional_input_non_blocking() == 2):
                 cont = False
         if cont:
             if iters == max(10//batches, 1):
                 if add_img_or_custom == 'i':
                     accuracy = batch_comp(
-                        partial(acc_conv, network=[neurons, neurons_conv]),
+                        partial(acc_conv, network=[weights, weights_conv]),
                         batch_size, x_test.shape[0]//batch_size,
                         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
                     rand_accuracy = batch_comp(
-                        partial(rand_acc_conv, network=[neurons, neurons_conv]),
+                        partial(rand_acc_conv, network=[weights, weights_conv]),
                         batch_size, x_test.shape[0]//batch_size,
                         inputs=x_test, output=y_test, scaled=scaled_test_imgs)
                     new_loss = batch_comp(
-                        partial(loss_conv, network=[neurons, neurons_conv], **loss_conv_kwargs),
+                        partial(loss_conv, network=[weights, weights_conv], **loss_conv_kwargs),
                         batch_size, batches,
                         inputs=inputs, output=output, scaled=scaled_train_imgs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
-                    print(gate_usage_by_layer(neurons, sig))
-                    print(gate_usage_by_layer(neurons, step))
-                    print(max_fan_in_penalty(neurons, 0, temperature),
-                          max_fan_in_penalty_disc(neurons, 0))
-                    print(mean_fan_in_penalty(neurons, 0, temperature,
+                    print(gate_usage_by_layer(weights, "cont"))
+                    print(gate_usage_by_layer(weights, "disc"))
+                    print(max_fan_in_penalty(weights, 0, temperature),
+                          max_fan_in_penalty_disc(weights, 0))
+                    print(mean_fan_in_penalty(weights, 0, temperature,
                                               num_neurons))
                 else:
-                    accuracy = acc(neurons, inputs, output,
+                    accuracy = acc(weights, inputs, output,
                                    use_surr, surr_arr, False)[0]
-                    rand_accuracy = rand_acc(neurons, inputs, output,
+                    rand_accuracy = rand_acc(weights, inputs, output,
                                              use_surr, surr_arr, False)
-                    new_loss = loss(neurons, inputs, output, **loss_kwargs)
+                    new_loss = loss(weights, inputs, output, **loss_kwargs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
-                    print(gate_usage_by_layer(neurons, sig))
-                    print(gate_usage_by_layer(neurons, step))
-                    print(max_fan_in_penalty(neurons, 0, temperature),
-                          max_fan_in_penalty_disc(neurons, 0))
-                    print(mean_fan_in_penalty(neurons, 0, temperature,
+                    print(gate_usage_by_layer(weights, "cont"))
+                    print(gate_usage_by_layer(weights, "disc"))
+                    print(max_fan_in_penalty(weights, 0, temperature),
+                          max_fan_in_penalty_disc(weights, 0))
+                    print(mean_fan_in_penalty(weights, 0, temperature,
                                                num_neurons))
                 iters = 0
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
     if add_img_or_custom != 'i':
-        circuit = output_circuit(neurons, True, True)
+        circuit = output_circuit(weights, True, True)
         [print(circ) for circ in circuit]
     return
 
