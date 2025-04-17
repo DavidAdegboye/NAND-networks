@@ -1572,138 +1572,134 @@ def run_test(updates: Dict[str, any]):
             max_fan_in_penalty_disc(weights, 0))
         print(mean_fan_in_penalty(weights, 0, temperature, num_neurons))
 
-    def run(timeout=config["timeout"]) -> None:
-        global inputs, output, weights, weights_conv, opt_state_dense, opt_state_conv, scaled_train_imgs
-        cont = True
-        iters = 0
-        start_run_time = time.time()
-        while cont:
-            iters += 1
-            for _ in range(max(10//batches, 1)):
-                if batches > 1:
-                    key = jax.random.PRNGKey(random.randint(0, 10000))
-                    shuffled_indices = jax.random.permutation(key, inputs.shape[0])
-                    inputs = inputs[shuffled_indices]
-                    output = output[shuffled_indices]
-                    if add_img_or_custom == 'i' and convs:
-                        scaled_train_imgs = [imgs[shuffled_indices]
-                                            for imgs in scaled_train_imgs]
-                for batch in range(batches):
-                    if add_img_or_custom == 'i':
-                        gradients = grad_conv([weights, weights_conv],
-                                            inputs[batch*batch_size:(batch+1)*batch_size],
-                                            output[batch*batch_size:(batch+1)*batch_size],
-                                            [imgs[batch*batch_size:(batch+1)*batch_size]
-                                            for imgs in scaled_train_imgs],
-                                            **loss_conv_kwargs)
-                        update, opt_state_dense = optimizer_dense.update(
-                            gradients[0], opt_state_dense, weights)
-                        weights = optax.apply_updates(weights, update)
-                        if convs:
-                            update, opt_state_conv = optimizer_conv.update(
-                                gradients[1], opt_state_conv, weights_conv)
-                            weights_conv = optax.apply_updates(weights_conv, update)
-                    else:
-                        gradients = grad(weights,
+    cont = True
+    iters = 0
+    start_run_time = time.time()
+    while cont:
+        iters += 1
+        for _ in range(max(10//batches, 1)):
+            if batches > 1:
+                key = jax.random.PRNGKey(random.randint(0, 10000))
+                shuffled_indices = jax.random.permutation(key, inputs.shape[0])
+                inputs = inputs[shuffled_indices]
+                output = output[shuffled_indices]
+                if add_img_or_custom == 'i' and convs:
+                    scaled_train_imgs = [imgs[shuffled_indices]
+                                        for imgs in scaled_train_imgs]
+            for batch in range(batches):
+                if add_img_or_custom == 'i':
+                    gradients = grad_conv([weights, weights_conv],
                                         inputs[batch*batch_size:(batch+1)*batch_size],
                                         output[batch*batch_size:(batch+1)*batch_size],
-                                        **loss_kwargs)
-                        updates, opt_state_dense = optimizer_dense.update(
-                            gradients, opt_state_dense, weights)
-                        weights = optax.apply_updates(weights, updates)
-                if time.time() - start_run_time > timeout * 60:
-                    if add_img_or_custom == 'i':
-                        accuracy = batch_comp(
-                            partial(acc_conv, network=[weights, weights_conv]),
-                            batch_size, x_test.shape[0]//batch_size,
-                            inputs=x_test, output=y_test, scaled=scaled_test_imgs)
-                        rand_accuracy = batch_comp(
-                            partial(rand_acc_conv, network=[weights, weights_conv]),
-                            batch_size, x_test.shape[0]//batch_size,
-                            inputs=x_test, output=y_test, scaled=scaled_test_imgs)
-                        new_loss = batch_comp(
-                            partial(loss_conv, network=[weights, weights_conv],
-                                    **loss_conv_kwargs),
-                            batch_size, batches,
-                            inputs=inputs, output=output, scaled=scaled_train_imgs)
-                        print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
-                        print(gate_usage_by_layer(weights, "cont"))
-                        gate_usage_disc = gate_usage_by_layer(weights, "disc")
-                        print(gate_usage_disc)
-                        max_fan = max_fan_in_penalty_disc(weights, 0)
-                        print(max_fan_in_penalty(weights, 0, temperature),
-                            max_fan)
-                        print(mean_fan_in_penalty(weights, 0, temperature,
-                                                num_neurons))
-                        with open(config["output_file"], "a") as f:
-                            f.write(str(updates)+'\n')
-                            f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
-                            f.write(f"Gate usage: {gate_usage_disc}\n")
-                            f.write(f"Max fan-in: {max_fan}\n")
-                    else:
-                        accuracy = acc(weights, inputs, output,
-                                    use_surr, surr_arr, False)[0]
-                        rand_accuracy = rand_acc(weights, inputs, output,
-                                                use_surr, surr_arr, False)
-                        new_loss = loss(weights, inputs, output, **loss_kwargs)
-                        print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
-                        print(gate_usage_by_layer(weights, "cont"))
-                        print(gate_usage_by_layer(weights, "disc"))
-                        print(max_fan_in_penalty(weights, 0, temperature),
-                            max_fan_in_penalty_disc(weights, 0))
-                        print(mean_fan_in_penalty(weights, 0, temperature,
-                                                num_neurons))
-                        output_circuit(weights, True, True)
-                    return
-            if add_img_or_custom != 'i':
-                if (test(weights, inputs, output, use_surr, surr_arr) and
-                    (max_fan_in_penalty_coeff==0 or test_fan_in(weights))
-                    or get_optional_input_non_blocking() == 2):
-                    cont = False
-            if cont:
-                if iters == max(10//batches, 1):
-                    if add_img_or_custom == 'i':
-                        accuracy = batch_comp(
-                            partial(acc_conv, network=[weights, weights_conv]),
-                            batch_size, x_test.shape[0]//batch_size,
-                            inputs=x_test, output=y_test, scaled=scaled_test_imgs)
-                        rand_accuracy = batch_comp(
-                            partial(rand_acc_conv, network=[weights, weights_conv]),
-                            batch_size, x_test.shape[0]//batch_size,
-                            inputs=x_test, output=y_test, scaled=scaled_test_imgs)
-                        new_loss = batch_comp(
-                            partial(loss_conv, network=[weights, weights_conv], **loss_conv_kwargs),
-                            batch_size, batches,
-                            inputs=inputs, output=output, scaled=scaled_train_imgs)
-                        print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
-                        print(gate_usage_by_layer(weights, "cont"))
-                        print(gate_usage_by_layer(weights, "disc"))
-                        print(max_fan_in_penalty(weights, 0, temperature),
-                            max_fan_in_penalty_disc(weights, 0))
-                        print(mean_fan_in_penalty(weights, 0, temperature,
-                                                num_neurons))
-                    else:
-                        accuracy = acc(weights, inputs, output,
-                                    use_surr, surr_arr, False)[0]
-                        rand_accuracy = rand_acc(weights, inputs, output,
-                                                use_surr, surr_arr, False)
-                        new_loss = loss(weights, inputs, output, **loss_kwargs)
-                        print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
-                        print(gate_usage_by_layer(weights, "cont"))
-                        print(gate_usage_by_layer(weights, "disc"))
-                        print(max_fan_in_penalty(weights, 0, temperature),
-                            max_fan_in_penalty_disc(weights, 0))
-                        print(mean_fan_in_penalty(weights, 0, temperature,
-                                                num_neurons))
-                    iters = 0
-        end_time = time.time()
-        print("Took", end_time-start_run_time, "seconds to train.")
+                                        [imgs[batch*batch_size:(batch+1)*batch_size]
+                                        for imgs in scaled_train_imgs],
+                                        **loss_conv_kwargs)
+                    update, opt_state_dense = optimizer_dense.update(
+                        gradients[0], opt_state_dense, weights)
+                    weights = optax.apply_updates(weights, update)
+                    if convs:
+                        update, opt_state_conv = optimizer_conv.update(
+                            gradients[1], opt_state_conv, weights_conv)
+                        weights_conv = optax.apply_updates(weights_conv, update)
+                else:
+                    gradients = grad(weights,
+                                    inputs[batch*batch_size:(batch+1)*batch_size],
+                                    output[batch*batch_size:(batch+1)*batch_size],
+                                    **loss_kwargs)
+                    updates, opt_state_dense = optimizer_dense.update(
+                        gradients, opt_state_dense, weights)
+                    weights = optax.apply_updates(weights, updates)
+            if time.time() - start_run_time > config["timeout"] * 60:
+                if add_img_or_custom == 'i':
+                    accuracy = batch_comp(
+                        partial(acc_conv, network=[weights, weights_conv]),
+                        batch_size, x_test.shape[0]//batch_size,
+                        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
+                    rand_accuracy = batch_comp(
+                        partial(rand_acc_conv, network=[weights, weights_conv]),
+                        batch_size, x_test.shape[0]//batch_size,
+                        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
+                    new_loss = batch_comp(
+                        partial(loss_conv, network=[weights, weights_conv],
+                                **loss_conv_kwargs),
+                        batch_size, batches,
+                        inputs=inputs, output=output, scaled=scaled_train_imgs)
+                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
+                    print(gate_usage_by_layer(weights, "cont"))
+                    gate_usage_disc = gate_usage_by_layer(weights, "disc")
+                    print(gate_usage_disc)
+                    max_fan = max_fan_in_penalty_disc(weights, 0)
+                    print(max_fan_in_penalty(weights, 0, temperature),
+                        max_fan)
+                    print(mean_fan_in_penalty(weights, 0, temperature,
+                                            num_neurons))
+                    with open(config["output_file"], "a") as f:
+                        f.write(str(updates)+'\n')
+                        f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
+                        f.write(f"Gate usage: {gate_usage_disc}\n")
+                        f.write(f"Max fan-in: {max_fan}\n")
+                else:
+                    accuracy = acc(weights, inputs, output,
+                                use_surr, surr_arr, False)[0]
+                    rand_accuracy = rand_acc(weights, inputs, output,
+                                            use_surr, surr_arr, False)
+                    new_loss = loss(weights, inputs, output, **loss_kwargs)
+                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
+                    print(gate_usage_by_layer(weights, "cont"))
+                    print(gate_usage_by_layer(weights, "disc"))
+                    print(max_fan_in_penalty(weights, 0, temperature),
+                        max_fan_in_penalty_disc(weights, 0))
+                    print(mean_fan_in_penalty(weights, 0, temperature,
+                                            num_neurons))
+                    output_circuit(weights, True, True)
+                return
         if add_img_or_custom != 'i':
-            circuit = output_circuit(weights, True, True)
-            [print(circ) for circ in circuit]
-        return
-
-    run()
+            if (test(weights, inputs, output, use_surr, surr_arr) and
+                (max_fan_in_penalty_coeff==0 or test_fan_in(weights))
+                or get_optional_input_non_blocking() == 2):
+                cont = False
+        if cont:
+            if iters == max(10//batches, 1):
+                if add_img_or_custom == 'i':
+                    accuracy = batch_comp(
+                        partial(acc_conv, network=[weights, weights_conv]),
+                        batch_size, x_test.shape[0]//batch_size,
+                        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
+                    rand_accuracy = batch_comp(
+                        partial(rand_acc_conv, network=[weights, weights_conv]),
+                        batch_size, x_test.shape[0]//batch_size,
+                        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
+                    new_loss = batch_comp(
+                        partial(loss_conv, network=[weights, weights_conv], **loss_conv_kwargs),
+                        batch_size, batches,
+                        inputs=inputs, output=output, scaled=scaled_train_imgs)
+                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
+                    print(gate_usage_by_layer(weights, "cont"))
+                    print(gate_usage_by_layer(weights, "disc"))
+                    print(max_fan_in_penalty(weights, 0, temperature),
+                        max_fan_in_penalty_disc(weights, 0))
+                    print(mean_fan_in_penalty(weights, 0, temperature,
+                                            num_neurons))
+                else:
+                    accuracy = acc(weights, inputs, output,
+                                use_surr, surr_arr, False)[0]
+                    rand_accuracy = rand_acc(weights, inputs, output,
+                                            use_surr, surr_arr, False)
+                    new_loss = loss(weights, inputs, output, **loss_kwargs)
+                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
+                    print(gate_usage_by_layer(weights, "cont"))
+                    print(gate_usage_by_layer(weights, "disc"))
+                    print(max_fan_in_penalty(weights, 0, temperature),
+                        max_fan_in_penalty_disc(weights, 0))
+                    print(mean_fan_in_penalty(weights, 0, temperature,
+                                            num_neurons))
+                iters = 0
+    end_time = time.time()
+    print("Took", end_time-start_run_time, "seconds to train.")
+    if add_img_or_custom != 'i':
+        circuit = output_circuit(weights, True, True)
+        [print(circ) for circ in circuit]
+    return
 
 for _ in range(20):
     run_test({"output": [[random.randint(0,1)] for i in range(16)]})
