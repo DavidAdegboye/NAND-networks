@@ -61,13 +61,13 @@ add_img_or_custom = config["add_img_or_custom"]
 
 if add_img_or_custom == 'c':
     import utils.custom_util as custom_util
-    inputs, output, ins, outs, num_ins = custom_util.set_up_custom()
+    inputs, output, ins, outs, num_ins = custom_util.set_up_custom(config)
 elif add_img_or_custom == 'a':
     import utils.adders_util as adders_util
-    inputs, output, ins, outs, num_ins = adders_util.set_up_adders()
+    inputs, output, ins, outs, num_ins = adders_util.set_up_adders(config)
 else:
     import utils.image_util as image_util
-    inputs, x_test, output, y_test, num_ins = image_util.set_up_img()
+    inputs, x_test, output, y_test, num_ins = image_util.set_up_img(config)
     inputs = jnp.expand_dims(inputs, axis=1)
     x_test = jnp.expand_dims(x_test, axis=1)
     outs = output.shape[1]

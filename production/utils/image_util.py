@@ -9,6 +9,20 @@ import yaml
 
 Conv = Tuple[int, int, bool]
 
+def set_up_img(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, int]:
+    global config, size, n
+    config = config_dict
+    size = config["size"]
+    n = config["size"]
+    train_n = config["train_n"]
+    test_n = config["test_n"]
+    x_train_resized = jnp.array([preprocess_image(img, s=(size, size)) for img in x_train[:train_n]])
+    x_test_resized = jnp.array([preprocess_image(img, s=(size, size)) for img in x_test[:test_n]])
+    y_train = jnp.array(y_train[:train_n])
+    y_test = jnp.array(y_test[:test_n])
+    y_train_new = jax.vmap(lambda x: preprocess_image(x, s=(size, size)))(y_train)
+    return x_train_resized, x_test_resized, y_train_new, y_test, train_n
+
 # loading the MNIST numbers dataset
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 
@@ -16,10 +30,6 @@ Conv = Tuple[int, int, bool]
 x_train = x_train / 255.0
 x_test = x_test / 255.0
 
-with open("set-up.yaml", "r") as f:
-    config = yaml.safe_load(f)
-
-size = config["size"]
 # resizing the image from 28*28 to size*size, and from x∈[0,1] to x∈{0,1}
 def preprocess_image(image: np.ndarray, s: Tuple[int, int]=(size, size), threshold: float=0.5) -> jnp.ndarray:
     """
@@ -36,8 +46,6 @@ def preprocess_image(image: np.ndarray, s: Tuple[int, int]=(size, size), thresho
     resized = resize(image, s, anti_aliasing=True)
     binary = (resized > threshold).astype(jnp.float32)
     return binary
-
-n = config["n"]
 
 # turning the output label from a number to n hot encoding
 @jax.jit
@@ -63,16 +71,6 @@ def preprocess_test(value: int) -> jnp.ndarray:
     return output
 
 # applying preprocessing to the data
-train_n = config["train_n"]
-test_n = config["test_n"]
-x_train_resized = jnp.array([preprocess_image(img) for img in x_train[:train_n]])
-x_test_resized = jnp.array([preprocess_image(img) for img in x_test[:test_n]])
-y_train = jnp.array(y_train[:train_n])
-y_test = jnp.array(y_test[:test_n])
-y_train_new = jax.vmap(preprocess_test)(y_train)
-
-def set_up_img() -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, int]:
-    return x_train_resized, x_test_resized, y_train_new, y_test, train_n
 
 # Visualising a few samples
 # for i in range(9):

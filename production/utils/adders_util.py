@@ -3,12 +3,8 @@ import jax.numpy as jnp
 from typing import List, Tuple, Dict
 import yaml
 
-with open("set-up.yaml", "r") as f:
-    config = yaml.safe_load(f)
-
 # sets up parameters for learning an n-bit adder
-bits = config["bits"]
-def set_up_adders() -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]:
+def set_up_adders(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]:
     """
    sets up a run to learn an adder
 
@@ -19,8 +15,11 @@ def set_up_adders() -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]:
     outs - the number of bits in the output
     num_ins - the number of samples we have (this would be both inputs.shape[0] and output.shape[0])
     """
+    global config, bits
+    config = config_dict
+    bits = config["bits"]
     # if it's a n-bit adder, we need 2n inputs, n for each number 
-    ins = bits*2
+    ins = config["bits"]*2
     num_ins = 2**ins
     inputs = jax.vmap(denary_to_binary_array)(jnp.arange(num_ins))
     out_bits = config["out_bits"]
