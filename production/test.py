@@ -1711,4 +1711,4 @@ def run_test(updates: Dict[str, any]):
     run()
 
 for _ in range(20):
-    run_test({"output": jnp.array([[random.randint(0,1)] for i in range(16)])})
+    run_test({"output": [[random.randint(0,1)] for i in range(16)]})
