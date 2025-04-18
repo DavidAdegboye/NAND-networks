@@ -1900,14 +1900,17 @@ with open("set-up.yaml", "r") as f:
 with open(config["output_file"], "w") as f:
     f.write(f"New test:\n")
 true_start = time.time()
-for _ in range(20):
-    run_start = time.time()
-    run_test({"output": [[random.randint(0,1)] for _ in range(256)]})
-    run_end = time.time()
-    with open("set-up.yaml", "r") as f:
-        config = yaml.safe_load(f)
-    with open(config["output_file"], "a") as f:
-        f.write(f"Total time for test: {run_end - run_start} seconds.\n")
+cont_pens = [0, 0.003, 0.01, 0.05, 0.1, 0.5, 1]
+for _ in range(5):
+    for cp in cont_pens:
+        run_start = time.time()
+        run_test({"output": [[random.randint(0,1)] for _ in range(256)],
+                  "continuous_penalty_coeff": cp})
+        run_end = time.time()
+        with open("set-up.yaml", "r") as f:
+            config = yaml.safe_load(f)
+        with open(config["output_file"], "a") as f:
+            f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
