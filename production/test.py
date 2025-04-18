@@ -23,6 +23,7 @@ def run_test(variables: Dict[str, any]):
     for k,v in variables.items():
         config[k] = v
 
+    print(variables)
     jax.config.update("jax_traceback_filtering", config["traceback"])
 
     new_batches = 0
@@ -1823,7 +1824,7 @@ def run_test(variables: Dict[str, any]):
                                             num_neurons))
                     with open(config["output_file"], "a") as f:
                         f.write(str(variables)+'\n')
-                        f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
+                        f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%\n")
                         f.write(f"Gate usage: {gate_usage_disc}\n")
                         f.write(f"Max fan-in: {max_fan}\n")
                 else:
@@ -1843,8 +1844,8 @@ def run_test(variables: Dict[str, any]):
                                             num_neurons))
                     with open(config["output_file"], "a") as f:
                         f.write(str(variables)+'\n')
-                        f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
-                        f.write(f"Gate usage: {gate_usage_disc}\n")
+                        f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%\n")
+                        f.write(f"Gate usage: {gate_usage_disc}9n")
                         f.write(f"Max fan-in: {max_fan}\n")
                 return
         if add_img_or_custom != 'i':
@@ -1901,16 +1902,19 @@ with open(config["output_file"], "w") as f:
     f.write(f"New test:\n")
 true_start = time.time()
 cont_pens = [0, 0.003, 0.01, 0.05, 0.1, 0.5, 1]
+archs = [[64,16], [64]]
 for _ in range(5):
     for cp in cont_pens:
-        run_start = time.time()
-        run_test({"output": [[random.randint(0,1)] for _ in range(256)],
-                  "continuous_penalty_coeff": cp})
-        run_end = time.time()
-        with open("set-up.yaml", "r") as f:
-            config = yaml.safe_load(f)
-        with open(config["output_file"], "a") as f:
-            f.write(f"Total time for test: {run_end - run_start} seconds.\n")
+        for arch in archs:
+            run_start = time.time()
+            run_test({"output": [[random.randint(0,1)] for _ in range(256)],
+                      "continuous_penalty_coeff": cp,
+                      "architecture": arch})
+            run_end = time.time()
+            with open("set-up.yaml", "r") as f:
+                config = yaml.safe_load(f)
+            with open(config["output_file"], "a") as f:
+                f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
