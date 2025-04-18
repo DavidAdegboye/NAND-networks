@@ -1901,7 +1901,7 @@ with open("set-up.yaml", "r") as f:
 with open(config["output_file"], "w") as f:
     f.write(f"New test:\n")
 true_start = time.time()
-archs = [[64], [128], [256], [512]]
+archs = [[64], [128], [256], [512], [64,32], [128,64], [256, 128]]
 for _ in range(5):
     for arch in archs:
         run_start = time.time()
