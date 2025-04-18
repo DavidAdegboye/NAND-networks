@@ -1901,25 +1901,17 @@ with open("set-up.yaml", "r") as f:
 with open(config["output_file"], "w") as f:
     f.write(f"New test:\n")
 true_start = time.time()
-cont_pens = [0, 0.003, 0.01, 0.05, 0.1, 0.5, 1]
-archs = [[64,16], [64]]
+archs = [[64], [128], [256], [512]]
 for _ in range(5):
-    for cp in cont_pens:
-        for arch in archs:
-            if len(arch) == 1:
-                max_fan_coeff = 0
-            else:
-                max_fan_coeff = 1
-            run_start = time.time()
-            run_test({"output": [[random.randint(0,1)] for _ in range(256)],
-                      "continuous_penalty_coeff": cp,
-                      "architecture": arch,
-                      "max_fan_in_penalty_coeff": max_fan_coeff})
-            run_end = time.time()
-            with open("set-up.yaml", "r") as f:
-                config = yaml.safe_load(f)
-            with open(config["output_file"], "a") as f:
-                f.write(f"Total time for test: {run_end - run_start} seconds.\n")
+    for arch in archs:
+        run_start = time.time()
+        run_test({"output": [[random.randint(0,1)] for _ in range(256)],
+                  "architecture": arch})
+        run_end = time.time()
+        with open("set-up.yaml", "r") as f:
+            config = yaml.safe_load(f)
+        with open(config["output_file"], "a") as f:
+            f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
