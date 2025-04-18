@@ -683,7 +683,7 @@ def run_test(variables: Dict[str, any]):
         fan_ins = []
         for node_index in used_list:
             if node_index >= learnt_arch[0]:
-                fan_ins.append(len(connecteds[node_index]))r
+                fan_ins.append(len(connecteds[node_index]))
         with open(config["output_file"], "a") as f:
             for pair in variables.items():
                 f.write(str(pair)+'\n')
