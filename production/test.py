@@ -1845,7 +1845,7 @@ def run_test(variables: Dict[str, any]):
                     with open(config["output_file"], "a") as f:
                         f.write(str(variables)+'\n')
                         f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%\n")
-                        f.write(f"Gate usage: {gate_usage_disc}9n")
+                        f.write(f"Gate usage: {gate_usage_disc}\n")
                         f.write(f"Max fan-in: {max_fan}\n")
                 return
         if add_img_or_custom != 'i':
