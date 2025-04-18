@@ -683,9 +683,10 @@ def run_test(variables: Dict[str, any]):
         fan_ins = []
         for node_index in used_list:
             if node_index >= learnt_arch[0]:
-                fan_ins.append(len(connecteds[node_index]))
+                fan_ins.append(len(connecteds[node_index]))r
         with open(config["output_file"], "a") as f:
-            f.write(str(variables)+'\n')
+            for pair in variables.items():
+                f.write(str(pair)+'\n')
             f.write(f"Without PTO:\nused:\n{learnt_arch}\nout of:\n{true_arch}\n")
             f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {sum(fan_ins)/len(fan_ins)}\n")
             for circ in circuits[-true_arch[-1]:]:
@@ -1823,7 +1824,8 @@ def run_test(variables: Dict[str, any]):
                     print(mean_fan_in_penalty(weights, 0, temperature,
                                             num_neurons))
                     with open(config["output_file"], "a") as f:
-                        f.write(str(variables)+'\n')
+                        for pair in variables.items():
+                            f.write(str(pair)+'\n')
                         f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%\n")
                         f.write(f"Gate usage: {gate_usage_disc}\n")
                         f.write(f"Max fan-in: {max_fan}\n")
@@ -1843,7 +1845,8 @@ def run_test(variables: Dict[str, any]):
                     print(mean_fan_in_penalty(weights, 0, temperature,
                                             num_neurons))
                     with open(config["output_file"], "a") as f:
-                        f.write(str(variables)+'\n')
+                        for pair in variables.items():
+                            f.write(str(pair)+'\n')
                         f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%\n")
                         f.write(f"Gate usage: {gate_usage_disc}\n")
                         f.write(f"Max fan-in: {max_fan}\n")
