@@ -1906,10 +1906,15 @@ archs = [[64,16], [64]]
 for _ in range(5):
     for cp in cont_pens:
         for arch in archs:
+            if len(arch) == 1:
+                max_fan_coeff = 0
+            else:
+                max_fan_coeff = 1
             run_start = time.time()
             run_test({"output": [[random.randint(0,1)] for _ in range(256)],
                       "continuous_penalty_coeff": cp,
-                      "architecture": arch})
+                      "architecture": arch,
+                      "max_fan_in_penalty_coeff": max_fan_coeff})
             run_end = time.time()
             with open("set-up.yaml", "r") as f:
                 config = yaml.safe_load(f)
