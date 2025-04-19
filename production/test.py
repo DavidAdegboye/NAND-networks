@@ -1653,7 +1653,7 @@ def run_test(variables: Dict[str, any]):
                 print(temp, max_fan_in)
                 [print(circ) for circ in (output_circuit_inefficient(weights, True, True))]
                 [print(circ) for circ in (output_circuit(weights, True, True))]
-                print("Max fan-in not good enough")
+                print(f"Max fan-in ({temp}) not good enough")
                 return temp
             return current_max_fan_in
         return True
@@ -1682,7 +1682,7 @@ def run_test(variables: Dict[str, any]):
             if temp < current_max_fan_in_rand or current_max_fan_in_rand == -1:
                 print(temp, max_fan_in)
                 [print(circ) for circ in (output_circuit_random(weights, True, True))]
-                print("Max fan-in not good enough")
+                print(f"Max fan-in ({temp}) not good enough")
                 return temp
             return current_max_fan_in_rand
         return True
@@ -2061,19 +2061,9 @@ def run_test(variables: Dict[str, any]):
                 return
         if add_img_or_custom != 'i':
             if test(weights, inputs, output, use_surr, surr_arr):
-                if max_fan_in_penalty_coeff == 0:
-                    cont = False
-                else:
-                    current_max_fan_in = test_fan_in(weights)
-                    if current_max_fan_in == True:
-                        cont = False
+                cont = False
             elif test_rand(weights, inputs, output, use_surr, surr_arr):
-                if max_fan_in_penalty_coeff == 0:
-                    cont = 0
-                else:
-                    current_max_fan_in_rand = test_fan_in_rand(weights)
-                    if current_max_fan_in_rand == True:
-                        cont = 0
+                cont = 0
         if cont:
             if iters == max(10//batches, 1):
                 if add_img_or_custom == 'i':
