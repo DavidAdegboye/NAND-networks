@@ -1276,7 +1276,7 @@ def run_test(variables: Dict[str, any]):
         fan_ins = jnp.array([])
         for layer in weights:
             fan_ins = jnp.concatenate((fan_ins, jax.vmap(
-                lambda x:jnp.sum(step))(layer)))
+                lambda x:jnp.sum(jnp.where(x>0, 1, 0)))(layer)))
         temp = jax.nn.relu(fan_ins-max_fan_in)
         return jnp.max(temp)
 
@@ -1646,7 +1646,7 @@ def run_test(variables: Dict[str, any]):
         for layer in weights:
             # this can include gates that aren't used and have a fan-in greater
             # so if the circuit printed is better, we can stop the search anyway
-            fan_ins = jax.vmap(lambda x:jnp.sum(step))(layer)
+            fan_ins = jax.vmap(lambda x:jnp.sum(jnp.where(x>0, 1, 0)))(layer)
             temp = max(temp, jnp.max(fan_ins))
         if temp > max_fan_in:
             if temp < current_max_fan_in or current_max_fan_in == -1:
@@ -1674,7 +1674,9 @@ def run_test(variables: Dict[str, any]):
         for layer in weights:
             # this can include gates that aren't used and have a fan-in greater
             # so if the circuit printed is better, we can stop the search anyway
-            fan_ins = jax.vmap(lambda x:jnp.sum(bern))(layer)
+            fan_ins = jax.vmap(lambda x:jnp.sum(jax.random.bernoulli(
+                                                jax.random.key(0),
+                                                jax.nn.sigmoid(x))))(layer)
             temp = max(temp, jnp.max(fan_ins))
         if temp > max_fan_in:
             if temp < current_max_fan_in_rand or current_max_fan_in_rand == -1:
