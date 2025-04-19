@@ -26,36 +26,6 @@ def run_test(variables: Dict[str, any]):
     print(variables)
     jax.config.update("jax_traceback_filtering", config["traceback"])
 
-    new_batches = 0
-    def get_optional_input_non_blocking():
-        global new_batches, max_fan_in
-        if os.name == 'nt':  # Windows
-            if msvcrt.kbhit():
-                user_input = msvcrt.getch().decode('utf-8').strip()
-                if 's' in user_input:
-                    print("Input received")
-                    return 1
-                if 'd' in user_input:
-                    print("Input received")
-                    return 2
-                if 'a' in user_input:
-                    print("Input received")
-                    max_fan_in += 1
-        else:  # Unix-like systems
-            input_ready, _, _ = select.select([sys.stdin], [], [], 0)  # Non-blocking select
-            if input_ready:
-                user_input = sys.stdin.readline().strip()
-                if 's' in user_input:
-                    print("Input received")
-                    return 1
-                if 'd' in user_input:
-                    print("Input received")
-                    return 2
-                if 'a' in user_input:
-                    print("Input received")
-                    max_fan_in += 1
-        return 0
-
     # defining some types
     Network = Tuple[jnp.ndarray, ...]
     Shape = Tuple[int, ...]
@@ -979,8 +949,6 @@ def run_test(variables: Dict[str, any]):
         a 2d jnp array of the weights, which represents the wires going into a
         certain neuron
         """
-        global key
-        key = random.randint(0, 10000)
         n = old_c*w**2
         return distribution(shape=(c, old_c, w, w), n=n, sigma=sigma, k=k)
 
@@ -1462,7 +1430,6 @@ def run_test(variables: Dict[str, any]):
         Returns
         if the max fan-in is less than what the user specified
         """
-        global current_max_fan_in
         temp = 0
         for layer in weights:
             # this can include gates that aren't used and have a fan-in greater
@@ -1470,13 +1437,13 @@ def run_test(variables: Dict[str, any]):
             fan_ins = jax.vmap(lambda x:jnp.sum(jnp.where(x>0, 1, 0)))(layer)
             temp = max(temp, jnp.max(fan_ins))
         if temp > max_fan_in:
-            if (temp < current_max_fan_in or current_max_fan_in == -1):
+            if temp < current_max_fan_in or current_max_fan_in == -1:
                 print(temp, max_fan_in)
                 [print(circ) for circ in (output_circuit_inefficient(weights, True, True))]
                 [print(circ) for circ in (output_circuit(weights, True, True))]
                 print("Max fan-in not good enough")
-                current_max_fan_in = temp
-            return False
+                return temp
+            return current_max_fan_in
         return True
 
     @partial(jax.jit, static_argnames=("skew_towards_falses", "use_surr"))
@@ -1487,7 +1454,7 @@ def run_test(variables: Dict[str, any]):
             surr_arr: List[jnp.ndarray]=[],
             skew_towards_falses=False
             ) -> Tuple[float, jnp.ndarray, jnp.ndarray]:
-        """
+        """current_max_fan_in
         calculates the accuracy, and also the masks used in the loss function
 
         Parameters
@@ -1852,10 +1819,13 @@ def run_test(variables: Dict[str, any]):
                         f.write(f"Max fan-in: {max_fan}\n")
                 return
         if add_img_or_custom != 'i':
-            if (test(weights, inputs, output, use_surr, surr_arr) and
-                (max_fan_in_penalty_coeff==0 or test_fan_in(weights))
-                or get_optional_input_non_blocking() == 2):
-                cont = False
+            if test(weights, inputs, output, use_surr, surr_arr):
+                if max_fan_in_penalty_coeff == 0:
+                    cont = False
+                else:
+                    current_max_fan_in = test_fan_in(weights)
+                    if current_max_fan_in == True:
+                        cont = False
         if cont:
             if iters == max(10//batches, 1):
                 if add_img_or_custom == 'i':
