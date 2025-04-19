@@ -22,7 +22,7 @@ def set_up_adders(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]
     ins = config["bits"]*2
     num_ins = 2**ins
     inputs = jax.vmap(denary_to_binary_array, in_axes=(0, None))(
-        jnp.arange(num_ins), bits=bits*2)
+        jnp.arange(num_ins), bits*2)
     out_bits = config["out_bits"]
     output = jax.vmap(get_output)(jnp.arange(num_ins))[:,:out_bits]
     print(output.shape)
