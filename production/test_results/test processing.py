@@ -89,6 +89,7 @@ def graph(xlabel, ylabel, means, stds=None, title=None):
     plt.xticks(x, labels)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
+    plt.ylim(bottom=0)
     if title is None:
         plt.title(f"{ylabel} by {xlabel}")
     else:

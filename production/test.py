@@ -1904,12 +1904,13 @@ with open("set-up.yaml", "r") as f:
 with open(config["output_file"], "w") as f:
     f.write(f"New test:\n")
 true_start = time.time()
-archs = [[128], [256], [64,32], [128,64]]
+archs = [[256], [128, 128], [160, 96], [192, 64]]
+max_fan_in = [8, 4, 4, 4]
 for _ in range(5):
-    for arch in archs:
+    for arch, mfi in zip(archs, max_fan_in):
         run_start = time.time()
         run_test({"architecture": arch,
-                  "max_fan_in_penalty_coeff": len(arch) - 1})
+                  "max_fan_in": mfi})
         run_end = time.time()
         with open("set-up.yaml", "r") as f:
             config = yaml.safe_load(f)
