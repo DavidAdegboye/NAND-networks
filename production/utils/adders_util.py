@@ -21,14 +21,15 @@ def set_up_adders(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]
     # if it's a n-bit adder, we need 2n inputs, n for each number 
     ins = config["bits"]*2
     num_ins = 2**ins
-    inputs = jax.vmap(denary_to_binary_array)(jnp.arange(num_ins))
+    inputs = jax.vmap(denary_to_binary_array, in_axes=(0, None))(
+        jnp.arange(num_ins), bits=bits*2)
     out_bits = config["out_bits"]
     output = jax.vmap(get_output)(jnp.arange(num_ins))[:,:out_bits]
     print(output.shape)
     return inputs, output, ins, out_bits, num_ins
 
 # function to convert a denary number to a a jnp array of bits
-def denary_to_binary_array(number: int, bits: int=bits*2) -> jnp.ndarray:
+def denary_to_binary_array(number: int, bits: int) -> jnp.ndarray:
     """
     Converts a denary number to a jnp array of the bits
 
