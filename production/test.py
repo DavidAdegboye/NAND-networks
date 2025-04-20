@@ -2262,21 +2262,22 @@ ALL_KS = [1.0, 1.0, 1.0, 0.995, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91,
 ks = {s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)}
 distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 archs = [[160, 96], [192, 64]]
-for dist in distributions:
-    for sig in sigmas[dist]:
-        if sig not in ks.keys():
-            ks[sig] = 1
-        for arch in archs:
-            run_start = time.time()
-            run_test({"architecture": arch,
-                    "dense_sigma": sig,
-                    "dense_k": ks[sig],
-                    "dense_distribution": dist})
-            run_end = time.time()
-            with open("set-up.yaml", "r") as f:
-                config = yaml.safe_load(f)
-            with open(config["output_file"], "a") as f:
-                f.write(f"Total time for test: {run_end - run_start} seconds.\n")
+for _ in range(5):
+    for dist in distributions:
+        for sig in sigmas[dist]:
+            if sig not in ks.keys():
+                ks[sig] = 1
+            for arch in archs:
+                run_start = time.time()
+                run_test({"architecture": arch,
+                        "dense_sigma": sig,
+                        "dense_k": ks[sig],
+                        "dense_distribution": dist})
+                run_end = time.time()
+                with open("set-up.yaml", "r") as f:
+                    config = yaml.safe_load(f)
+                with open(config["output_file"], "a") as f:
+                    f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
