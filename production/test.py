@@ -2249,18 +2249,24 @@ with open("set-up.yaml", "r") as f:
 with open(config["output_file"], "w") as f:
     f.write(f"New test:\n")
 true_start = time.time()
-archs = [[256], [128, 128], [160, 96], [192, 64]]
-max_fans = [6, 4, 4, 4]
+sigmas = [0.1, 0.25, 0.5, 0.75, 1.0, 2.0, 3.0, 5.0, 10.0]
+ks = [1.0, 0.99, 0.955, 0.91, 0.85, 0.65, 0.5, 0.32, 0.17]
+distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
+archs = [[128, 128], [160, 96], [192, 64]]
 for _ in range(5):
-    for arch, mfi in zip(archs, max_fans):
-        run_start = time.time()
-        run_test({"architecture": arch,
-                  "max_fan_in": mfi})
-        run_end = time.time()
-        with open("set-up.yaml", "r") as f:
-            config = yaml.safe_load(f)
-        with open(config["output_file"], "a") as f:
-            f.write(f"Total time for test: {run_end - run_start} seconds.\n")
+    for dist in distributions:
+        for sig, k in zip(sigmas, ks):
+            for arch in archs:
+                run_start = time.time()
+                run_test({"architecture": arch,
+                          "dense_sigma": sig,
+                          "dense_k": k,
+                          "dense_distribution": dist})
+                run_end = time.time()
+                with open("set-up.yaml", "r") as f:
+                    config = yaml.safe_load(f)
+                with open(config["output_file"], "a") as f:
+                    f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
