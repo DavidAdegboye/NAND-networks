@@ -1192,6 +1192,7 @@ def run_test(variables: Dict[str, any]):
         Returns
         the weights
         """
+        sigma = sigma * jnp.sqrt(n-1)/n
         key = random.randint(0, 10000)
         alpha = ((n-1)/(n**2*sigma**2)-1)/n
         beta = alpha * (n - 1)
@@ -2256,17 +2257,18 @@ archs = [[128, 128], [160, 96], [192, 64]]
 for _ in range(5):
     for dist in distributions:
         for sig, k in zip(sigmas, ks):
-            for arch in archs:
-                run_start = time.time()
-                run_test({"architecture": arch,
-                          "dense_sigma": sig,
-                          "dense_k": k,
-                          "dense_distribution": dist})
-                run_end = time.time()
-                with open("set-up.yaml", "r") as f:
-                    config = yaml.safe_load(f)
-                with open(config["output_file"], "a") as f:
-                    f.write(f"Total time for test: {run_end - run_start} seconds.\n")
+            if dist != "beta_sampler" or sig < 1:
+                for arch in archs:
+                    run_start = time.time()
+                    run_test({"architecture": arch,
+                            "dense_sigma": sig,
+                            "dense_k": k,
+                            "dense_distribution": dist})
+                    run_end = time.time()
+                    with open("set-up.yaml", "r") as f:
+                        config = yaml.safe_load(f)
+                    with open(config["output_file"], "a") as f:
+                        f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
