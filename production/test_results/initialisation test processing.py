@@ -50,44 +50,46 @@ while i < 1716:
     sigma = lines[i][16:-2]
     i += 2
     distribution = lines[i][24:-3]
-    print(arch, sigma, distribution)
-    total_counts[(arch, sigma, distribution)] += 1
-    i += 2
+    i += 1
+    glob = lines[i][19:-2]
+    print(distribution, sigma, glob, arch)
+    total_counts[(distribution, sigma, glob, arch)] += 1
+    i += 1
     line = lines[i].split(',')
     if len(line) == 3:
         acc, loss, rand_acc = line
-        accuracies[(arch, sigma, distribution)].append(float(acc[10:-1]))
-        losses[(arch, sigma, distribution)].append(float(loss[6:]))
-        random_accuracies[(arch, sigma, distribution)].append(float(rand_acc[18:-2]))
+        accuracies[(distribution, sigma, glob, arch)].append(float(acc[10:-1]))
+        losses[(distribution, sigma, glob, arch)].append(float(loss[6:]))
+        random_accuracies[(distribution, sigma, glob, arch)].append(float(rand_acc[18:-2]))
         i += 4
     else:
-        successful_counts[(arch, sigma, distribution)] += 1
+        successful_counts[(distribution, sigma, glob, arch)] += 1
         i += 2
-        gate_usage[(arch, sigma, distribution)].append([int(node_count) for node_count in lines[i][1:-2].split(',')])
+        gate_usage[(distribution, sigma, glob, arch)].append([int(node_count) for node_count in lines[i][1:-2].split(',')])
         print(lines[i])
         i += 3
-        max_fan_ins[(arch, sigma, distribution)].append(int(lines[i][12:-1]))
+        max_fan_ins[(distribution, sigma, glob, arch)].append(int(lines[i][12:-1]))
         print(lines[i])
         i += 1
-        average_fan_ins[(arch, sigma, distribution)].append(float(lines[i][16:-1]))
+        average_fan_ins[(distribution, sigma, glob, arch)].append(float(lines[i][16:-1]))
         print(lines[i])
         i += 5
-        gate_pto[(arch, sigma, distribution)].append([int(node_count) for node_count in lines[i][1:-2].split(',')])
+        gate_pto[(distribution, sigma, glob, arch)].append([int(node_count) for node_count in lines[i][1:-2].split(',')])
         print(lines[i])
         i += 3
-        max_fan_pto[(arch, sigma, distribution)].append(int(lines[i][12:-1]))
+        max_fan_pto[(distribution, sigma, glob, arch)].append(int(lines[i][12:-1]))
         print(lines[i])
         i += 1
-        average_fan_pto[(arch, sigma, distribution)].append(float(lines[i][16:-1]))
+        average_fan_pto[(distribution, sigma, glob, arch)].append(float(lines[i][16:-1]))
         print(lines[i])
         i += 3
-        training_times[(arch, sigma, distribution)].append(float(lines[i][21:-9]))
+        training_times[(distribution, sigma, glob, arch)].append(float(lines[i][21:-9]))
         print(lines[i])
         i += 1
-        accuracies[(arch, sigma, distribution)].append(100)
-        random_accuracies[(arch, sigma, distribution)].append(100)
+        accuracies[(distribution, sigma, glob, arch)].append(100)
+        random_accuracies[(distribution, sigma, glob, arch)].append(100)
 
-[print(item) for item in successful_counts.items()]
+[print(item) for item in sorted([item for item in successful_counts.items()])]
 print()
 
 accuracies = {k:mean_std(jnp.array(v)) for k,v in accuracies.items()}
@@ -95,7 +97,7 @@ random_accuracies = {k:mean_std(jnp.array(v)) for k,v in random_accuracies.items
 training_times = {k:mean_std(jnp.array(v)) for k,v in training_times.items()}
 
 print()
-print(max([y for x,y in training_times.values()]))
+print(max([x for x,y in training_times.values()]))
 
 """
 import matplotlib.pyplot as plt
