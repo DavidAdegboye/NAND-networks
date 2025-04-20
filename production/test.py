@@ -2250,7 +2250,7 @@ with open("set-up.yaml", "r") as f:
 with open(config["output_file"], "w") as f:
     f.write(f"New test:\n")
 true_start = time.time()
-sigmas = {"beta_sampler": [0.003, 0.005, 0.01, 0.03, 0.05, 0.1, 0.2],
+sigmas = {"beta_sampler": [0.005, 0.01, 0.03, 0.05, 0.1, 0.2],
           "normal_sampler1": [1, 2, 3, 4, 5, 6],
           "normal_sampler2": [0.1, 0.2, 0.3, 0.5, 0.75, 1, 1.5, 2, 2.5]}
 ALL_SIGMAS = [0.01, 0.05, 0.1, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75,
