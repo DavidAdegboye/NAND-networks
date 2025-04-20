@@ -1504,3 +1504,213 @@ Accuracy: 92.97%, Loss: 0.04075, Random accuracy: 96.09%
 Gate usage: [12.  4.  4.  2.]
 Max fan-in: 5.0
 Total time for test: 124.88847208023071 seconds.
+('architecture', [128, 128])
+('dense_sigma', 0.01)
+('dense_k', 1.0)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 96.88%, Loss: 0.04815, Random accuracy: 96.88%
+Gate usage: [14.  5.  3.  2.]
+Max fan-in: 5.0
+Total time for test: 315.04066824913025 seconds.
+('architecture', [160, 96])
+('dense_sigma', 0.01)
+('dense_k', 1.0)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Without PTO:
+used:
+[23, 5, 3, 2]
+out of:
+[32, 160, 96, 2]
+Max fan-in: 5
+Average fan-in: 3.357142857142857
+¬(¬(A.E).¬(D.H.¬(¬A.¬E).¬(¬B.¬F).¬(¬C.¬G)).¬(B.F.¬(¬A.¬E)).¬(C.G.¬(¬A.¬E).¬(¬B.¬F)))
+¬(¬(A.B.E.F).¬(¬(A.¬E).¬(¬A.E).¬(¬B.¬F).¬(¬(B.F).¬(C.G).¬(D.H))).¬(B.F.¬(B.F.¬(¬A.¬E))).¬(¬(A.E).¬(¬A.¬E).¬(D.H.¬(¬A.¬E).¬(¬B.¬F).¬(¬C.¬G)).¬(B.F.¬(¬A.¬E)).¬(C.G.¬(¬A.¬E).¬(¬B.¬F))))
+With PTO
+used:
+[23, 5, 3, 2]
+out of:
+[32, 160, 96, 2]
+Max fan-in: 5
+Average fan-in: 3.357142857142857
+¬(¬(A.E).¬(D.H.¬(¬A.¬E).¬(¬B.¬F).¬(¬C.¬G)).¬(B.F.¬(¬A.¬E)).¬(C.G.¬(¬A.¬E).¬(¬B.¬F)))
+¬(¬(A.B.E.F).¬(¬(A.¬E).¬(¬A.E).¬(¬B.¬F).¬(¬(B.F).¬(C.G).¬(D.H))).¬(B.F.¬(B.F.¬(¬A.¬E))).¬(¬(A.E).¬(¬A.¬E).¬(D.H.¬(¬A.¬E).¬(¬B.¬F).¬(¬C.¬G)).¬(B.F.¬(¬A.¬E)).¬(C.G.¬(¬A.¬E).¬(¬B.¬F))))
+Total time for test: 79.91851210594177 seconds.
+('architecture', [192, 64])
+('dense_sigma', 0.01)
+('dense_k', 1.0)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 89.65%, Loss: 0.04469, Random accuracy: 98.44%
+Gate usage: [15.  5.  3.  2.]
+Max fan-in: 4.0
+Total time for test: 311.0303249359131 seconds.
+('architecture', [128, 128])
+('dense_sigma', 0.05)
+('dense_k', 1.0)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 96.09%, Loss: 0.0476, Random accuracy: 98.44%
+Gate usage: [14.  7.  2.  2.]
+Max fan-in: 5.0
+Total time for test: 304.8607985973358 seconds.
+('architecture', [160, 96])
+('dense_sigma', 0.05)
+('dense_k', 1.0)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 89.84%, Loss: 0.02908, Random accuracy: 98.44%
+Gate usage: [18.  9.  2.  2.]
+Max fan-in: 4.0
+Total time for test: 304.8410449028015 seconds.
+('architecture', [192, 64])
+('dense_sigma', 0.05)
+('dense_k', 1.0)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 87.89%, Loss: 0.05194, Random accuracy: 97.66%
+Gate usage: [16.  7.  2.  2.]
+Max fan-in: 5.0
+Total time for test: 304.9374837875366 seconds.
+('architecture', [128, 128])
+('dense_sigma', 0.1)
+('dense_k', 1.0)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 79.69%, Loss: 0.04633, Random accuracy: 96.48%
+Gate usage: [17.  7.  3.  2.]
+Max fan-in: 5.0
+Total time for test: 304.7444350719452 seconds.
+('architecture', [160, 96])
+('dense_sigma', 0.1)
+('dense_k', 1.0)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 77.34%, Loss: 0.07001, Random accuracy: 96.88%
+Gate usage: [16.  7.  3.  2.]
+Max fan-in: 5.0
+Total time for test: 304.83561062812805 seconds.
+('architecture', [192, 64])
+('dense_sigma', 0.1)
+('dense_k', 1.0)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 93.75%, Loss: 0.01974, Random accuracy: 99.22%
+Gate usage: [16.  7.  2.  2.]
+Max fan-in: 4.0
+Total time for test: 304.8190631866455 seconds.
+('architecture', [128, 128])
+('dense_sigma', 0.2)
+('dense_k', 0.995)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 99.61%, Loss: 0.01666, Random accuracy: 99.61%
+Gate usage: [18. 14.  5.  2.]
+Max fan-in: 5.0
+Total time for test: 304.8399930000305 seconds.
+('architecture', [160, 96])
+('dense_sigma', 0.2)
+('dense_k', 0.995)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 98.44%, Loss: 0.0194, Random accuracy: 99.22%
+Gate usage: [18. 13.  4.  2.]
+Max fan-in: 4.0
+Total time for test: 305.0798726081848 seconds.
+('architecture', [192, 64])
+('dense_sigma', 0.2)
+('dense_k', 0.995)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 92.19%, Loss: 0.06979, Random accuracy: 97.27%
+Gate usage: [19. 13.  2.  2.]
+Max fan-in: 5.0
+Total time for test: 304.67322993278503 seconds.
+('architecture', [128, 128])
+('dense_sigma', 0.3)
+('dense_k', 0.98)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 97.66%, Loss: 0.02982, Random accuracy: 99.22%
+Gate usage: [15. 15.  5.  2.]
+Max fan-in: 5.0
+Total time for test: 304.8642547130585 seconds.
+('architecture', [160, 96])
+('dense_sigma', 0.3)
+('dense_k', 0.98)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Without PTO:
+used:
+[25, 12, 4, 2]
+out of:
+[32, 160, 96, 2]
+Max fan-in: 4
+Average fan-in: 3.4
+¬(¬(A.E).¬(¬(¬A.¬E).¬(¬B.¬F).¬(¬C.¬G.¬(A.E).¬(B.F)).¬(¬(A.E).¬(B.F).¬(C.G).¬(D.H))))
+¬(¬(¬(A.E).¬(¬A.¬E).¬(B.F).¬(C.G)).¬(¬(¬(¬A.E).¬(B.F).¬(C.G).¬(D.H)).¬(B.¬(¬A.¬E).¬(B.¬F).¬(¬B.¬F)).¬(¬(A.E).¬(¬A.¬E).¬(¬B.¬F).¬(¬C.¬G)).¬(¬B.¬F.¬(A.¬E).¬(¬A.E))).¬(B.¬(¬(B.F).¬(C.G).¬(D.H))).¬(¬(A.¬E).¬(¬B.¬(¬A.E).¬(B.F).¬(¬B.F)).¬(¬(A.¬E).¬(¬A.E).¬(B.F).¬(C.G)).¬(¬(A.E).¬(¬A.¬E).¬(¬B.¬F))))
+With PTO
+used:
+[25, 11, 4, 2]
+out of:
+[32, 160, 96, 2]
+Max fan-in: 4
+Average fan-in: 3.473684210526316
+¬(¬(A.E).¬(¬(¬A.¬E).¬(¬B.¬F).¬(¬C.¬G.¬(A.E).¬(B.F)).¬(¬(A.E).¬(B.F).¬(C.G).¬(D.H))))
+¬(¬(¬(A.E).¬(¬A.¬E).¬(B.F).¬(C.G)).¬(¬(¬(¬A.E).¬(B.F).¬(C.G).¬(D.H)).¬(B.¬(¬A.¬E).¬(B.¬F).¬(¬B.¬F)).¬(¬(A.E).¬(¬A.¬E).¬(¬B.¬F).¬(¬C.¬G)).¬(¬B.¬F.¬(A.¬E).¬(¬A.E))).¬(B.¬(¬(B.F).¬(C.G).¬(D.H))).¬(¬(A.¬E).¬(¬B.¬(¬A.E).¬(B.F).¬(¬B.F)).¬(¬(A.¬E).¬(¬A.E).¬(B.F).¬(C.G)).¬(¬(A.E).¬(¬A.¬E).¬(¬B.¬F))))
+Total time for test: 39.13919973373413 seconds.
+('architecture', [192, 64])
+('dense_sigma', 0.3)
+('dense_k', 0.98)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 98.44%, Loss: 0.0194, Random accuracy: 99.22%
+Gate usage: [20. 16.  5.  2.]
+Max fan-in: 4.0
+Total time for test: 304.7836103439331 seconds.
+('architecture', [128, 128])
+('dense_sigma', 0.5)
+('dense_k', 0.955)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 98.05%, Loss: 0.02387, Random accuracy: 98.83%
+Gate usage: [24. 21.  7.  2.]
+Max fan-in: 5.0
+Total time for test: 308.0171661376953 seconds.
+('architecture', [160, 96])
+('dense_sigma', 0.5)
+('dense_k', 0.955)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 95.7%, Loss: 0.03371, Random accuracy: 96.09%
+Gate usage: [21. 17.  4.  2.]
+Max fan-in: 4.0
+Total time for test: 304.835675239563 seconds.
+('architecture', [192, 64])
+('dense_sigma', 0.5)
+('dense_k', 0.955)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 97.27%, Loss: 0.03895, Random accuracy: 98.83%
+Gate usage: [23. 18.  4.  2.]
+Max fan-in: 5.0
+Total time for test: 304.8701477050781 seconds.
+('architecture', [128, 128])
+('dense_sigma', 0.75)
+('dense_k', 0.91)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 94.73%, Loss: 0.04411, Random accuracy: 95.9%
+Gate usage: [27. 17.  5.  2.]
+Max fan-in: 4.0
+Total time for test: 304.76957988739014 seconds.
+('architecture', [160, 96])
+('dense_sigma', 0.75)
+('dense_k', 0.91)
+('dense_distribution', 'beta_sampler')
+('global_weights', False)
+Accuracy: 94.73%, Loss: 0.04885, Random accuracy: 97.66%
+Gate usage: [21. 11.  3.  2.]
+Max fan-in: 5.0
+Total time for test: 304.9893989562988 seconds.

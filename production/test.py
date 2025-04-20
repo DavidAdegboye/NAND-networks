@@ -2250,9 +2250,9 @@ with open("set-up.yaml", "r") as f:
 with open(config["output_file"], "w") as f:
     f.write(f"New test:\n")
 true_start = time.time()
-sigmas = {"beta_sampler": [0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.75],
-          "normal_sampler1": [1, 2, 3, 4, 5, 7, 10],
-          "normal_sampler2": [0.1, 0.2, 0.3, 0.5, 0.75, 1, 1.5, 2]}
+sigmas = {"beta_sampler": [0.001, 0.003, 0.005, 0.01, 0.03, 0.05, 0.1, 0.2, 0.3],
+          "normal_sampler1": [1, 2, 3, 4, 5, 6],
+          "normal_sampler2": [0.1, 0.2, 0.3, 0.5, 0.75, 1, 1.5, 2, 2.5]}
 ALL_SIGMAS = [0.01, 0.05, 0.1, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75,
             0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,
             8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0]
@@ -2266,6 +2266,8 @@ archs = [[128, 128], [160, 96], [192, 64]]
 for i in range(2):
     for dist in distributions:
         for sig in sigmas[dist]:
+            if sig not in ks.keys():
+                ks[sig] = 1
             for arch in archs:
                 run_start = time.time()
                 run_test({"architecture": arch,

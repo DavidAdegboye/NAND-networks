@@ -44,7 +44,7 @@ random_accuracies = defaultdict(list)
 
 success = False
 i=0
-while i < 498:
+while i < 1716:
     arch = lines[i][17:-2]
     i += 1
     sigma = lines[i][16:-2]
@@ -87,17 +87,15 @@ while i < 498:
         accuracies[(arch, sigma, distribution)].append(100)
         random_accuracies[(arch, sigma, distribution)].append(100)
 
-print(successful_counts)
+[print(item) for item in successful_counts.items()]
 print()
-print(total_counts)
 
 accuracies = {k:mean_std(jnp.array(v)) for k,v in accuracies.items()}
 random_accuracies = {k:mean_std(jnp.array(v)) for k,v in random_accuracies.items()}
 training_times = {k:mean_std(jnp.array(v)) for k,v in training_times.items()}
+
 print()
-print(accuracies)
-print()
-print(random_accuracies)
+print(max([y for x,y in training_times.values()]))
 
 """
 import matplotlib.pyplot as plt
