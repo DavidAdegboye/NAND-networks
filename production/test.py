@@ -2249,8 +2249,8 @@ with open("set-up.yaml", "r") as f:
 with open(config["output_file"], "w") as f:
     f.write(f"New test:\n")
 true_start = time.time()
-archs = [[256], [128, 128], [160, 96], [192, 64]]
-max_fans = [6, 5, 5, 5]
+archs = [[177, 59, 20]]
+max_fans = [3]
 cpcs = [0, 0, 0, 0]
 for _ in range(5):
     for arch, mfi, cpc in zip(archs, max_fans, cpcs):
