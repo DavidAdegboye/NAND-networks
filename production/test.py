@@ -2249,15 +2249,13 @@ with open("set-up.yaml", "r") as f:
 with open(config["output_file"], "w") as f:
     f.write(f"New test:\n")
 true_start = time.time()
-archs = [[177, 59, 20]]
-max_fans = [4]
-cpcs = [0, 0, 0, 0]
+archs = [[[256], [128, 128], [160, 96], [192, 64]]]
+max_fans = [6, 4, 4, 4]
 for _ in range(5):
-    for arch, mfi, cpc in zip(archs, max_fans, cpcs):
+    for arch, mfi in zip(archs, max_fans):
         run_start = time.time()
         run_test({"architecture": arch,
-                  "max_fan_in": mfi,
-                  "continuous_penalty_coefficient": cpc})
+                  "max_fan_in": mfi})
         run_end = time.time()
         with open("set-up.yaml", "r") as f:
             config = yaml.safe_load(f)
