@@ -2250,20 +2250,29 @@ with open("set-up.yaml", "r") as f:
 with open(config["output_file"], "w") as f:
     f.write(f"New test:\n")
 true_start = time.time()
-sigmas = [0.1, 0.25, 0.5, 0.75, 1.0, 2.0, 3.0, 5.0, 10.0]
-ks = [1.0, 0.99, 0.955, 0.91, 0.85, 0.65, 0.5, 0.32, 0.17]
+sigmas = {"beta_sampler": [0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.75],
+          "normal_sampler1": [1, 2, 3, 4, 5, 7, 10],
+          "normal_sampler2": [0.1, 0.2, 0.3, 0.5, 0.75, 1, 1.5, 2]}
+ALL_SIGMAS = [0.1, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75,
+            0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,
+            8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0]
+ALL_KS = [1.0, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91,
+        0.9, 0.85, 0.75, 0.65, 0.5, 0.39, 0.32, 0.27, 0.23,
+        0.205, 0.18, 0.17, 0.155, 0.14, 0.13, 0.12, 0.11]
+ks = {s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)}
 distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 archs = [[128, 128], [160, 96], [192, 64]]
 for _ in range(5):
-    for dist in distributions:
-        for sig, k in zip(sigmas, ks):
-            if dist != "beta_sampler" or sig < 1:
+    for i in range(2):
+        for dist in distributions:
+            for sig in sigmas[dist]:
                 for arch in archs:
                     run_start = time.time()
                     run_test({"architecture": arch,
                             "dense_sigma": sig,
-                            "dense_k": k,
-                            "dense_distribution": dist})
+                            "dense_k": ks[sig],
+                            "dense_distribution": dist,
+                            "global_weights": bool(i)})
                     run_end = time.time()
                     with open("set-up.yaml", "r") as f:
                         config = yaml.safe_load(f)
