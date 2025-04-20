@@ -2259,7 +2259,8 @@ ALL_SIGMAS = [0.1, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75,
 ALL_KS = [1.0, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91,
         0.9, 0.85, 0.75, 0.65, 0.5, 0.39, 0.32, 0.27, 0.23,
         0.205, 0.18, 0.17, 0.155, 0.14, 0.13, 0.12, 0.11]
-ks = {s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)}
+from collections import defaultdict
+ks = defaultdict({s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)})
 distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 archs = [[128, 128], [160, 96], [192, 64]]
 for _ in range(5):
