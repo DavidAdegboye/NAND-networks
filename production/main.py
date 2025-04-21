@@ -695,6 +695,196 @@ def output_circuit(weights: Network, verbose=True, super_verbose=False
     print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
     return circuits[-true_arch[-1]:]
 
+def output_circuit_random(weights: Network, verbose=True, super_verbose=False
+                ) -> List[str]:
+    """
+    Outputs the learnt circuit, and also prints some useful data about the
+    network
+    
+    Parameters
+    weights - the internal representation of the circuit as learnt
+    verbose - a flag for printing extra info
+    super_verbose - a flag for even more debug info
+    
+    Returns
+    circuits[-arch[-1]:] - a list of the circuit learnt for each output neuron
+    """
+    connecteds: List[List[int]] = [[] for _ in range(ins)]
+    if extra_layers:
+        circuits = [chr(ord('A')+i) for i in range(ins)]
+        for layer in extra_layers:
+            if layer[0] == 1:
+                extras = ["¬"+circ for circ in circuits]
+                connecteds += [[i] for i in range(len(connecteds))]
+            else:
+                extras = []
+            for k in range(max(2, layer[0]), layer[1]+1):
+                for comb in itertools.combinations(circuits, k):
+                    add = True
+                    for gate in comb:
+                        if "¬"+gate in comb:
+                            add = False
+                    if add:
+                        extras.append("¬("+".".join(comb)+")")
+                        new_con = []
+                        for gate in comb:
+                            new_con.append(circuits.index(gate))
+                        connecteds.append(new_con)
+            circuits += extras
+        if add_img_or_custom == 'a':
+            circuits, connecteds = adders_util.update_circuits(
+                add_adder_help, circuits, with_nots, connecteds)
+    else:
+        circuits = [chr(ord('A')+i) for i in range(arch[0])]
+    gates = [[[] for _ in range(arch[0])]]
+    c2i = dict([(x,i) for i,x in enumerate(circuits)])
+    indices = dict([(i,i) for i in range(arch[0])])
+    index2gate = dict([(i, (0,i)) for i in range(arch[0])])
+    empties = []
+    added = arch[0] - 1
+    used = set()
+    if use_surr:
+        sum_arch = []
+        sums = 0
+        for layer in true_arch:
+            sum_arch.append(sums)
+            sums += layer
+    for layer_i in range(i_0):
+        gates.append([])
+        gate_i1 = layer_i+1
+        gate_i2 = 0
+        if use_surr:
+            if super_verbose:
+                print("surrogates")
+            if layer_i < len(surr_arr):
+                for neuron_i in range(len(surr_arr[layer_i])):
+                    connected: List[Tuple[int, str]] = []
+                    for inner_layer_i, weight_i in surr_arr[layer_i][neuron_i]:
+                        i = sum_arch[inner_layer_i] + int(weight_i)
+                        connected.append((indices[i], circuits[indices[i]]))
+                    added += 1
+                    connected = sorted(connected)
+                    connecteds.append([node[0] for node in connected])
+                    i = len(connecteds)-1
+                    if super_verbose:
+                        print(i, connecteds[i])
+                    if len(connected) == 1:
+                        node = '¬' + connected[0][1]
+                        if len(node) > 2:
+                            if node[:3] == "¬¬¬":
+                                node = node[2:]
+                    else:
+                        node = ('¬(' +
+                                '.'.join([element[1] for element in connected])
+                                + ')')
+                    if node in c2i.keys():
+                        if layer_i == i_0-1:
+                    
+                            circuits.append(node)
+                            gates[-1].append(["=", index2gate[c2i[node]]])
+                            index2gate[added] = (gate_i1, gate_i2)
+                            gate_i2 += 1
+                            for prev_node in connected:
+                                used.add(prev_node[0])
+                        else:
+                            circuits.append('_')
+                        indices[added] = c2i[node]
+                    else:
+                        circuits.append(node)
+                        c2i[node] = added
+                        indices[added] = added
+                        gates[-1].append(
+                            [index2gate[element[0]] for element in connected])
+                        index2gate[added] = (gate_i1, gate_i2)
+                        gate_i2 += 1
+                        if layer_i == i_0-1:
+                            for prev_node in connected:
+                                used.add(prev_node[0])
+                            used.add(added)
+            if super_verbose:
+                print("natties")
+        for neuron_i in range(arch[layer_i+1]):
+            i = 0
+            connected: Set[Tuple[int, str]] = set()
+            for inner_layer_i in range(layer_i+1):
+                for weight_i in range(true_arch[inner_layer_i]):
+                    if (bern(weights[layer_i][neuron_i,inner_layer_i,weight_i])
+                        and indices[i] not in empties):
+                        connected.add((indices[i], circuits[indices[i]]))
+                    i += 1
+            added += 1
+            sorted_connected = sorted(list(connected))
+            connecteds.append([node[0] for node in sorted_connected])
+            i = len(connecteds)-1
+            if super_verbose:
+                print(i, connecteds[i])
+            if not sorted_connected:
+                empties.append(added)
+                indices[added] = added
+                circuits.append('_')
+            else:
+                if len(sorted_connected) == 1:
+                    node = '¬' + sorted_connected[0][1]
+                    if len(node) > 2:
+                        if node[:3] == "¬¬¬":
+                            node = node[2:]
+                else:
+                    node = '¬(' + '.'.join(
+                        [element[1] for element in sorted_connected]) + ')'
+                if node in c2i.keys():
+                    if layer_i == i_0-1:
+                        circuits.append(node)
+                        gates[-1].append(["=", index2gate[c2i[node]]])
+                        index2gate[added] = (gate_i1, gate_i2)
+                        gate_i2 += 1
+                        for prev_node in sorted_connected:
+                            used.add(prev_node[0])
+                    else:
+                        circuits.append('_')
+                    indices[added] = c2i[node]
+                else:
+                    circuits.append(node)
+                    c2i[node] = added
+                    indices[added] = added
+                    gates[-1].append([index2gate[element[0]]
+                                    for element in sorted_connected])
+                    index2gate[added] = (gate_i1, gate_i2)
+                    gate_i2 += 1
+                    if layer_i == i_0-1:
+                        for prev_node in sorted_connected:
+                            used.add(prev_node[0])
+                        used.add(added)
+    queue = list(used)
+    nodes = []
+    while len(queue):
+        node_i = queue.pop(0)
+        nodes.append(node_i)
+        for node_2 in connecteds[node_i]:
+            if node_2 not in used:
+                queue.append(node_2)
+                used.add(node_2)
+    used_list: List[int] = sorted(list(used))
+    if verbose:
+        print(used_list)
+    true_net = {i: connecteds[i] for i in used_list}
+    true_weights = clean_connected(true_net, used_list, true_arch)
+    if super_verbose:
+        print(true_weights)
+    learnt_arch = get_used(used_list, true_arch, verbose)
+    fan_ins = []
+    for node_index in used_list:
+        if node_index >= learnt_arch[0]:
+            fan_ins.append(len(connecteds[node_index]))
+    with open(config["output_file"], "a") as f:
+        f.write("With PTO\n")
+        f.write(f"used:\n{learnt_arch}\nout of:\n{true_arch}\n")
+        f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {sum(fan_ins)/len(fan_ins)}\n")
+        for circ in circuits[-true_arch[-1]:]:
+            f.write(f"{circ}\n")
+    print("used:\n", learnt_arch, "\nout of:\n", true_arch)
+    print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
+    return circuits[-true_arch[-1]:]
+
 def beta_sampler(shape: Shape, n: int, sigma: float, k: float=None
                  ) -> jnp.ndarray:
     """
@@ -710,6 +900,7 @@ def beta_sampler(shape: Shape, n: int, sigma: float, k: float=None
     Returns
     the weights
     """
+    sigma = sigma * jnp.sqrt(n-1)/n
     key = random.randint(0, 10000)
     alpha = ((n-1)/(n**2*sigma**2)-1)/n
     beta = alpha * (n - 1)
@@ -1260,6 +1451,29 @@ def test(weights: Network,
         inputs, weights, "disc", use_surr, surr_arr)
     return jnp.all(pred==output)
 
+@partial(jax.jit, static_argnames="use_surr")
+def test_rand(weights: Network,
+                inputs: jnp.ndarray,
+                output: jnp.ndarray,
+                use_surr: bool=False,
+                surr_arr: List[jnp.ndarray]=[]) -> bool:
+    """
+    is true iff the network is 100% accurate
+
+    Parameters
+    weights - the network
+    inputs - jnp array of the inputs we're testing
+    output - jnp array of the outputs we're testing
+    use_surr - boolean telling us if we're using surrogate bits
+    surr_arr - data structure of how to calculate surrogate bits
+    
+    Returns
+    if the network was 100% accurate
+    """
+    pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
+        inputs, weights, "rand", use_surr, surr_arr)
+    return jnp.all(pred==output)
+
 current_max_fan_in = -1
 def test_fan_in(weights: Network) -> bool:
     """
@@ -1285,6 +1499,36 @@ def test_fan_in(weights: Network) -> bool:
             [print(circ) for circ in (output_circuit(weights, True, True))]
             print("Max fan-in not good enough")
             current_max_fan_in = temp
+        return False
+    return True
+
+current_max_fan_in_rand = -1
+def test_fan_in_rand(weights: Network) -> bool:
+    """
+    is true iff the max fan-in is less than what the user specified (ignoring
+    duplicates)
+
+    Parameters
+    weights - the network
+    
+    Returns
+    if the max fan-in is less than what the user specified
+    """
+    global current_max_fan_in_rand
+    temp = 0
+    for layer in weights:
+        # this can include gates that aren't used and have a fan-in greater
+        # so if the circuit printed is better, we can stop the search anyway
+        fan_ins = jax.vmap(lambda x:jnp.sum(jax.random.bernoulli(
+                                            jax.random.key(0),
+                                            jax.nn.sigmoid(x))))(layer)
+        temp = max(temp, jnp.max(fan_ins))
+    if temp > max_fan_in:
+        if temp < current_max_fan_in_rand or current_max_fan_in_rand == -1:
+            print(temp, max_fan_in)
+            [print(circ) for circ in (output_circuit_random(weights, True, True))]
+            print(f"Max fan-in ({temp}) not good enough")
+            current_max_fan_in_rand = temp
         return False
     return True
 
@@ -1557,6 +1801,7 @@ if add_img_or_custom == 'i':
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
     print(gate_usage_by_layer(weights, "cont"))
     print(gate_usage_by_layer(weights, "disc"))
+    print(gate_usage_by_layer(weights, "rand"))
     print(max_fan_in_penalty(weights, 0, temperature),
           max_fan_in_penalty_disc(weights, 0))
     print(mean_fan_in_penalty(weights, 0, temperature, num_neurons))
@@ -1567,6 +1812,7 @@ else:
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
     print(gate_usage_by_layer(weights, "cont"))
     print(gate_usage_by_layer(weights, "disc"))
+    print(gate_usage_by_layer(weights, "rand"))
     print(max_fan_in_penalty(weights, 0, temperature),
           max_fan_in_penalty_disc(weights, 0))
     print(mean_fan_in_penalty(weights, 0, temperature, num_neurons))
@@ -1628,6 +1874,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
+                    print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0))
                     print(mean_fan_in_penalty(weights, 0, temperature,
@@ -1641,6 +1888,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
+                    print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0))
                     print(mean_fan_in_penalty(weights, 0, temperature,
@@ -1651,6 +1899,10 @@ def run(timeout=config["timeout"]) -> None:
                 (max_fan_in_penalty_coeff==0 or test_fan_in(weights))
                 or get_optional_input_non_blocking() == 2):
                 cont = False
+            elif (test_rand(weights, inputs, output, use_surr, surr_arr) and
+                (max_fan_in_penalty_coeff==0 or test_fan_in_rand(weights))
+                or get_optional_input_non_blocking() == 2):
+                cont = 0
         if cont:
             if iters == max(10//batches, 1):
                 if add_img_or_custom == 'i':
@@ -1669,6 +1921,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
+                    print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0))
                     print(mean_fan_in_penalty(weights, 0, temperature,
@@ -1682,6 +1935,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
+                    print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0))
                     print(mean_fan_in_penalty(weights, 0, temperature,
@@ -1690,8 +1944,12 @@ def run(timeout=config["timeout"]) -> None:
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
     if add_img_or_custom != 'i':
-        circuit = output_circuit(weights, True, True)
-        [print(circ) for circ in circuit]
+        if cont == 0:
+            circuit = output_circuit_random(weights, True, True)
+            [print(circ) for circ in circuit]
+        else:
+            circuit = output_circuit(weights, True, True)
+            [print(circ) for circ in circuit]
     return
 
 run()

@@ -2090,6 +2090,7 @@ def run_test(variables: Dict[str, any]):
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
         print(gate_usage_by_layer(weights, "cont"))
         print(gate_usage_by_layer(weights, "disc"))
+        print(gate_usage_by_layer(weights, "rand"))
         print(max_fan_in_penalty(weights, 0, temperature),
             max_fan_in_penalty_disc(weights, 0))
         print(mean_fan_in_penalty(weights, 0, temperature, num_neurons))
@@ -2100,6 +2101,7 @@ def run_test(variables: Dict[str, any]):
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
         print(gate_usage_by_layer(weights, "cont"))
         print(gate_usage_by_layer(weights, "disc"))
+        print(gate_usage_by_layer(weights, "rand"))
         print(max_fan_in_penalty(weights, 0, temperature),
             max_fan_in_penalty_disc(weights, 0))
         print(mean_fan_in_penalty(weights, 0, temperature, num_neurons))
@@ -2160,6 +2162,7 @@ def run_test(variables: Dict[str, any]):
                     print(gate_usage_by_layer(weights, "cont"))
                     gate_usage_disc = gate_usage_by_layer(weights, "disc")
                     print(gate_usage_disc)
+                    print(gate_usage_by_layer(weights, "rand"))
                     max_fan = max_fan_in_penalty_disc(weights, 0)
                     print(max_fan_in_penalty(weights, 0, temperature),
                         max_fan)
@@ -2181,6 +2184,7 @@ def run_test(variables: Dict[str, any]):
                     print(gate_usage_by_layer(weights, "cont"))
                     gate_usage_disc = gate_usage_by_layer(weights, "disc")
                     print(gate_usage_disc)
+                    print(gate_usage_by_layer(weights, "rand"))
                     max_fan = max_fan_in_penalty_disc(weights, 0)
                     print(max_fan_in_penalty(weights, 0, temperature),
                         max_fan)
@@ -2216,6 +2220,7 @@ def run_test(variables: Dict[str, any]):
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
+                    print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                         max_fan_in_penalty_disc(weights, 0))
                     print(mean_fan_in_penalty(weights, 0, temperature,
@@ -2229,6 +2234,7 @@ def run_test(variables: Dict[str, any]):
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
+                    print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                         max_fan_in_penalty_disc(weights, 0))
                     print(mean_fan_in_penalty(weights, 0, temperature,
