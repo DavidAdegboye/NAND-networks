@@ -153,10 +153,10 @@ for dist in ("beta_sampler", "normal_sampler1", "normal_sampler2"):
         plt.bar(x + width/2, bern_means, width, yerr=bern_stds, label='Bernoulli Accuracy (%)', capsize=5, edgecolor='black')
         plt.legend(loc="lower left")
         plt.xticks(x, labels)
-        plt.xlabel("Hidden layers")
+        plt.xlabel("Standard Deviation")
         plt.ylabel("Accuracy (%)")
         plt.ylim(80,100)
-        plt.title(f"Accuracy with Step vs Bernoulli by Architecture ({dist}, {arch})")
+        plt.title(f"Accuracy with Step vs Bernoulli by Standard Deviation")
         plt.grid(axis='y', linestyle='--', alpha=0.5)
 
         plt.tight_layout()
