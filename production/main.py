@@ -850,7 +850,7 @@ def output_circuit_inefficient_random(weights: Network, verbose=True, super_verb
     return circuits[-true_arch[-1]:]
 
 def output_circuit_random(weights: Network, verbose=True, super_verbose=False
-                ) -> List[str]:
+                   ) -> List[str]:
     """
     Outputs the learnt circuit, and also prints some useful data about the
     network
@@ -933,7 +933,7 @@ def output_circuit_random(weights: Network, verbose=True, super_verbose=False
                                 + ')')
                     if node in c2i.keys():
                         if layer_i == i_0-1:
-                    
+                      
                             circuits.append(node)
                             gates[-1].append(["=", index2gate[c2i[node]]])
                             index2gate[added] = (gate_i1, gate_i2)
@@ -1001,7 +1001,7 @@ def output_circuit_random(weights: Network, verbose=True, super_verbose=False
                     c2i[node] = added
                     indices[added] = added
                     gates[-1].append([index2gate[element[0]]
-                                    for element in sorted_connected])
+                                      for element in sorted_connected])
                     index2gate[added] = (gate_i1, gate_i2)
                     gate_i2 += 1
                     if layer_i == i_0-1:
@@ -1029,16 +1029,14 @@ def output_circuit_random(weights: Network, verbose=True, super_verbose=False
     for node_index in used_list:
         if node_index >= learnt_arch[0]:
             fan_ins.append(len(connecteds[node_index]))
-    with open(config["output_file"], "a") as f:
-        f.write("With PTO\n")
+    with open(f"circuit.txt", "w") as f:
         f.write(f"used:\n{learnt_arch}\nout of:\n{true_arch}\n")
-        f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {sum(fan_ins)/len(fan_ins)}\n")
+        f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}\n")
         for circ in circuits[-true_arch[-1]:]:
             f.write(f"{circ}\n")
     print("used:\n", learnt_arch, "\nout of:\n", true_arch)
     print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
     return circuits[-true_arch[-1]:]
-
 def beta_sampler(shape: Shape, n: int, sigma: float, k: float=None
                  ) -> jnp.ndarray:
     """
