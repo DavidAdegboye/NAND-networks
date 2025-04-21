@@ -842,8 +842,6 @@ def output_circuit_inefficient_random(weights: Network, verbose=True, super_verb
         if node_index >= learnt_arch[0]:
             fan_ins.append(len(connecteds[node_index]))
     with open(config["output_file"], "a") as f:
-        for pair in variables.items():
-            f.write(str(pair)+'\n')
         f.write(f"Without PTO:\nused:\n{learnt_arch}\nout of:\n{true_arch}\n")
         f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {sum(fan_ins)/len(fan_ins)}\n")
         for circ in circuits[-true_arch[-1]:]:
