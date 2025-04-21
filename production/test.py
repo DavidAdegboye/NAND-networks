@@ -2243,7 +2243,7 @@ def run_test(variables: Dict[str, any]):
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
     if add_img_or_custom != 'i':
-        if cont == 0:
+        if cont is 0:
             [print(circ) for circ in (output_circuit_inefficient_random(weights, True, True))]
             [print(circ) for circ in (output_circuit_random(weights, True, True))]
         else:
