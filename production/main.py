@@ -1582,7 +1582,7 @@ if add_img_or_custom=='i':
 
     grad_conv = jax.jit(jax.grad(loss_conv))
 
-# @partial(jax.jit, static_argnames="use_surr")
+@partial(jax.jit, static_argnames="use_surr")
 def test(weights: Network,
          inputs: jnp.ndarray,
          output: jnp.ndarray,
@@ -1603,10 +1603,9 @@ def test(weights: Network,
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
         inputs, weights, "disc", use_surr, surr_arr)
-    print("step:", pred)
     return jnp.all(pred==output)
 
-# @partial(jax.jit, static_argnames="use_surr")
+@partial(jax.jit, static_argnames="use_surr")
 def test_rand(weights: Network,
                 inputs: jnp.ndarray,
                 output: jnp.ndarray,
@@ -1627,7 +1626,6 @@ def test_rand(weights: Network,
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
         inputs, weights, "rand", use_surr, surr_arr)
-    print("bern:", pred)
     return jnp.all(pred==output)
 
 current_max_fan_in = -1
@@ -2099,6 +2097,7 @@ def run(timeout=config["timeout"]) -> None:
                 iters = 0
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
+    [print(layer) for layer in weights]
     if add_img_or_custom != 'i':
         if cont == 0:
             circuit = output_circuit_inefficient_random(weights, True, True)
