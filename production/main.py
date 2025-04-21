@@ -2098,14 +2098,17 @@ def run(timeout=config["timeout"]) -> None:
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
     [print(layer) for layer in weights]
+    print(cont)
     if add_img_or_custom != 'i':
         if cont == 0:
+            print("Using bernoulli discretisation")
             circuit = output_circuit_inefficient_random(weights, True, True)
             [print(circ) for circ in circuit]
             print("With PTO")
             circuit = output_circuit_random(weights, True, True)
             [print(circ) for circ in circuit]
         else:
+            print("Using step discretisation")
             circuit = output_circuit(weights, True, True)
             [print(circ) for circ in circuit]
     return
