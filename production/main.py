@@ -244,8 +244,7 @@ dps = config["decimal_places"]
 
 step = jax.jit(lambda x: jnp.where(x>0, 1, 0))
 bern = jax.jit(lambda x: jax.random.bernoulli(
-    jax.random.key(random.randint(0, 10000)),
-    jax.nn.sigmoid(x)))
+    jax.random.key(0), jax.nn.sigmoid(x)))
 temp = jax.jit(lambda x: jax.nn.sigmoid(x/temperature))
 weight_activation_dict = {"cont": jax.nn.sigmoid,
                           "disc": step,
