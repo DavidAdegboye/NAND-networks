@@ -614,7 +614,7 @@ def output_circuit(weights: Network, verbose=True, super_verbose=False
             connected: Set[Tuple[int, str]] = set()
             for inner_layer_i in range(layer_i+1):
                 for weight_i in range(true_arch[inner_layer_i]):
-                    if (weights[layer_i][neuron_i,inner_layer_i,weight_i] > 0
+                    if (step(weights[layer_i][neuron_i,inner_layer_i,weight_i])
                         and indices[i] not in empties):
                         connected.add((indices[i], circuits[indices[i]]))
                     i += 1
@@ -1679,7 +1679,7 @@ def test_fan_in_rand(weights: Network) -> bool:
     if temp > max_fan_in:
         if temp < current_max_fan_in_rand or current_max_fan_in_rand == -1:
             print("Trying bernoulli discretisation")
-            [print(circ) for circ in (output_circuit_random(weights, True, True))]
+            [print(circ) for circ in (output_circuit_inefficient_random(weights, True, True))]
             print(f"Max fan-in ({temp}) not good enough")
             current_max_fan_in_rand = temp
         return False
