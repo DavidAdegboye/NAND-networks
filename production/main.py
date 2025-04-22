@@ -1300,6 +1300,7 @@ def test_fan_in(weights: Network) -> bool:
     if the max fan-in is less than what the user specified
     """
     global current_max_fan_in
+    print(f"Took {time.time()-init_time} seconds so far.")
     temp = 0
     for layer in weights:
         # this can include gates that aren't used and have a fan-in greater
@@ -1328,6 +1329,7 @@ def test_fan_in_rand(weights: Network) -> bool:
     if the max fan-in is less than what the user specified
     """
     global current_max_fan_in_rand
+    print(f"Took {time.time()-init_time} seconds so far.")
     temp = 0
     for layer in weights:
         # this can include gates that aren't used and have a fan-in greater
