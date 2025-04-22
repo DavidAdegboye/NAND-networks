@@ -244,12 +244,18 @@ dps = config["decimal_places"]
 
 step = jax.jit(lambda x: jnp.where(x>0, 1, 0))
 
-def key_for(x):
-    xi = jax.lax.bitcast_convert_type(x, jnp.uint32)
-    return jax.random.fold_in(jax.random.PRNGKey(0), xi)
+def sample(seed, p):
+    key = jax.random.fold_in(jax.random.PRNGKey(0), seed)
+    return jax.random.bernoulli(key, p)
 
-bern = jax.jit(lambda x: jax.random.bernoulli(
-    key_for(x), jax.nn.sigmoid(x)))
+@jax.jit
+def bern(x):
+    x = jnp.asarray(x, dtype=jnp.float32)
+    seeds = jax.lax.bitcast_convert_type(x, jnp.uint32).ravel()
+    probs = jax.nn.sigmoid(x).ravel()
+    samples_flat = jax.vmap(sample)(seeds, probs)
+    return samples_flat.reshape(x.shape)
+
 temp = jax.jit(lambda x: jax.nn.sigmoid(x/temperature))
 weight_activation_dict = {"cont": jax.nn.sigmoid,
                           "disc": step,
