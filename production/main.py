@@ -1300,7 +1300,6 @@ def test_fan_in(weights: Network) -> bool:
     if the max fan-in is less than what the user specified
     """
     global current_max_fan_in
-    print(f"Took {time.time()-init_time} seconds so far.")
     temp = 0
     for layer in weights:
         # this can include gates that aren't used and have a fan-in greater
@@ -1310,6 +1309,7 @@ def test_fan_in(weights: Network) -> bool:
     if temp > max_fan_in:
         if (temp < current_max_fan_in or current_max_fan_in == -1):
             print("Trying step discretisation")
+            print(f"Took {time.time()-init_time} seconds so far.")
             [print(circ) for circ in (output_circuit(weights, True, True))]
             print("Max fan-in not good enough")
             current_max_fan_in = temp
@@ -1329,7 +1329,6 @@ def test_fan_in_rand(weights: Network) -> bool:
     if the max fan-in is less than what the user specified
     """
     global current_max_fan_in_rand
-    print(f"Took {time.time()-init_time} seconds so far.")
     temp = 0
     for layer in weights:
         # this can include gates that aren't used and have a fan-in greater
@@ -1341,6 +1340,7 @@ def test_fan_in_rand(weights: Network) -> bool:
     if temp > max_fan_in:
         if temp < current_max_fan_in_rand or current_max_fan_in_rand == -1:
             print("Trying bernoulli discretisation")
+            print(f"Took {time.time()-init_time} seconds so far.")
             [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
             print(f"Max fan-in ({temp}) not good enough")
             current_max_fan_in_rand = temp
