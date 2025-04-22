@@ -989,6 +989,7 @@ def mean_fan_in_penalty(
         fan_ins = jnp.concatenate((fan_ins, jax.vmap(
             lambda x:jnp.sum(jax.nn.sigmoid(x/temperature)))(layer)))
         jax.debug.print("Fan-in shape: {fan_ins.shape}", fan_ins=fan_ins)
+    return 0
     usage = get_used_array(weights, "temp")[1:]
     temp = fan_ins * usage.reshape(-1)/jnp.sum(usage)
     return jax.nn.relu(temp-mean_fan_in)
