@@ -577,7 +577,7 @@ def output_circuit(weights: Network, verbose=True, super_verbose=False
                     if len(connected) == 1:
                         node = '¬' + connected[0][1]
                         if len(node) > 2:
-                            if node[:2] == "¬¬¬" and node[2] != '(':
+                            if node[:3] == "¬¬¬":
                                 node = node[2:]
                     else:
                         node = ('¬(' +
@@ -2098,9 +2098,10 @@ def run(timeout=config["timeout"]) -> None:
     if add_img_or_custom != 'i':
         if cont is 0:
             print("Using bernoulli discretisation")
-            circuit = output_circuit_inefficient_random(weights, True, True)
-            [print(circ) for circ in circuit]
-            print("With PTO")
+            # circuit = output_circuit_inefficient_random(weights, True, True)
+            # [print(circ) for circ in circuit]
+            # print("With PTO")
+            print(jax.vmap(bern)(weights))
             circuit = output_circuit_random(weights, True, True)
             [print(circ) for circ in circuit]
         else:
