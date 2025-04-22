@@ -1619,7 +1619,7 @@ if add_img_or_custom == 'i':
     print(gate_usage_by_layer(weights, "rand"))
     print(max_fan_in_penalty(weights, 0, temperature),
           max_fan_in_penalty_disc(weights, 0),
-          max_fan_in_penalty_disc(weights, max_fan_in))
+          max_fan_in_penalty(weights, max_fan_in, temperature))
     print(mean_fan_in_penalty(weights, 0, temperature))
 else:
     accuracy = acc(weights, inputs, output, use_surr, surr_arr, False)[0]
@@ -1631,7 +1631,7 @@ else:
     print(gate_usage_by_layer(weights, "rand"))
     print(max_fan_in_penalty(weights, 0, temperature),
           max_fan_in_penalty_disc(weights, 0),
-          max_fan_in_penalty_disc(weights, max_fan_in))
+          max_fan_in_penalty(weights, max_fan_in, temperature))
     print(mean_fan_in_penalty(weights, 0, temperature))
 
 def run(timeout=config["timeout"]) -> None:
@@ -1694,7 +1694,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0),
-                          max_fan_in_penalty_disc(weights, max_fan_in))
+                          max_fan_in_penalty(weights, max_fan_in, temperature))
                     print(mean_fan_in_penalty(weights, 0, temperature))
                 else:
                     accuracy = acc(weights, inputs, output,
@@ -1708,7 +1708,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0),
-                          max_fan_in_penalty_disc(weights, max_fan_in))
+                          max_fan_in_penalty(weights, max_fan_in, temperature))
                     print(mean_fan_in_penalty(weights, 0, temperature))
                 return
         if add_img_or_custom != 'i':
@@ -1741,7 +1741,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0),
-                          max_fan_in_penalty_disc(weights, max_fan_in))
+                          max_fan_in_penalty(weights, max_fan_in, temperature))
                     print(mean_fan_in_penalty(weights, 0, temperature))
                 else:
                     accuracy = acc(weights, inputs, output,
@@ -1755,7 +1755,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0),
-                          max_fan_in_penalty_disc(weights, max_fan_in))
+                          max_fan_in_penalty(weights, max_fan_in, temperature))
                     print(mean_fan_in_penalty(weights, 0, temperature))
                 iters = 0
     end_time = time.time()
