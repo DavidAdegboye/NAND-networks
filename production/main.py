@@ -1677,7 +1677,6 @@ def test_fan_in_rand(weights: Network) -> bool:
         temp = max(temp, jnp.max(fan_ins))
     if temp > max_fan_in:
         if temp < current_max_fan_in_rand or current_max_fan_in_rand == -1:
-            [print(jax.vmap(bern)(layer)) for layer in weights]
             print("Trying bernoulli discretisation")
             [print(circ) for circ in (output_circuit_random(weights, True, True))]
             print(f"Max fan-in ({temp}) not good enough")
