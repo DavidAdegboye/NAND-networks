@@ -1278,7 +1278,6 @@ def test_rand(weights: Network,
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
         inputs, weights, "rand", use_surr, surr_arr)
-    print(pred)
     return jnp.all(pred==output)
 
 current_max_fan_in = -1
