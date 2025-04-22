@@ -210,7 +210,6 @@ for i in range(1, len(true_arch)):
 global_n = (sum(ns[0]*ns[1] for ns in weights_shape) 
             / sum(ns[1] for ns in weights_shape))
 
-num_neurons = sum(true_arch[1:])
 num_wires = sum(ns[0]*ns[1] for ns in weights_shape)
 
 temperature = config["temperature"]
@@ -968,8 +967,7 @@ def max_fan_in_penalty(weights: Network, max_fan_in: int, temperature: float
 def mean_fan_in_penalty(
     weights: Network,
     mean_fan_in: float,
-    temperature: float,
-    num_neurons: int) -> float:
+    temperature: float) -> float:
     """
     calculates a penalty, which is minimised for any mean fan-in under or equal
     to "mean_fan_in". This doesn't account for duplicate gates
@@ -978,7 +976,6 @@ def mean_fan_in_penalty(
     weights - the network
     mean_fan_in - the desired mean fan-in
     temperature - lower makes it closer to discrete
-    num_neurons - the number of neurons in the network
     
     Returns
     the penalty (a float, whihc will be multiplied by a coefficient, and added
@@ -988,8 +985,7 @@ def mean_fan_in_penalty(
     for layer in weights:
         fan_ins = jnp.concatenate((fan_ins, jax.vmap(
             lambda x:jnp.sum(jax.nn.sigmoid(x/temperature)))(layer)))
-        jax.debug.print("Fan-in shape: {fan_ins.shape}", fan_ins=fan_ins)
-    return 0
+        fan_ins = jnp.concatenate((fan_ins, jnp.zeros(layer-i_3)))
     usage = get_used_array(weights, "temp")[1:]
     temp = fan_ins * usage.reshape(-1)/jnp.sum(usage)
     return jax.nn.relu(temp-mean_fan_in)
@@ -1176,7 +1172,6 @@ def loss(
     mean_fan_in: float=None,
     max_gates: jnp.ndarray=None,
     min_gates: jnp.ndarray=None,
-    num_neurons: int=None,
     num_wires: int=None) -> float:
     """
     calculates the loss
@@ -1198,7 +1193,7 @@ def loss(
     if mean_fan_in_penalty_coeff:
         l += (mean_fan_in_penalty_coeff
               * mean_fan_in_penalty(
-                  weights, mean_fan_in, temperature, num_neurons))
+                  weights, mean_fan_in, temperature))
     if max_gates_used_penalty_coeff:
         l += (max_gates_used_penalty_coeff
               * max_gates_used_penalty(weights, max_gates))
@@ -1224,7 +1219,6 @@ if add_img_or_custom=='i':
         mean_fan_in: float=None,
         max_gates: jnp.ndarray=None,
         min_gates: jnp.ndarray=None,
-        num_neurons: int=None,
         num_wires: int=None) -> float:
         """
         calculates the loss including convolutional layers
@@ -1244,7 +1238,7 @@ if add_img_or_custom=='i':
         return loss(network[0], pred, output, max_fan_in=max_fan_in,
                     temperature=temperature, mean_fan_in=mean_fan_in,
                     max_gates=max_gates, min_gates=min_gates,
-                    num_neurons=num_neurons, num_wires=num_wires)
+                    num_wires=num_wires)
 
     grad_conv = jax.jit(jax.grad(loss_conv))
 
@@ -1425,7 +1419,6 @@ loss_kwargs = {"max_fan_in": max_fan_in,
                "mean_fan_in": mean_fan_in,
                "max_gates": max_gates,
                "min_gates": min_gates,
-               "num_neurons": num_neurons,
                "num_wires": num_wires,
                "use_surr": use_surr,
                "surr_arr": surr_arr}
@@ -1435,7 +1428,6 @@ loss_conv_kwargs = {"max_fan_in": max_fan_in,
                     "mean_fan_in": mean_fan_in,
                     "max_gates": max_gates,
                     "min_gates": min_gates,
-                    "num_neurons": num_neurons,
                     "num_wires": num_wires,}
 
 def filtered_mean(x: Tuple[jnp.ndarray, ...]) -> jnp.ndarray:
@@ -1624,7 +1616,7 @@ if add_img_or_custom == 'i':
     print(gate_usage_by_layer(weights, "rand"))
     print(max_fan_in_penalty(weights, 0, temperature),
           max_fan_in_penalty_disc(weights, 0))
-    print(mean_fan_in_penalty(weights, 0, temperature, num_neurons))
+    print(mean_fan_in_penalty(weights, 0, temperature))
 else:
     accuracy = acc(weights, inputs, output, use_surr, surr_arr, False)[0]
     rand_accuracy = rand_acc(weights, inputs, output, use_surr, surr_arr, False)
@@ -1635,7 +1627,7 @@ else:
     print(gate_usage_by_layer(weights, "rand"))
     print(max_fan_in_penalty(weights, 0, temperature),
           max_fan_in_penalty_disc(weights, 0))
-    print(mean_fan_in_penalty(weights, 0, temperature, num_neurons))
+    print(mean_fan_in_penalty(weights, 0, temperature))
 
 def run(timeout=config["timeout"]) -> None:
     global inputs, output, weights, weights_conv, opt_state_dense, opt_state_conv, scaled_train_imgs
@@ -1697,8 +1689,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0))
-                    print(mean_fan_in_penalty(weights, 0, temperature,
-                                              num_neurons))
+                    print(mean_fan_in_penalty(weights, 0, temperature))
                 else:
                     accuracy = acc(weights, inputs, output,
                                    use_surr, surr_arr, False)[0]
@@ -1711,8 +1702,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0))
-                    print(mean_fan_in_penalty(weights, 0, temperature,
-                                              num_neurons))
+                    print(mean_fan_in_penalty(weights, 0, temperature))
                 return
         if add_img_or_custom != 'i':
             if (test(weights, inputs, output, use_surr, surr_arr) and
@@ -1744,8 +1734,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0))
-                    print(mean_fan_in_penalty(weights, 0, temperature,
-                                              num_neurons))
+                    print(mean_fan_in_penalty(weights, 0, temperature))
                 else:
                     accuracy = acc(weights, inputs, output,
                                    use_surr, surr_arr, False)[0]
@@ -1758,8 +1747,7 @@ def run(timeout=config["timeout"]) -> None:
                     print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0))
-                    print(mean_fan_in_penalty(weights, 0, temperature,
-                                               num_neurons))
+                    print(mean_fan_in_penalty(weights, 0, temperature))
                 iters = 0
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
