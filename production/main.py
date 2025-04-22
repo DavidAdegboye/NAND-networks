@@ -1647,7 +1647,7 @@ def test_fan_in(weights: Network) -> bool:
         temp = max(temp, jnp.max(fan_ins))
     if temp > max_fan_in:
         if (temp < current_max_fan_in or current_max_fan_in == -1):
-            print(temp, max_fan_in)
+            print("Trying step discretisation")
             [print(circ) for circ in (output_circuit(weights, True, True))]
             print("Max fan-in not good enough")
             current_max_fan_in = temp
@@ -1677,7 +1677,7 @@ def test_fan_in_rand(weights: Network) -> bool:
         temp = max(temp, jnp.max(fan_ins))
     if temp > max_fan_in:
         if temp < current_max_fan_in_rand or current_max_fan_in_rand == -1:
-            print(temp, max_fan_in)
+            print("Trying bernoulli discretisation")
             [print(circ) for circ in (output_circuit_random(weights, True, True))]
             print(f"Max fan-in ({temp}) not good enough")
             current_max_fan_in_rand = temp
