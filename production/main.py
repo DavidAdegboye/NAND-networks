@@ -588,7 +588,7 @@ def output_circuit(weights: Network, verbose=True, super_verbose=False,
                     if len(connected) == 1:
                         node = '¬' + connected[0][1]
                         if len(node) > 2:
-                            if node[:3] == "¬¬¬":
+                            if node[:2] == "¬¬" and node[2] != '(':
                                 node = node[2:]
                     else:
                         node = ('¬(' +
@@ -644,7 +644,7 @@ def output_circuit(weights: Network, verbose=True, super_verbose=False,
                 if len(sorted_connected) == 1:
                     node = '¬' + sorted_connected[0][1]
                     if len(node) > 2:
-                        if node[:3] == "¬¬¬":
+                        if node[:2] == "¬¬" and node[2] != '(':
                             node = node[2:]
                 else:
                     node = '¬(' + '.'.join(
