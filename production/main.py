@@ -685,8 +685,7 @@ def output_circuit(weights: Network, verbose=True, super_verbose=False,
         print(used_list)
     true_net = {i: connecteds[i] for i in used_list}
     true_weights = clean_connected(true_net, used_list, true_arch)
-    if super_verbose:
-        print(true_weights)
+    print(true_weights)
     learnt_arch = get_used(used_list, true_arch, verbose)
     fan_ins = []
     for node_index in used_list:
