@@ -1343,6 +1343,8 @@ def test_fan_in_rand(weights: Network) -> bool:
             [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
             print(f"Max fan-in ({temp}) not good enough")
             current_max_fan_in_rand = temp
+        else:
+            [print(circ) for circ in (output_circuit(weights, False, False, "rand"))]
         return False
     return True
 
