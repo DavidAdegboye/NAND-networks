@@ -987,7 +987,7 @@ def mean_fan_in_penalty(
             lambda x:jnp.sum(jax.nn.sigmoid(x/temperature)))(layer)))
         fan_ins = jnp.concatenate((fan_ins, jnp.zeros(i_3-layer.shape[0])))
     usage = get_used_array(weights, "temp")[1:]
-    temp = (fan_ins * usage.reshape(-1))/jnp.sum(usage)
+    temp = jnp.sum(fan_ins * usage.reshape(-1))/jnp.sum(usage)
     return jax.nn.relu(temp-mean_fan_in)
 
 @partial(jax.jit, static_argnums=1)
@@ -1621,7 +1621,6 @@ else:
     accuracy = acc(weights, inputs, output, use_surr, surr_arr, False)[0]
     rand_accuracy = rand_acc(weights, inputs, output, use_surr, surr_arr, False)
     new_loss = loss(weights, inputs, output, **loss_kwargs)
-    print(mean_fan_in_penalty(weights, 0, temperature))
     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
     print(gate_usage_by_layer(weights, "cont"))
     print(gate_usage_by_layer(weights, "disc"))
