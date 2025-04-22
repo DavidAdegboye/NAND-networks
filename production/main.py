@@ -1603,7 +1603,7 @@ def test(weights: Network,
         inputs, weights, "disc", use_surr, surr_arr)
     return jnp.all(pred==output)
 
-@partial(jax.jit, static_argnames="use_surr")
+# @partial(jax.jit, static_argnames="use_surr")
 def test_rand(weights: Network,
                 inputs: jnp.ndarray,
                 output: jnp.ndarray,
@@ -1622,7 +1622,7 @@ def test_rand(weights: Network,
     Returns
     if the network was 100% accurate
     """
-    [jax.debug.print(jax.vmap(bern)(layer)) for layer in weights]
+    [print(jax.vmap(bern)(layer)) for layer in weights]
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
         inputs, weights, "rand", use_surr, surr_arr)
     return jnp.all(pred==output)
