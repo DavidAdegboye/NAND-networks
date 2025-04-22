@@ -988,7 +988,8 @@ def mean_fan_in_penalty(
     for layer in weights:
         fan_ins = jnp.concatenate((fan_ins, jax.vmap(
             lambda x:jnp.sum(jax.nn.sigmoid(x/temperature)))(layer)))
-    temp = jnp.sum(fan_ins)/num_neurons
+    usage = get_used_array(weights, "temp")[1:]
+    temp = fan_ins * usage.reshape(-1)/jnp.sum(usage)
     return jax.nn.relu(temp-mean_fan_in)
 
 @partial(jax.jit, static_argnums=1)
