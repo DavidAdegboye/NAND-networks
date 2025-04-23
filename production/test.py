@@ -1779,6 +1779,10 @@ def run_test(variables: Dict[str, any]):
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
     if add_img_or_custom != 'i':
+        print(max_fan_in_penalty(weights, 0, temperature),
+                max_fan_in_penalty_disc(weights, 0),
+                max_fan_in_penalty(weights, max_fan_in, temperature),
+                max_fan_in_penalty_disc(weights, max_fan_in))
         if cont is 0:
             [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
         else:
