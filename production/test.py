@@ -666,13 +666,13 @@ def run_test(variables: Dict[str, any]):
         for node_index in used_list:
             if node_index >= learnt_arch[0]:
                 fan_ins.append(len(connecteds[node_index]))
-        with open(f"circuit.txt", "w") as f:
+        print("used:\n", learnt_arch, "\nout of:\n", true_arch)
+        print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
+        with open(config["output_file"], "a") as f:
             f.write(f"used:\n{learnt_arch}\nout of:\n{true_arch}\n")
             f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}\n")
             for circ in circuits[-true_arch[-1]:]:
                 f.write(f"{circ}\n")
-        print("used:\n", learnt_arch, "\nout of:\n", true_arch)
-        print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
         return circuits[-true_arch[-1]:]
 
     def beta_sampler(shape: Shape, n: int, sigma: float, k: float=None
