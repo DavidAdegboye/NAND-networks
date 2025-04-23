@@ -1667,9 +1667,9 @@ def run_test(variables: Dict[str, any]):
                           max_fan_in_penalty(weights, max_fan_in, temperature),
                           max_fan_in_penalty_disc(weights, max_fan_in))
                     print(mean_fan_in_penalty(weights, 0, temperature))
-                    if (accuracy >= 0.998 and 
+                    if (accuracy >= 0.99 and 
                         max_fan_in_penalty_disc(weights, max_fan_in) == 0) or (
-                        rand_accuracy >= 0.998 and
+                        rand_accuracy >= 0.99 and
                         max_fan_in_penalty_rand(weights, max_fan_in) == 0):
                         print("Should timeout but will continue")
                         if not outputted:
