@@ -1773,15 +1773,13 @@ distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 archs = [[160, 96], [192, 64]]
 settings = [(1, 4), (0.5, 4), (1, 3), (0.75, 4), (1, 3.5)]
 for _ in range(30):
-    for temp, max_fan in settings:
-        run_start = time.time()
-        run_test({"temperature": temp,
-                "max_fan_in": max_fan})
-        run_end = time.time()
-        with open("set-up.yaml", "r") as f:
-            config = yaml.safe_load(f)
-        with open(config["output_file"], "a") as f:
-            f.write(f"Total time for test: {run_end - run_start} seconds.\n")
+    run_start = time.time()
+    run_test()
+    run_end = time.time()
+    with open("set-up.yaml", "r") as f:
+        config = yaml.safe_load(f)
+    with open(config["output_file"], "a") as f:
+        f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
