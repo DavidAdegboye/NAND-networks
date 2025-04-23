@@ -1648,6 +1648,7 @@ def run_test(variables: Dict[str, any]):
                         f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%\n")
                         f.write(f"Gate usage: {gate_usage_disc}\n")
                         f.write(f"Max fan-in: {max_fan}\n")
+                    return
                 else:
                     accuracy = acc(weights, inputs, output,
                                 use_surr, surr_arr, False)[0]
@@ -1665,17 +1666,23 @@ def run_test(variables: Dict[str, any]):
                           max_fan_in_penalty(weights, max_fan_in, temperature),
                           max_fan_in_penalty_disc(weights, max_fan_in))
                     print(mean_fan_in_penalty(weights, 0, temperature))
-                    with open(config["output_file"], "a") as f:
-                        for pair in variables.items():
-                            f.write(str(pair)+'\n')
-                        f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%\n")
-                        f.write("Circuit output for at the final stage\n")
-                        if rand_accuracy == 1:
-                            [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
-                        elif accuracy == 1:
-                            [print(circ) for circ in (output_circuit(weights, True, True))]
-                print("Timeout")
-                return
+                    if (accuracy >= 0.998 and 
+                        max_fan_in_penalty_disc(weights, max_fan_in) == 0) or (
+                        rand_accuracy >= 0.998 and
+                        max_fan_in_penalty_rand(weights, max_fan_in) == 0):
+                        print("Should timeout but will continue")
+                    else:
+                        with open(config["output_file"], "a") as f:
+                            for pair in variables.items():
+                                f.write(str(pair)+'\n')
+                            f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%\n")
+                            f.write("Circuit output for at the final stage\n")
+                            if rand_accuracy == 1:
+                                [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
+                            elif accuracy == 1:
+                                [print(circ) for circ in (output_circuit(weights, True, True))]
+                        print("Timeout")
+                        return
         if add_img_or_custom != 'i':
             if test(weights, inputs, output, use_surr, surr_arr, max_fan_in_penalty_coeff, max_fan_in):
                 cont = False
@@ -1729,8 +1736,10 @@ def run_test(variables: Dict[str, any]):
                 max_fan_in_penalty(weights, max_fan_in, temperature),
                 max_fan_in_penalty_disc(weights, max_fan_in))
         if cont is 0:
+            print("Trying random discretisation")
             [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
         else:
+            print("Trying step discretisation")
             [print(circ) for circ in (output_circuit(weights, True, True))]
     return
 
