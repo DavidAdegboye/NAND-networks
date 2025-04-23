@@ -1774,7 +1774,7 @@ archs = [[160, 96], [192, 64]]
 settings = [(1, 4), (0.5, 4), (1, 3), (0.75, 4), (1, 3.5)]
 for _ in range(30):
     run_start = time.time()
-    run_test()
+    run_test(dict())
     run_end = time.time()
     with open("set-up.yaml", "r") as f:
         config = yaml.safe_load(f)
