@@ -671,6 +671,7 @@ def run_test(variables: Dict[str, any]):
         with open(config["output_file"], "a") as f:
             f.write(f"used:\n{learnt_arch}\nout of:\n{true_arch}\n")
             f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}\n")
+            f.write(f"Used {weight_activation}\n")
             for circ in circuits[-true_arch[-1]:]:
                 f.write(f"{circ}\n")
         return circuits[-true_arch[-1]:]
@@ -909,6 +910,27 @@ def run_test(variables: Dict[str, any]):
         for layer in weights:
             fan_ins = jnp.concatenate((fan_ins, jax.vmap(
                 lambda x:jnp.sum(jnp.where(x>0, 1, 0)))(layer)))
+        temp = jax.nn.relu(fan_ins-max_fan_in)
+        return jnp.max(temp)
+
+    @jax.jit
+    def max_fan_in_penalty_rand(weights: Network, max_fan_in: int) -> float:
+        """
+        calculates a penalty, which is minimised for any maximum fan-in under or
+        equal to "max_fan_in"
+        this doesn't account for duplicate gates, and this is the discrete version.
+
+        Parameters
+        weights - the network
+        max_fan_in - the desired maximum fan-in
+        
+        Returns
+        the penalty
+        """
+        fan_ins = jnp.array([])
+        for layer in weights:
+            fan_ins = jnp.concatenate((fan_ins, jax.vmap(
+                lambda x:jnp.sum(bern(x)))(layer)))
         temp = jax.nn.relu(fan_ins-max_fan_in)
         return jnp.max(temp)
 
@@ -1214,12 +1236,14 @@ def run_test(variables: Dict[str, any]):
 
         grad_conv = jax.jit(jax.grad(loss_conv))
 
-    @partial(jax.jit, static_argnames="use_surr")
+    @partial(jax.jit, static_argnames=("use_surr", "max_fan_in_penalty_coeff"))
     def test(weights: Network,
             inputs: jnp.ndarray,
             output: jnp.ndarray,
             use_surr: bool=False,
-            surr_arr: List[jnp.ndarray]=[]) -> bool:
+            surr_arr: List[jnp.ndarray]=[],
+            max_fan_in_penalty_coeff: int=0,
+            max_fan_in: int=0) -> bool:
         """
         is true iff the network is 100% accurate
 
@@ -1235,14 +1259,19 @@ def run_test(variables: Dict[str, any]):
         """
         pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
             inputs, weights, "disc", use_surr, surr_arr)
+        if max_fan_in_penalty_coeff:
+            if max_fan_in_penalty_disc(weights, max_fan_in) != 0:
+                return False
         return jnp.all(pred==output)
 
-    @partial(jax.jit, static_argnames="use_surr")
+    @partial(jax.jit, static_argnames=("use_surr", "max_fan_in_penalty_coeff"))
     def test_rand(weights: Network,
                   inputs: jnp.ndarray,
                   output: jnp.ndarray,
                   use_surr: bool=False,
-                  surr_arr: List[jnp.ndarray]=[]) -> bool:
+                  surr_arr: List[jnp.ndarray]=[],
+                  max_fan_in_penalty_coeff: int=0,
+                  max_fan_in: int=0) -> bool:
         """
         is true iff the network is 100% accurate
 
@@ -1258,6 +1287,9 @@ def run_test(variables: Dict[str, any]):
         """
         pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
             inputs, weights, "rand", use_surr, surr_arr)
+        if max_fan_in_penalty_coeff:
+            if max_fan_in_penalty_rand(weights, max_fan_in) != 0:
+                return False
         return jnp.all(pred==output)
 
     current_max_fan_in = -1
@@ -1689,8 +1721,11 @@ def run_test(variables: Dict[str, any]):
                         for pair in variables.items():
                             f.write(str(pair)+'\n')
                         f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%\n")
-                        f.write(f"Gate usage: {gate_usage_disc}\n")
-                        f.write(f"Max fan-in: {max_fan}\n")
+                        f.write("Circuit output for at the final stage\n")
+                        if rand_accuracy > accuracy:
+                            [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
+                        else:
+                            [print(circ) for circ in (output_circuit(weights, True, True))]
                 return
         if add_img_or_custom != 'i':
             if test(weights, inputs, output, use_surr, surr_arr):
