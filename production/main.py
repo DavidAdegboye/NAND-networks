@@ -1681,13 +1681,9 @@ def run(timeout=config["timeout"]) -> None:
                     print(mean_fan_in_penalty(weights, 0, temperature))
                 return
         if add_img_or_custom != 'i':
-            if (test(weights, inputs, output, use_surr, surr_arr) and
-                (max_fan_in_penalty_coeff==0 or test_fan_in(weights))
-                or get_optional_input_non_blocking() == 2):
+            if test(weights, inputs, output, use_surr, surr_arr, max_fan_in_penalty_coeff, max_fan_in):
                 cont = False
-            elif (test_rand(weights, inputs, output, use_surr, surr_arr) and
-                (max_fan_in_penalty_coeff==0 or test_fan_in_rand(weights))
-                or get_optional_input_non_blocking() == 2):
+            elif test_rand(weights, inputs, output, use_surr, surr_arr, max_fan_in_penalty_coeff, max_fan_in):
                 cont = 0
         if cont:
             if iters == max(10//batches, 1):
