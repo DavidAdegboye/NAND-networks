@@ -1671,6 +1671,13 @@ def run_test(variables: Dict[str, any]):
                         rand_accuracy >= 0.998 and
                         max_fan_in_penalty_rand(weights, max_fan_in) == 0):
                         print("Should timeout but will continue")
+                        if (accuracy >= 0.998 and 
+                            max_fan_in_penalty_disc(weights, max_fan_in) == 0):
+                            print("Trying step discretisation")
+                            [print(circ) for circ in (output_circuit(weights, True, True))]
+                        else:
+                            print("Trying random discretisation")
+                            [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
                     else:
                         with open(config["output_file"], "a") as f:
                             for pair in variables.items():
