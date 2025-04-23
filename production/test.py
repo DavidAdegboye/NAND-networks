@@ -1617,8 +1617,9 @@ def run_test(variables: Dict[str, any]):
         print(gate_usage_by_layer(weights, "disc"))
         print(gate_usage_by_layer(weights, "rand"))
         print(max_fan_in_penalty(weights, 0, temperature),
-                max_fan_in_penalty_disc(weights, 0),
-                max_fan_in_penalty(weights, max_fan_in, temperature))
+              max_fan_in_penalty_disc(weights, 0),
+              max_fan_in_penalty(weights, max_fan_in, temperature),
+              max_fan_in_penalty_disc(weights, max_fan_in))
         print(mean_fan_in_penalty(weights, 0, temperature))
     else:
         accuracy = acc(weights, inputs, output, use_surr, surr_arr, False)[0]
@@ -1629,8 +1630,9 @@ def run_test(variables: Dict[str, any]):
         print(gate_usage_by_layer(weights, "disc"))
         print(gate_usage_by_layer(weights, "rand"))
         print(max_fan_in_penalty(weights, 0, temperature),
-                max_fan_in_penalty_disc(weights, 0),
-                max_fan_in_penalty(weights, max_fan_in, temperature))
+              max_fan_in_penalty_disc(weights, 0),
+              max_fan_in_penalty(weights, max_fan_in, temperature),
+              max_fan_in_penalty_disc(weights, max_fan_in))
         print(mean_fan_in_penalty(weights, 0, temperature))
 
     cont = True
@@ -1693,7 +1695,8 @@ def run_test(variables: Dict[str, any]):
                     max_fan = max_fan_in_penalty_disc(weights, 0)
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan,
-                          max_fan_in_penalty(weights, max_fan_in, temperature))
+                          max_fan_in_penalty(weights, max_fan_in, temperature),
+                          max_fan_in_penalty_disc(weights, max_fan_in))
                     print(mean_fan_in_penalty(weights, 0, temperature))
                     with open(config["output_file"], "a") as f:
                         for pair in variables.items():
@@ -1715,7 +1718,8 @@ def run_test(variables: Dict[str, any]):
                     max_fan = max_fan_in_penalty_disc(weights, 0)
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan,
-                          max_fan_in_penalty(weights, max_fan_in, temperature))
+                          max_fan_in_penalty(weights, max_fan_in, temperature),
+                          max_fan_in_penalty_disc(weights, max_fan_in))
                     print(mean_fan_in_penalty(weights, 0, temperature))
                     with open(config["output_file"], "a") as f:
                         for pair in variables.items():
@@ -1753,7 +1757,8 @@ def run_test(variables: Dict[str, any]):
                     print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0),
-                          max_fan_in_penalty(weights, max_fan_in, temperature))
+                          max_fan_in_penalty(weights, max_fan_in, temperature),
+                          max_fan_in_penalty_disc(weights, max_fan_in))
                     print(mean_fan_in_penalty(weights, 0, temperature))
                 else:
                     accuracy = acc(weights, inputs, output,
@@ -1767,7 +1772,8 @@ def run_test(variables: Dict[str, any]):
                     print(gate_usage_by_layer(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0),
-                          max_fan_in_penalty(weights, max_fan_in, temperature))
+                          max_fan_in_penalty(weights, max_fan_in, temperature),
+                          max_fan_in_penalty_disc(weights, max_fan_in))
                     print(mean_fan_in_penalty(weights, 0, temperature))
                 iters = 0
     end_time = time.time()
