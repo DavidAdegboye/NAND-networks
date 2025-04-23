@@ -1617,7 +1617,7 @@ def run_test(variables: Dict[str, any]):
                     updates, opt_state_dense = optimizer_dense.update(
                         gradients, opt_state_dense, weights)
                     weights = optax.apply_updates(weights, updates)
-            if time.time() - start_run_time > config["timeout"] * 60:
+            if time.time() - start_run_time > config["timeout"] * 60 and not outputted:
                 if add_img_or_custom == 'i':
                     accuracy = batch_comp(
                         partial(acc_conv, network=[weights, weights_conv]),
@@ -1672,15 +1672,14 @@ def run_test(variables: Dict[str, any]):
                         rand_accuracy >= 0.99 and
                         max_fan_in_penalty_rand(weights, max_fan_in) == 0):
                         print("Should timeout but will continue")
-                        if not outputted:
-                            outputted = True
-                            if (accuracy >= 0.998 and 
-                                max_fan_in_penalty_disc(weights, max_fan_in) == 0):
-                                print("Trying step discretisation")
-                                [print(circ) for circ in (output_circuit(weights, True, True))]
-                            else:
-                                print("Trying random discretisation")
-                                [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
+                        outputted = True
+                        if (accuracy >= 0.998 and 
+                            max_fan_in_penalty_disc(weights, max_fan_in) == 0):
+                            print("Trying step discretisation")
+                            [print(circ) for circ in (output_circuit(weights, True, True))]
+                        else:
+                            print("Trying random discretisation")
+                            [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
                     else:
                         with open(config["output_file"], "a") as f:
                             for pair in variables.items():
@@ -1737,6 +1736,11 @@ def run_test(variables: Dict[str, any]):
                           max_fan_in_penalty(weights, max_fan_in, temperature),
                           max_fan_in_penalty_disc(weights, max_fan_in))
                     print(mean_fan_in_penalty(weights, 0, temperature))
+                    if outputted and not (accuracy >= 0.99 and 
+                        max_fan_in_penalty_disc(weights, max_fan_in) == 0) or (
+                        rand_accuracy >= 0.99 and
+                        max_fan_in_penalty_rand(weights, max_fan_in) == 0):
+                        cont = False
                 iters = 0
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
