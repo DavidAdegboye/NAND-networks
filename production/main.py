@@ -940,6 +940,27 @@ def max_fan_in_penalty_disc(weights: Network, max_fan_in: int) -> float:
     return jnp.max(temp)
 
 @jax.jit
+def max_fan_in_penalty_rand(weights: Network, max_fan_in: int) -> float:
+    """
+    calculates a penalty, which is minimised for any maximum fan-in under or
+    equal to "max_fan_in"
+    this doesn't account for duplicate gates, and this is the discrete version.
+
+    Parameters
+    weights - the network
+    max_fan_in - the desired maximum fan-in
+    
+    Returns
+    the penalty
+    """
+    fan_ins = jnp.array([])
+    for layer in weights:
+        fan_ins = jnp.concatenate((fan_ins, jax.vmap(
+            lambda x:jnp.sum(bern(x)))(layer)))
+    temp = jax.nn.relu(fan_ins-max_fan_in)
+    return jnp.max(temp)
+
+@jax.jit
 def max_fan_in_penalty(weights: Network, max_fan_in: int, temperature: float
                        ) -> float:
     """
@@ -1241,12 +1262,14 @@ if add_img_or_custom=='i':
 
     grad_conv = jax.jit(jax.grad(loss_conv))
 
-@partial(jax.jit, static_argnames="use_surr")
+@partial(jax.jit, static_argnames=("use_surr", "max_fan_in_penalty_coeff"))
 def test(weights: Network,
-         inputs: jnp.ndarray,
-         output: jnp.ndarray,
-         use_surr: bool=False,
-         surr_arr: List[jnp.ndarray]=[]) -> bool:
+        inputs: jnp.ndarray,
+        output: jnp.ndarray,
+        use_surr: bool=False,
+        surr_arr: List[jnp.ndarray]=[],
+        max_fan_in_penalty_coeff: int=0,
+        max_fan_in: int=0) -> bool:
     """
     is true iff the network is 100% accurate
 
@@ -1262,14 +1285,19 @@ def test(weights: Network,
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
         inputs, weights, "disc", use_surr, surr_arr)
+    if max_fan_in_penalty_coeff:
+        return ((1 - max_fan_in_penalty_disc(weights, max_fan_in))
+                * jnp.all(pred==output))
     return jnp.all(pred==output)
 
-# @partial(jax.jit, static_argnames="use_surr")
+@partial(jax.jit, static_argnames=("use_surr", "max_fan_in_penalty_coeff"))
 def test_rand(weights: Network,
                 inputs: jnp.ndarray,
                 output: jnp.ndarray,
                 use_surr: bool=False,
-                surr_arr: List[jnp.ndarray]=[]) -> bool:
+                surr_arr: List[jnp.ndarray]=[],
+                max_fan_in_penalty_coeff: int=0,
+                max_fan_in: int=0) -> bool:
     """
     is true iff the network is 100% accurate
 
@@ -1285,69 +1313,10 @@ def test_rand(weights: Network,
     """
     pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
         inputs, weights, "rand", use_surr, surr_arr)
+    if max_fan_in_penalty_coeff:
+        return ((1 - max_fan_in_penalty_rand(weights, max_fan_in))
+                * jnp.all(pred==output))
     return jnp.all(pred==output)
-
-current_max_fan_in = -1
-def test_fan_in(weights: Network) -> bool:
-    """
-    is true iff the max fan-in is less than what the user specified (ignoring
-    duplicates)
-
-    Parameters
-    weights - the network
-    
-    Returns
-    if the max fan-in is less than what the user specified
-    """
-    global current_max_fan_in
-    temp = 0
-    for layer in weights:
-        # this can include gates that aren't used and have a fan-in greater
-        # so if the circuit printed is better, we can stop the search anyway
-        fan_ins = jax.vmap(lambda x:jnp.sum(jnp.where(x>0, 1, 0)))(layer)
-        temp = max(temp, jnp.max(fan_ins))
-    if temp > max_fan_in:
-        if (temp < current_max_fan_in or current_max_fan_in == -1):
-            print("Trying step discretisation")
-            print(f"Took {time.time()-init_time} seconds so far.")
-            [print(circ) for circ in (output_circuit(weights, True, True))]
-            print("Max fan-in not good enough")
-            current_max_fan_in = temp
-        return False
-    return True
-
-current_max_fan_in_rand = -1
-def test_fan_in_rand(weights: Network) -> bool:
-    """
-    is true iff the max fan-in is less than what the user specified (ignoring
-    duplicates)
-
-    Parameters
-    weights - the network
-    
-    Returns
-    if the max fan-in is less than what the user specified
-    """
-    global current_max_fan_in_rand
-    temp = 0
-    for layer in weights:
-        # this can include gates that aren't used and have a fan-in greater
-        # so if the circuit printed is better, we can stop the search anyway
-        fan_ins = jax.vmap(lambda x:jnp.sum(jax.random.bernoulli(
-                                            jax.random.key(0),
-                                            jax.nn.sigmoid(x))))(layer)
-        temp = max(temp, jnp.max(fan_ins))
-    if temp > max_fan_in:
-        if temp < current_max_fan_in_rand or current_max_fan_in_rand == -1:
-            print("Trying bernoulli discretisation")
-            print(f"Took {time.time()-init_time} seconds so far.")
-            [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
-            print(f"Max fan-in ({temp}) not good enough")
-            current_max_fan_in_rand = temp
-        # else:
-        #     [print(circ) for circ in (output_circuit(weights, False, False, "rand"))]
-        return False
-    return True
 
 @partial(jax.jit, static_argnames=("skew_towards_falses", "use_surr"))
 def acc(weights: Network,
