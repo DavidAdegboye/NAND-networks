@@ -1260,8 +1260,8 @@ def run_test(variables: Dict[str, any]):
         pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
             inputs, weights, "disc", use_surr, surr_arr)
         if max_fan_in_penalty_coeff:
-            return (max_fan_in_penalty_disc(weights, max_fan_in) == 0
-                    and jnp.all(pred==output))
+            return ((1 - max_fan_in_penalty_disc(weights, max_fan_in))
+                    * jnp.all(pred==output))
         return jnp.all(pred==output)
 
     @partial(jax.jit, static_argnames=("use_surr", "max_fan_in_penalty_coeff"))
@@ -1288,8 +1288,8 @@ def run_test(variables: Dict[str, any]):
         pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
             inputs, weights, "rand", use_surr, surr_arr)
         if max_fan_in_penalty_coeff:
-            return (max_fan_in_penalty_rand(weights, max_fan_in) == 0
-                    and jnp.all(pred==output))
+            return ((1 - max_fan_in_penalty_rand(weights, max_fan_in))
+                    * jnp.all(pred==output))
         return jnp.all(pred==output)
 
     @partial(jax.jit, static_argnames=("skew_towards_falses", "use_surr"))
