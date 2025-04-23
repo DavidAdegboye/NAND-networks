@@ -1677,9 +1677,9 @@ def run_test(variables: Dict[str, any]):
                 print("Timeout")
                 return
         if add_img_or_custom != 'i':
-            if test(weights, inputs, output, use_surr, surr_arr):
+            if test(weights, inputs, output, use_surr, surr_arr, max_fan_in_penalty_coeff, max_fan_in):
                 cont = False
-            elif test_rand(weights, inputs, output, use_surr, surr_arr):
+            elif test_rand(weights, inputs, output, use_surr, surr_arr, max_fan_in_penalty_coeff, max_fan_in):
                 cont = 0
         if cont:
             if iters == max(10//batches, 1):
