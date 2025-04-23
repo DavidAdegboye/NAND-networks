@@ -1617,7 +1617,6 @@ def run_test(variables: Dict[str, any]):
                         gradients, opt_state_dense, weights)
                     weights = optax.apply_updates(weights, updates)
             if time.time() - start_run_time > config["timeout"] * 60:
-                print("Timeout")
                 if add_img_or_custom == 'i':
                     accuracy = batch_comp(
                         partial(acc_conv, network=[weights, weights_conv]),
@@ -1671,10 +1670,11 @@ def run_test(variables: Dict[str, any]):
                             f.write(str(pair)+'\n')
                         f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%\n")
                         f.write("Circuit output for at the final stage\n")
-                        if rand_accuracy > accuracy:
+                        if rand_accuracy == 1:
                             [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
-                        else:
+                        elif accuracy == 1:
                             [print(circ) for circ in (output_circuit(weights, True, True))]
+                print("Timeout")
                 return
         if add_img_or_custom != 'i':
             if test(weights, inputs, output, use_surr, surr_arr):
