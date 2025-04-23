@@ -1771,7 +1771,7 @@ ALL_KS = [1.0, 1.0, 1.0, 0.995, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91,
 ks = {s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)}
 distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 archs = [[160, 96], [192, 64]]
-settings = [(1, 4)]
+settings = [(1, 4), (0.5, 4), (1, 3), (0.75, 4), (1, 3.5)]
 for _ in range(30):
     for temp, max_fan in settings:
         run_start = time.time()
