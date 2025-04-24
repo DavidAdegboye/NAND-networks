@@ -16,19 +16,15 @@ def set_up_img(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.
     n = config["size"]
     train_n = config["train_n"]
     test_n = config["test_n"]
+    (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+    x_train = x_train / 255.0
+    x_test = x_test / 255.0
     x_train_resized = jnp.array([preprocess_image(img, s=(size, size)) for img in x_train[:train_n]])
     x_test_resized = jnp.array([preprocess_image(img, s=(size, size)) for img in x_test[:test_n]])
     y_train = jnp.array(y_train[:train_n])
     y_test = jnp.array(y_test[:test_n])
     y_train_new = jax.vmap(lambda x: preprocess_image(x, s=(size, size)))(y_train)
     return x_train_resized, x_test_resized, y_train_new, y_test, train_n
-
-# loading the MNIST numbers dataset
-(x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
-
-# from 0-255 to 0-1
-x_train = x_train / 255.0
-x_test = x_test / 255.0
 
 # resizing the image from 28*28 to size*size, and from x∈[0,1] to x∈{0,1}
 def preprocess_image(image: np.ndarray, s: Tuple[int, int], threshold: float=0.5) -> jnp.ndarray:
