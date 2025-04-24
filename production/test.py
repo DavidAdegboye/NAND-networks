@@ -1791,8 +1791,8 @@ settings = [(0, [0, 0, 0, 0, 0, 0]), (1, [0, 0, 0, 0, 16, 10]),
             (1, [0, 0, 0, 0, 128, 10]), (1, [0, 0, 0, 0, 256, 10])]
 for setting in settings:
     run_start = time.time()
-    run_test({"min_gates_used_penalty_coeff": settings[0],
-              "min_gates": settings[1]})
+    run_test({"min_gates_used_penalty_coeff": setting[0],
+              "min_gates": setting[1]})
     run_end = time.time()
     with open("set-up.yaml", "r") as f:
         config = yaml.safe_load(f)
