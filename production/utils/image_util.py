@@ -5,12 +5,13 @@ import os
 import numpy as np
 from skimage.transform import resize
 from typing import List, Tuple
+from functools import partial
 import yaml
 
 Conv = Tuple[int, int, bool]
 
 def set_up_img(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, int]:
-    global config, size, n
+    global config, size
     config = config_dict
     size = config["size"]
     n = config["n"]
@@ -23,7 +24,7 @@ def set_up_img(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.
     x_test_resized = jnp.array([preprocess_image(img, s=(size, size)) for img in x_test[:test_n]])
     y_train = jnp.array(y_train[:train_n])
     y_test = jnp.array(y_test[:test_n])
-    y_train_new = jax.vmap(lambda x: preprocess_image(x, s=(size, size)))(y_train)
+    y_train_new = jax.vmap(lambda x: preprocess_test(x, n=n))(y_train)
     return x_train_resized, x_test_resized, y_train_new, y_test, train_n
 
 # resizing the image from 28*28 to size*size, and from x∈[0,1] to x∈{0,1}
@@ -44,8 +45,8 @@ def preprocess_image(image: np.ndarray, s: Tuple[int, int], threshold: float=0.5
     return binary
 
 # turning the output label from a number to n hot encoding
-@jax.jit
-def preprocess_test(value: int) -> jnp.ndarray:
+@partial(jax.jit, static_argnames="n")
+def preprocess_test(value: int, n: int) -> jnp.ndarray:
     """
     Returns an n hot encoded jnp array
 
