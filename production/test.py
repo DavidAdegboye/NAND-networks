@@ -1771,8 +1771,8 @@ def run_test(variables: Dict[str, any]):
 
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
-with open(config["output_file"], "w") as f:
-    f.write(f"New test:\n")
+# with open(config["output_file"], "w") as f:
+#     f.write(f"New test:\n")
 true_start = time.time()
 sigmas = {"beta_sampler": [0.005, 0.01, 0.03, 0.05, 0.1, 0.2],
           "normal_sampler1": [1, 2, 3, 4, 5, 6],
@@ -1785,14 +1785,20 @@ ALL_KS = [1.0, 1.0, 1.0, 0.995, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91,
         0.205, 0.18, 0.17, 0.155, 0.14, 0.13, 0.12, 0.11]
 ks = {s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)}
 distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
-archs = [[160, 96], [192, 64]]
-settings = [(0, [0, 0, 0, 0, 0, 0]), (1, [0, 0, 0, 0, 16, 10]),
-            (1, [0, 0, 0, 0, 32, 10]), (1, [0, 0, 0, 0, 64, 10]),
-            (1, [0, 0, 0, 0, 128, 10]), (1, [0, 0, 0, 0, 256, 10])]
-for setting in settings:
+archs = [[1024], [1024, 768], [1024, 768, 512], [1024, 768, 512, 256]]
+pools = [[], [[3, 1, "max"]], [[3, 1, "min"]], [[3, 1, "max"], [3, 1, "min"]]]
+mgms = [0, 0.25, 0.5, 0.75, 1]
+for _ in range(15):
+    arch = random.choice(archs)
+    pf = random.choice(pools)
+    min_gates = [1568] + arch.copy + [10]
+    min_gates = [round(random.choice(mgms) * layer) for layer in min_gates]
+    mgpc = 1 if sum(min_gates) else 0
     run_start = time.time()
-    run_test({"min_gates_used_penalty_coeff": setting[0],
-              "min_gates": setting[1]})
+    run_test({"min_gates_used_penalty_coeff": min_gates,
+              "min_gates": mgpc,
+              "pool_filters": pf,
+              "architecture": arch})
     run_end = time.time()
     with open("set-up.yaml", "r") as f:
         config = yaml.safe_load(f)
