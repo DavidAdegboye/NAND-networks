@@ -1791,7 +1791,7 @@ mgms = [0, 0.25, 0.5, 0.75, 1]
 for _ in range(15):
     arch = random.choice(archs)
     pf = random.choice(pools)
-    min_gates = [1568] + arch.copy + [10]
+    min_gates = [1568] + arch.copy() + [10]
     min_gates = [round(random.choice(mgms) * layer) for layer in min_gates]
     mgpc = 1 if sum(min_gates) else 0
     run_start = time.time()
