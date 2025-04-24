@@ -1788,17 +1788,22 @@ distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 archs = [[1024], [1024, 768], [1024, 768, 512], [1024, 768, 512, 256]]
 pools = [[], [[3, 1, "max"]], [[3, 1, "min"]], [[3, 1, "max"], [3, 1, "min"]]]
 mgms = [0, 0.25, 0.5, 0.75, 1]
+max_fans = [0, 32, 64, 96, 128]
 for _ in range(15):
     arch = random.choice(archs)
     pf = random.choice(pools)
+    max_fan = random.choice(max_fans)
     min_gates = [1568] + arch.copy() + [10]
     min_gates = [round(random.choice(mgms) * layer) for layer in min_gates]
     mgpc = 1 if sum(min_gates) else 0
+    mfc = 1 if max_fan else 0
     run_start = time.time()
     run_test({"min_gates_used_penalty_coeff": mgpc,
               "min_gates": min_gates,
               "pool_filters": pf,
-              "architecture": arch})
+              "architecture": arch,
+              "max_fan_in_penalty_coeff": mfc,
+              "max_fan_in": max_fan})
     run_end = time.time()
     with open("set-up.yaml", "r") as f:
         config = yaml.safe_load(f)
