@@ -11,7 +11,7 @@ import yaml
 Conv = Tuple[int, int, bool]
 
 def set_up_img(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, int]:
-    global config, size
+    global config, size, x_train, x_test, train_n, test_n
     config = config_dict
     size = config["size"]
     n = config["n"]
