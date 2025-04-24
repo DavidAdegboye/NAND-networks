@@ -1795,8 +1795,8 @@ for _ in range(15):
     min_gates = [round(random.choice(mgms) * layer) for layer in min_gates]
     mgpc = 1 if sum(min_gates) else 0
     run_start = time.time()
-    run_test({"min_gates_used_penalty_coeff": min_gates,
-              "min_gates": mgpc,
+    run_test({"min_gates_used_penalty_coeff": mgpc,
+              "min_gates": min_gates,
               "pool_filters": pf,
               "architecture": arch})
     run_end = time.time()
