@@ -13,7 +13,7 @@ def set_up_img(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.
     global config, size, n
     config = config_dict
     size = config["size"]
-    n = config["size"]
+    n = config["n"]
     train_n = config["train_n"]
     test_n = config["test_n"]
     (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
