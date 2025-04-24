@@ -31,7 +31,7 @@ x_train = x_train / 255.0
 x_test = x_test / 255.0
 
 # resizing the image from 28*28 to size*size, and from x∈[0,1] to x∈{0,1}
-def preprocess_image(image: np.ndarray, s: Tuple[int, int]=(size, size), threshold: float=0.5) -> jnp.ndarray:
+def preprocess_image(image: np.ndarray, s: Tuple[int, int], threshold: float=0.5) -> jnp.ndarray:
     """
     Returns a black and white (not grayscale) image, resized to size s
 
