@@ -1583,6 +1583,10 @@ def run_test(variables: Dict[str, any]):
     iters = 0
     start_run_time = time.time()
     outputted = False
+    if add_img_or_custom == 'i':
+        accs = []
+        losses = []
+        rand_accs = []
     while cont:
         iters += 1
         for _ in range(max(10//batches, 1)):
@@ -1632,6 +1636,9 @@ def run_test(variables: Dict[str, any]):
                                 **loss_conv_kwargs),
                         batch_size, batches,
                         inputs=inputs, output=output, scaled=scaled_train_imgs)
+                    accs.append(accuracy)
+                    rand_accs.append(rand_accuracy)
+                    losses.append(new_loss)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(weights, "cont"))
                     gate_usage_disc = gate_usage_by_layer(weights, "disc")
@@ -1646,9 +1653,9 @@ def run_test(variables: Dict[str, any]):
                     with open(config["output_file"], "a") as f:
                         for pair in variables.items():
                             f.write(str(pair)+'\n')
-                        f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%\n")
-                        f.write(f"Gate usage: {gate_usage_disc}\n")
-                        f.write(f"Max fan-in: {max_fan}\n")
+                        f.write(str(accs) + '\n')
+                        f.write(str(rand_accs) + '\n')
+                        f.write(str(losses) + '\n')
                     return
                 else:
                     accuracy = acc(weights, inputs, output,
@@ -1698,20 +1705,24 @@ def run_test(variables: Dict[str, any]):
             # elif test_rand(weights, inputs, output, use_surr, surr_arr, max_fan_in_penalty_coeff, max_fan_in):
             #     cont = 0
         if cont:
+            if add_img_or_custom == 'i':
+                accuracy = batch_comp(
+                    partial(acc_conv, network=[weights, weights_conv]),
+                    batch_size, x_test.shape[0]//batch_size,
+                    inputs=x_test, output=y_test, scaled=scaled_test_imgs)
+                rand_accuracy = batch_comp(
+                    partial(rand_acc_conv, network=[weights, weights_conv]),
+                    batch_size, x_test.shape[0]//batch_size,
+                    inputs=x_test, output=y_test, scaled=scaled_test_imgs)
+                new_loss = batch_comp(
+                    partial(loss_conv, network=[weights, weights_conv], **loss_conv_kwargs),
+                    batch_size, batches,
+                    inputs=inputs, output=output, scaled=scaled_train_imgs)
+                accs.append(accuracy)
+                rand_accs.append(rand_accuracy)
+                losses.append(new_loss)
             if iters == max(10//batches, 1):
                 if add_img_or_custom == 'i':
-                    accuracy = batch_comp(
-                        partial(acc_conv, network=[weights, weights_conv]),
-                        batch_size, x_test.shape[0]//batch_size,
-                        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
-                    rand_accuracy = batch_comp(
-                        partial(rand_acc_conv, network=[weights, weights_conv]),
-                        batch_size, x_test.shape[0]//batch_size,
-                        inputs=x_test, output=y_test, scaled=scaled_test_imgs)
-                    new_loss = batch_comp(
-                        partial(loss_conv, network=[weights, weights_conv], **loss_conv_kwargs),
-                        batch_size, batches,
-                        inputs=inputs, output=output, scaled=scaled_train_imgs)
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
@@ -1775,10 +1786,13 @@ ALL_KS = [1.0, 1.0, 1.0, 0.995, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91,
 ks = {s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)}
 distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 archs = [[160, 96], [192, 64]]
-settings = [(1, 4), (0.5, 4), (1, 3), (0.75, 4), (1, 3.5)]
-for _ in range(30):
+settings = [(0, [0, 0, 0, 0, 0, 0]), (1, [0, 0, 0, 0, 16, 10]),
+            (1, [0, 0, 0, 0, 32, 10]), (1, [0, 0, 0, 0, 64, 10]),
+            (1, [0, 0, 0, 0, 128, 10]), (1, [0, 0, 0, 0, 256, 10])]
+for setting in settings:
     run_start = time.time()
-    run_test(dict())
+    run_test({"min_gates_used_penalty_coeff": settings[0],
+              "min_gates": settings[1]})
     run_end = time.time()
     with open("set-up.yaml", "r") as f:
         config = yaml.safe_load(f)
