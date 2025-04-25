@@ -1827,7 +1827,7 @@ for arch in archs:
         for pf in pools:
             min_gates = [1568] + arch.copy() + [10]
             min_gates = [round(mgm * layer) for layer in min_gates]
-            mgpc = 1 if sum(mgm) else 0
+            mgpc = 1 if mgm else 0
             run_start = time.time()
             run_test({"min_gates_used_penalty_coeff": mgpc,
                     "min_gates": min_gates,
