@@ -1775,8 +1775,8 @@ def run_test(variables: Dict[str, any]):
 
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
-# with open(config["output_file"], "w") as f:
-#     f.write(f"New test:\n")
+with open(config["output_file"], "w") as f:
+    f.write(f"New test:\n")
 true_start = time.time()
 sigmas = {"beta_sampler": [0.005, 0.01, 0.03, 0.05, 0.1, 0.2],
           "normal_sampler1": [1, 2, 3, 4, 5, 6],
