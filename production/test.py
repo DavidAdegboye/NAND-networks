@@ -1544,6 +1544,9 @@ def run_test(variables: Dict[str, any]):
         return output/batches
 
     if add_img_or_custom == 'i':
+        accs = []
+        losses = []
+        rand_accs = []
         accuracy = batch_comp(
             partial(acc_conv, network=[weights, weights_conv]),
             batch_size, x_test.shape[0]//batch_size,
@@ -1556,6 +1559,9 @@ def run_test(variables: Dict[str, any]):
             partial(loss_conv, network=[weights, weights_conv], **loss_conv_kwargs),
             batch_size, batches,
             inputs=inputs, output=output, scaled=scaled_train_imgs)
+        accs.append(accuracy)
+        rand_accs.append(rand_accuracy)
+        losses.append(new_loss)
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
         print(gate_usage_by_layer(weights, "cont"))
         print(gate_usage_by_layer(weights, "disc"))
@@ -1583,10 +1589,6 @@ def run_test(variables: Dict[str, any]):
     iters = 0
     start_run_time = time.time()
     outputted = False
-    if add_img_or_custom == 'i':
-        accs = []
-        losses = []
-        rand_accs = []
     while cont:
         iters += 1
         for _ in range(max(10//batches, 1)):
