@@ -1785,6 +1785,8 @@ ALL_KS = [1.0, 1.0, 1.0, 0.995, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91,
         0.205, 0.18, 0.17, 0.155, 0.14, 0.13, 0.12, 0.11]
 ks = {s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)}
 distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
+
+"""
 archs = [[1024], [1024, 768], [1024, 768, 512], [1024, 768, 512, 256]]
 pools = [[], [[3, 1, "max"]], [[3, 1, "min"]], [[3, 1, "max"], [3, 1, "min"]]]
 mgms = [0, 0.25, 0.5, 0.75, 1]
@@ -1809,6 +1811,33 @@ for _ in range(15):
         config = yaml.safe_load(f)
     with open(config["output_file"], "a") as f:
         f.write(f"Total time for test: {run_end - run_start} seconds.\n")
+true_end = time.time()
+with open("set-up.yaml", "r") as f:
+    config = yaml.safe_load(f)
+with open(config["output_file"], "a") as f:
+    f.write(f"Total time for 20 tests: {true_end - true_start} seconds.\n")
+"""
+
+archs = [[2048], [1024, 768, 512, 256]]
+pools = [[], [[3, 1, "max"], [3, 1, "min"]]]
+mgms = [0, 0.5, 1]
+# max_fans = [0, 32, 64, 96, 128]
+for arch in archs:
+    for mgm in mgms:
+        for pf in pools:
+            min_gates = [1568] + arch.copy() + [10]
+            min_gates = [round(mgm * layer) for layer in min_gates]
+            mgpc = 1 if sum(mgm) else 0
+            run_start = time.time()
+            run_test({"min_gates_used_penalty_coeff": mgpc,
+                    "min_gates": min_gates,
+                    "pool_filters": pf,
+                    "architecture": arch})
+            run_end = time.time()
+            with open("set-up.yaml", "r") as f:
+                config = yaml.safe_load(f)
+            with open(config["output_file"], "a") as f:
+                f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
