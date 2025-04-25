@@ -1636,14 +1636,15 @@ def run_test(variables: Dict[str, any]):
                                 **loss_conv_kwargs),
                         batch_size, batches,
                         inputs=inputs, output=output, scaled=scaled_train_imgs)
-                    accs.append(accuracy)
-                    rand_accs.append(rand_accuracy)
-                    losses.append(new_loss)
+                    accs.append(float(accuracy))
+                    rand_accs.append(float(rand_accuracy))
+                    losses.append(float(new_loss))
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(weights, "cont"))
                     gate_usage_disc = gate_usage_by_layer(weights, "disc")
                     print(gate_usage_disc)
-                    print(gate_usage_by_layer(weights, "rand"))
+                    gate_usage_rand = gate_usage_by_layer(weights, "rand")
+                    print(gate_usage_rand)
                     max_fan = max_fan_in_penalty_disc(weights, 0)
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan,
@@ -1653,9 +1654,12 @@ def run_test(variables: Dict[str, any]):
                     with open(config["output_file"], "a") as f:
                         for pair in variables.items():
                             f.write(str(pair)+'\n')
-                        f.write(str(accs) + '\n')
-                        f.write(str(rand_accs) + '\n')
-                        f.write(str(losses) + '\n')
+                        f.write(f"Accuracies: {accs}\n")
+                        f.write(f"Random accuracies: {rand_accs}\n")
+                        f.write(f"Losses: {losses}\n")
+                        f.write(f"Final gate usage disc: {gate_usage_disc}\n")
+                        f.write(f"Final gate usage rand: {gate_usage_rand}\n")
+                        f.write(f"Final max fan-in: {max_fan}\n")
                     return
                 else:
                     accuracy = acc(weights, inputs, output,
@@ -1718,9 +1722,9 @@ def run_test(variables: Dict[str, any]):
                     partial(loss_conv, network=[weights, weights_conv], **loss_conv_kwargs),
                     batch_size, batches,
                     inputs=inputs, output=output, scaled=scaled_train_imgs)
-                accs.append(accuracy)
-                rand_accs.append(rand_accuracy)
-                losses.append(new_loss)
+                accs.append(float(accuracy))
+                rand_accs.append(float(rand_accuracy))
+                losses.append(float(new_loss))
             if iters == max(10//batches, 1):
                 if add_img_or_custom == 'i':
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
