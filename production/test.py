@@ -1484,18 +1484,17 @@ def run_test(variables: Dict[str, any]):
         if convs:
             dense_mean = 0
             convs_mean = 0
-            for batch in range(batches):
+            for batch in range(min(100, batches)):
                 gradients = grad_conv([weights, weights_conv],
                                     inputs[batch*batch_size:(batch+1)*batch_size],
                                     output[batch*batch_size:(batch+1)*batch_size],
                                     [imgs[batch*batch_size:(batch+1)*batch_size]
                                     for imgs in scaled_train_imgs],
                                     **loss_conv_kwargs)
-                print(batch)
                 dense_mean += filtered_mean(gradients[0])
                 convs_mean += filtered_mean(gradients[1])
-            dense_mean /= batches
-            convs_mean /= batches
+            dense_mean /= min(100, batches)
+            convs_mean /= min(100, batches)
             print(dense_mean, convs_mean)
             scaling_factor = dense_mean/convs_mean
             lr_convs = [x*scaling_factor for x in lr_convs]
