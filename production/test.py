@@ -1834,7 +1834,7 @@ archs = [[2048], [1024, 768, 512, 256]]
 arch = [1024, 768, 512, 256]
 pools = [[], [[3, 1, "max"], [3, 1, "min"]]]
 pf = [[3, 1, "max"], [3, 1, "min"]]
-mgms = [0, 0.5, 1]
+mgms = [1]
 # max_fans = [0, 32, 64, 96, 128]
 for mgm in mgms:
     min_gates = [1568] + arch.copy() + [10]
