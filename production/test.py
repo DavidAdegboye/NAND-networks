@@ -1229,6 +1229,13 @@ def run_test(variables: Dict[str, any]):
             pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(
                 inputs, network[1], scaled)
             pred = pred.reshape(pred.shape[0], -1)
+            return loss(network[0], pred, output, max_fan_in=max_fan_in,
+                        temperature=temperature, mean_fan_in=mean_fan_in,
+                        max_gates=max_gates, min_gates=min_gates,
+                        num_wires=num_wires)
+            pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(
+                inputs, network[1], scaled)
+            pred = pred.reshape(pred.shape[0], -1)
             inputs = inputs.reshape(inputs.shape[0], -1)
             inputs = jnp.concatenate([inputs, pred], axis=1)
             return loss(network[0], pred, output, max_fan_in=max_fan_in,
@@ -1420,6 +1427,14 @@ def run_test(variables: Dict[str, any]):
             accuracy - the accuracy (may be specifically the testing accuracy)
             """
             if not (convs is None):
+                inputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
+                    inputs, network[1], scaled, "disc")
+            inputs = inputs.reshape(inputs.shape[0], -1)
+            pred = jax.vmap(feed_forward, in_axes=(0, None, None))(
+                inputs, network[0], "disc")
+            result = jax.vmap(image_util.evaluate)(pred, output)
+            return jnp.sum(result)/result.size
+            if not (convs is None):
                 conv_outputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
                     inputs, network[1], scaled, "disc")
                 conv_outputs = conv_outputs.reshape(conv_outputs.shape[0], -1)
@@ -1448,6 +1463,14 @@ def run_test(variables: Dict[str, any]):
             Returns
             accuracy - the accuracy (may be specifically the testing accuracy)
             """
+            if not (convs is None):
+                inputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
+                    inputs, network[1], scaled, "rand")
+            inputs = inputs.reshape(inputs.shape[0], -1)
+            pred = jax.vmap(feed_forward, in_axes=(0, None, None))(
+                inputs, network[0], "rand")
+            result = jax.vmap(image_util.evaluate)(pred, output)
+            return jnp.sum(result)/result.size
             if not (convs is None):
                 conv_outputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
                     inputs, network[1], scaled, "rand")
