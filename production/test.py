@@ -1491,6 +1491,7 @@ def run_test(variables: Dict[str, any]):
                                     [imgs[batch*batch_size:(batch+1)*batch_size]
                                     for imgs in scaled_train_imgs],
                                     **loss_conv_kwargs)
+                print(batch)
                 dense_mean += filtered_mean(gradients[0])
                 convs_mean += filtered_mean(gradients[1])
             dense_mean /= batches
