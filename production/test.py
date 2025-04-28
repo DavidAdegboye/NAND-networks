@@ -1233,15 +1233,6 @@ def run_test(variables: Dict[str, any]):
                         temperature=temperature, mean_fan_in=mean_fan_in,
                         max_gates=max_gates, min_gates=min_gates,
                         num_wires=num_wires)
-            pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(
-                inputs, network[1], scaled)
-            pred = pred.reshape(pred.shape[0], -1)
-            inputs = inputs.reshape(inputs.shape[0], -1)
-            inputs = jnp.concatenate([inputs, pred], axis=1)
-            return loss(network[0], pred, output, max_fan_in=max_fan_in,
-                        temperature=temperature, mean_fan_in=mean_fan_in,
-                        max_gates=max_gates, min_gates=min_gates,
-                        num_wires=num_wires)
 
         grad_conv = jax.jit(jax.grad(loss_conv))
 
@@ -1434,16 +1425,6 @@ def run_test(variables: Dict[str, any]):
                 inputs, network[0], "disc")
             result = jax.vmap(image_util.evaluate)(pred, output)
             return jnp.sum(result)/result.size
-            if not (convs is None):
-                conv_outputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
-                    inputs, network[1], scaled, "disc")
-                conv_outputs = conv_outputs.reshape(conv_outputs.shape[0], -1)
-            inputs = inputs.reshape(inputs.shape[0], -1)
-            inputs = jnp.concatenate([inputs, conv_outputs], axis=1)
-            pred = jax.vmap(feed_forward, in_axes=(0, None, None))(
-                inputs, network[0], "disc")
-            result = jax.vmap(image_util.evaluate)(pred, output)
-            return jnp.sum(result)/result.size
 
         @jax.jit
         def rand_acc_conv(network: List[Network],
@@ -1467,16 +1448,6 @@ def run_test(variables: Dict[str, any]):
                 inputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
                     inputs, network[1], scaled, "rand")
             inputs = inputs.reshape(inputs.shape[0], -1)
-            pred = jax.vmap(feed_forward, in_axes=(0, None, None))(
-                inputs, network[0], "rand")
-            result = jax.vmap(image_util.evaluate)(pred, output)
-            return jnp.sum(result)/result.size
-            if not (convs is None):
-                conv_outputs = jax.vmap(feed_forward_conv, in_axes=(0, None, 0, None))(
-                    inputs, network[1], scaled, "rand")
-                conv_outputs = conv_outputs.reshape(conv_outputs.shape[0], -1)
-            inputs = inputs.reshape(inputs.shape[0], -1)
-            inputs = jnp.concatenate([inputs, conv_outputs], axis=1)
             pred = jax.vmap(feed_forward, in_axes=(0, None, None))(
                 inputs, network[0], "rand")
             result = jax.vmap(image_util.evaluate)(pred, output)
@@ -1588,9 +1559,9 @@ def run_test(variables: Dict[str, any]):
             partial(loss_conv, network=[weights, weights_conv], **loss_conv_kwargs),
             batch_size, batches,
             inputs=inputs, output=output, scaled=scaled_train_imgs)
-        accs.append(accuracy)
-        rand_accs.append(rand_accuracy)
-        losses.append(new_loss)
+        accs.append(float(accuracy))
+        rand_accs.append(float(rand_accuracy))
+        losses.append(float(new_loss))
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
         print(gate_usage_by_layer(weights, "cont"))
         print(gate_usage_by_layer(weights, "disc"))
@@ -1854,7 +1825,7 @@ with open(config["output_file"], "a") as f:
 """
 
 archs = [[2048], [1024, 768, 512, 256]]
-arch = [1536, 1280, 1024, 768, 512, 256]
+arch = [1536, 1280, 1024, 768, 512, 256, 192, 128, 64]
 pools = [[], [[3, 1, "max"], [3, 1, "min"]]]
 pf = []
 mgms = [0.9]
