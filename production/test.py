@@ -1003,6 +1003,22 @@ def run_test(variables: Dict[str, any]):
         return jnp.array([0, layer-2, layer-1])
 
     @partial(jax.jit, static_argnames="weight_activation")
+    def get_wire_count(weights: Network, weight_activation: str) -> float:
+        """
+        returns the number of wires in the NAND network
+
+        Parameters
+        weights - the network
+        weight_activation - sigmoid with temperature or step function
+        
+        Returns
+        the array
+        """
+        prob_weights = [
+            weight_activation_dict[weight_activation](layer) for layer in weights]
+        return sum(jnp.sum(prob_weights))
+
+    @partial(jax.jit, static_argnames="weight_activation")
     def get_used_array(weights: Network, weight_activation: str) -> float:
         """
         returns an array, used, representing the network, where if
@@ -1566,6 +1582,9 @@ def run_test(variables: Dict[str, any]):
         print(gate_usage_by_layer(weights, "cont"))
         print(gate_usage_by_layer(weights, "disc"))
         print(gate_usage_by_layer(weights, "rand"))
+        print(get_wire_count(weights, "cont"),
+            get_wire_count(weights, "disc"),
+            get_wire_count(weights, "rand"))
         print(max_fan_in_penalty(weights, 0, temperature),
               max_fan_in_penalty_disc(weights, 0),
               max_fan_in_penalty(weights, max_fan_in, temperature),
@@ -1579,6 +1598,9 @@ def run_test(variables: Dict[str, any]):
         print(gate_usage_by_layer(weights, "cont"))
         print(gate_usage_by_layer(weights, "disc"))
         print(gate_usage_by_layer(weights, "rand"))
+        print(get_wire_count(weights, "cont"),
+            get_wire_count(weights, "disc"),
+            get_wire_count(weights, "rand"))
         print(max_fan_in_penalty(weights, 0, temperature),
               max_fan_in_penalty_disc(weights, 0),
               max_fan_in_penalty(weights, max_fan_in, temperature),
@@ -1647,6 +1669,10 @@ def run_test(variables: Dict[str, any]):
                     print(gate_usage_disc)
                     gate_usage_rand = gate_usage_by_layer(weights, "rand")
                     print(gate_usage_rand)
+                    wire_counts = (get_wire_count(weights, "cont"),
+                                get_wire_count(weights, "disc"),
+                                get_wire_count(weights, "rand"))
+                    print(wire_counts[0], wire_counts[1], wire_counts[2])
                     max_fan = max_fan_in_penalty_disc(weights, 0)
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan,
@@ -1661,6 +1687,8 @@ def run_test(variables: Dict[str, any]):
                         f.write(f"Losses: {losses}\n")
                         f.write(f"Final gate usage disc: {gate_usage_disc}\n")
                         f.write(f"Final gate usage rand: {gate_usage_rand}\n")
+                        f.write(f"Final wire count disc: {wire_counts[1]}\n")
+                        f.write(f"Final wire count disc: {wire_counts[2]}\n")
                         f.write(f"Final max fan-in: {max_fan}\n")
                     return
                 else:
@@ -1674,6 +1702,9 @@ def run_test(variables: Dict[str, any]):
                     gate_usage_disc = gate_usage_by_layer(weights, "disc")
                     print(gate_usage_disc)
                     print(gate_usage_by_layer(weights, "rand"))
+                    print(get_wire_count(weights, "cont"),
+                        get_wire_count(weights, "disc"),
+                        get_wire_count(weights, "rand"))
                     max_fan = max_fan_in_penalty_disc(weights, 0)
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan,
@@ -1733,6 +1764,9 @@ def run_test(variables: Dict[str, any]):
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
                     print(gate_usage_by_layer(weights, "rand"))
+                    print(get_wire_count(weights, "cont"),
+                        get_wire_count(weights, "disc"),
+                        get_wire_count(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0),
                           max_fan_in_penalty(weights, max_fan_in, temperature),
@@ -1748,6 +1782,9 @@ def run_test(variables: Dict[str, any]):
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
                     print(gate_usage_by_layer(weights, "rand"))
+                    print(get_wire_count(weights, "cont"),
+                        get_wire_count(weights, "disc"),
+                        get_wire_count(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0),
                           max_fan_in_penalty(weights, max_fan_in, temperature),

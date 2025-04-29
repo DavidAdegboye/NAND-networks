@@ -1068,6 +1068,22 @@ def get_used_array(weights: Network, weight_activation: str) -> float:
             cont_or(used_for[layer, :arch[layer]], temp))
     return used_back*used_for
 
+@partial(jax.jit, static_argnames="weight_activation")
+def get_wire_count(weights: Network, weight_activation: str) -> float:
+    """
+    returns the number of wires in the NAND network
+
+    Parameters
+    weights - the network
+    weight_activation - sigmoid with temperature or step function
+    
+    Returns
+    the array
+    """
+    prob_weights = [
+        weight_activation_dict[weight_activation](layer) for layer in weights]
+    return sum(jnp.sum(prob_weights))
+
 @jax.jit
 def max_gates_used_penalty(weights: Network, max_gates: jnp.ndarray) -> float:
     """
@@ -1586,6 +1602,9 @@ if add_img_or_custom == 'i':
     print(gate_usage_by_layer(weights, "cont"))
     print(gate_usage_by_layer(weights, "disc"))
     print(gate_usage_by_layer(weights, "rand"))
+    print(get_wire_count(weights, "cont"),
+          get_wire_count(weights, "disc"),
+          get_wire_count(weights, "rand"))
     print(max_fan_in_penalty(weights, 0, temperature),
           max_fan_in_penalty_disc(weights, 0),
           max_fan_in_penalty(weights, max_fan_in, temperature))
@@ -1598,6 +1617,9 @@ else:
     print(gate_usage_by_layer(weights, "cont"))
     print(gate_usage_by_layer(weights, "disc"))
     print(gate_usage_by_layer(weights, "rand"))
+    print(get_wire_count(weights, "cont"),
+          get_wire_count(weights, "disc"),
+          get_wire_count(weights, "rand"))
     print(max_fan_in_penalty(weights, 0, temperature),
           max_fan_in_penalty_disc(weights, 0),
           max_fan_in_penalty(weights, max_fan_in, temperature))
@@ -1661,6 +1683,9 @@ def run(timeout=config["timeout"]) -> None:
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
                     print(gate_usage_by_layer(weights, "rand"))
+                    print(get_wire_count(weights, "cont"),
+                        get_wire_count(weights, "disc"),
+                        get_wire_count(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0),
                           max_fan_in_penalty(weights, max_fan_in, temperature))
@@ -1675,6 +1700,9 @@ def run(timeout=config["timeout"]) -> None:
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
                     print(gate_usage_by_layer(weights, "rand"))
+                    print(get_wire_count(weights, "cont"),
+                        get_wire_count(weights, "disc"),
+                        get_wire_count(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0),
                           max_fan_in_penalty(weights, max_fan_in, temperature))
@@ -1704,6 +1732,9 @@ def run(timeout=config["timeout"]) -> None:
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
                     print(gate_usage_by_layer(weights, "rand"))
+                    print(get_wire_count(weights, "cont"),
+                        get_wire_count(weights, "disc"),
+                        get_wire_count(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0),
                           max_fan_in_penalty(weights, max_fan_in, temperature))
@@ -1718,6 +1749,9 @@ def run(timeout=config["timeout"]) -> None:
                     print(gate_usage_by_layer(weights, "cont"))
                     print(gate_usage_by_layer(weights, "disc"))
                     print(gate_usage_by_layer(weights, "rand"))
+                    print(get_wire_count(weights, "cont"),
+                        get_wire_count(weights, "disc"),
+                        get_wire_count(weights, "rand"))
                     print(max_fan_in_penalty(weights, 0, temperature),
                           max_fan_in_penalty_disc(weights, 0),
                           max_fan_in_penalty(weights, max_fan_in, temperature))
