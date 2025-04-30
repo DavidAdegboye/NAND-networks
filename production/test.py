@@ -1861,7 +1861,7 @@ with open(config["output_file"], "a") as f:
     f.write(f"Total time for 20 tests: {true_end - true_start} seconds.\n")
 """
 
-arch = [2048, 1792, 1536, 1280, 1024, 768, 512, 256, 192, 128, 64]
+arch = [1024, 768, 512, 256, 192, 128, 64]
 min_gates = [1568] + arch.copy() + [10]
 min_gates = [layer-2 for layer in min_gates]
 run_start = time.time()
