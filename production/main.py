@@ -1082,7 +1082,7 @@ def get_wire_count(weights: Network, weight_activation: str) -> float:
     """
     prob_weights = [
         weight_activation_dict[weight_activation](layer) for layer in weights]
-    return sum(jnp.sum(prob_weights))
+    return sum([jnp.sum(layer) for layer in prob_weights])
 
 @jax.jit
 def max_gates_used_penalty(weights: Network, max_gates: jnp.ndarray) -> float:
