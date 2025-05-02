@@ -1814,8 +1814,8 @@ def run_test(variables: Dict[str, any]):
 
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
-with open(config["output_file"], "w") as f:
-    f.write(f"New test:\n")
+# with open(config["output_file"], "w") as f:
+#     f.write(f"New test:\n")
 true_start = time.time()
 sigmas = {"beta_sampler": [0.005, 0.01, 0.03, 0.05, 0.1, 0.2],
           "normal_sampler1": [1, 2, 3, 4, 5, 6],
@@ -1861,7 +1861,7 @@ with open(config["output_file"], "a") as f:
     f.write(f"Total time for 20 tests: {true_end - true_start} seconds.\n")
 """
 
-for num_layers in range(3, 7):
+for num_layers in range(4, 7):
     run_start = time.time()
     arch = [256*layer_i for layer_i in range(num_layers, 0, -1)]
     min_gates = [1568] + arch.copy() + [10]
