@@ -94,3 +94,38 @@ plt.ylim(0,0.1)
 plt.legend()
 plt.grid(True)
 plt.show()
+
+with open("images archs 3.txt", "r") as f:
+    lines = f.readlines()
+
+step_accs_3, rand_accs_3, losses_3 = get_accs_and_losses(4)
+step_accs_4, rand_accs_4, losses_4 = get_accs_and_losses(17)
+step_accs_5, rand_accs_5, losses_5 = get_accs_and_losses(30)
+step_accs_6, rand_accs_6, losses_6 = get_accs_and_losses(43)
+
+plt.plot(step_accs_3, label='3 hidden layers')
+plt.plot(step_accs_4, label='4 hidden layers')
+plt.plot(step_accs_5, label='5 hidden layers')
+plt.plot(step_accs_6, label='6 hidden layers')
+
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy (%)')
+plt.title("Accuracy Curves, 4 hr timeout")
+plt.ylim(95,100)
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+plt.plot(losses_3, label='3 hidden layers')
+plt.plot(losses_4, label='4 hidden layers')
+plt.plot(losses_5, label='5 hidden layers')
+plt.plot(losses_6, label='6 hidden layers')
+
+plt.xlabel('Epochs')
+plt.ylabel('Losses')
+plt.title("Loss Curves, 4 hr timeout")
+plt.ylim(0,0.1)
+plt.legend()
+plt.grid(True)
+plt.show()

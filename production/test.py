@@ -1865,7 +1865,7 @@ for num_layers in range(3, 7):
     run_start = time.time()
     arch = [256*layer_i for layer_i in range(num_layers, 0, -1)]
     min_gates = [1568] + arch.copy() + [10]
-    min_gates = [0.9 * layer for layer in min_gates]
+    min_gates = [round(0.9 * layer) for layer in min_gates]
     run_test({"min_gates_used_penalty_coeff": 1,
             "min_gates": min_gates,
             "pool_filters": [],
