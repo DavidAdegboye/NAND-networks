@@ -1861,20 +1861,21 @@ with open(config["output_file"], "a") as f:
     f.write(f"Total time for 20 tests: {true_end - true_start} seconds.\n")
 """
 
-for num_layers in range(3, 7):
-    run_start = time.time()
-    arch = [256*layer_i for layer_i in range(num_layers, 0, -1)]
-    min_gates = [1568] + arch.copy() + [10]
-    min_gates = [round(0.9 * layer) for layer in min_gates]
-    run_test({"min_gates_used_penalty_coeff": 1,
-            "min_gates": min_gates,
-            "pool_filters": [],
-            "architecture": arch})
-    run_end = time.time()
-    with open("set-up.yaml", "r") as f:
-        config = yaml.safe_load(f)
-    with open(config["output_file"], "a") as f:
-        f.write(f"Total time for test: {run_end - run_start} seconds.\n")
+for num_layers in range(6, 8):
+    for width_mult in range(2):
+        run_start = time.time()
+        arch = [width_mult*256*layer_i for layer_i in range(num_layers, 0, -1)]
+        min_gates = [1568] + arch.copy() + [10]
+        min_gates = [layer-2 for layer in min_gates]
+        run_test({"min_gates_used_penalty_coeff": 1,
+                "min_gates": min_gates,
+                "pool_filters": [],
+                "architecture": arch})
+        run_end = time.time()
+        with open("set-up.yaml", "r") as f:
+            config = yaml.safe_load(f)
+        with open(config["output_file"], "a") as f:
+            f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
 with open("set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
