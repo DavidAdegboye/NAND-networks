@@ -1862,7 +1862,7 @@ with open(config["output_file"], "a") as f:
 """
 
 for num_layers in range(6, 8):
-    for width_mult in range(2):
+    for width_mult in range(1,3):
         run_start = time.time()
         arch = [width_mult*256*layer_i for layer_i in range(num_layers, 0, -1)]
         min_gates = [1568] + arch.copy() + [10]
