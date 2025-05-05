@@ -1863,7 +1863,7 @@ with open(config["output_file"], "a") as f:
 
 for num_layers in range(6, 8):
     run_start = time.time()
-    arch = [128*layer_i for layer_i in range(num_layers, 0, -1)]
+    arch = [256*layer_i for layer_i in range(num_layers, 0, -1)]
     min_gates = [1568] + arch.copy() + [10]
     min_gates = [layer-2 for layer in min_gates]
     run_test({"min_gates_used_penalty_coeff": 1,
