@@ -1,0 +1,392 @@
+'continuous_penalty_coeff': 0
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 72.27%, Loss: 0.26998, Random accuracy: 76.95%
+Gate usage: [16. 12.  2.  1.]
+Max fan-in: 9.0
+Total time for test: 609.4292650222778 seconds.
+'continuous_penalty_coeff': 0
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 93.36%, Loss: 0.11748, Random accuracy: 91.02%
+Gate usage: [16. 41.  1.]
+Max fan-in: 41.0
+Total time for test: 603.5390396118164 seconds.
+'continuous_penalty_coeff': 0.003
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 73.05%, Loss: 0.2814, Random accuracy: 77.34%
+Gate usage: [16. 14.  2.  1.]
+Max fan-in: 8.0
+Total time for test: 605.1155951023102 seconds.
+'continuous_penalty_coeff': 0.003
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 91.8%, Loss: 0.12128, Random accuracy: 89.45%
+Gate usage: [16. 35.  1.]
+Max fan-in: 35.0
+Total time for test: 603.9659790992737 seconds.
+'continuous_penalty_coeff': 0.01
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 67.58%, Loss: 0.32774, Random accuracy: 76.56%
+Gate usage: [16.  8.  1.  1.]
+Max fan-in: 8.0
+Total time for test: 604.9218146800995 seconds.
+'continuous_penalty_coeff': 0.01
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 92.19%, Loss: 0.12716, Random accuracy: 91.41%
+Gate usage: [16. 33.  1.]
+Max fan-in: 33.0
+Total time for test: 603.723578453064 seconds.
+'continuous_penalty_coeff': 0.05
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 64.06%, Loss: 0.42149, Random accuracy: 66.8%
+Gate usage: [15.  6.  0.  1.]
+Max fan-in: 8.0
+Total time for test: 604.6734209060669 seconds.
+'continuous_penalty_coeff': 0.05
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 87.89%, Loss: 0.18816, Random accuracy: 86.72%
+Gate usage: [16. 26.  1.]
+Max fan-in: 26.0
+Total time for test: 603.6524255275726 seconds.
+'continuous_penalty_coeff': 0.1
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 70.31%, Loss: 0.37646, Random accuracy: 68.75%
+Gate usage: [16. 11.  3.  1.]
+Max fan-in: 8.0
+Total time for test: 605.7416639328003 seconds.
+'continuous_penalty_coeff': 0.1
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 78.91%, Loss: 0.32503, Random accuracy: 77.73%
+Gate usage: [16. 18.  1.]
+Max fan-in: 18.0
+Total time for test: 603.7173421382904 seconds.
+'continuous_penalty_coeff': 0.5
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 69.92%, Loss: 0.4803, Random accuracy: 59.77%
+Gate usage: [16.  8.  1.  1.]
+Max fan-in: 7.0
+Total time for test: 605.1851501464844 seconds.
+'continuous_penalty_coeff': 0.5
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 74.22%, Loss: 0.39695, Random accuracy: 75.0%
+Gate usage: [16. 13.  1.]
+Max fan-in: 13.0
+Total time for test: 603.7843992710114 seconds.
+'continuous_penalty_coeff': 1
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 53.91%, Loss: 0.64965, Random accuracy: 53.91%
+Gate usage: [3. 1. 0. 1.]
+Max fan-in: 3.0
+Total time for test: 605.1288509368896 seconds.
+'continuous_penalty_coeff': 1
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 67.97%, Loss: 0.5252, Random accuracy: 67.19%
+Gate usage: [16.  8.  1.]
+Max fan-in: 8.0
+Total time for test: 604.0108768939972 seconds.
+ 'continuous_penalty_coeff': 0
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 74.22%, Loss: 0.28056, Random accuracy: 75.0%
+Gate usage: [16. 13.  3.  1.]
+Max fan-in: 8.0
+Total time for test: 604.9929609298706 seconds.
+'continuous_penalty_coeff': 0
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 95.31%, Loss: 0.07522, Random accuracy: 94.14%
+Gate usage: [16. 42.  1.]
+Max fan-in: 42.0
+Total time for test: 603.7360384464264 seconds.
+'continuous_penalty_coeff': 0.003
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 72.66%, Loss: 0.2938, Random accuracy: 83.98%
+Gate usage: [16. 14.  2.  1.]
+Max fan-in: 8.0
+Total time for test: 604.5653259754181 seconds.
+'continuous_penalty_coeff': 0.003
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 94.14%, Loss: 0.09029, Random accuracy: 93.75%
+Gate usage: [16. 37.  1.]
+Max fan-in: 37.0
+Total time for test: 604.4246165752411 seconds.
+'continuous_penalty_coeff': 0.01
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1}
+Accuracy: 76.56%, Loss: 0.28759, Random accuracy: 80.86%
+Gate usage: [16. 11.  2.  1.]
+Max fan-in: 8.0
+Total time for test: 604.7679460048676 seconds.
+'continuous_penalty_coeff': 0.01
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 93.36%, Loss: 0.12112, Random accuracy: 92.58%
+Gate usage: [16. 33.  1.]
+Max fan-in: 33.0
+Total time for test: 603.6893093585968 seconds.
+'continuous_penalty_coeff': 0.05
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 64.45%, Loss: 0.38687, Random accuracy: 72.66%
+Gate usage: [14.  6.  0.  1.]
+Max fan-in: 6.0
+Total time for test: 605.192862033844 seconds.
+'continuous_penalty_coeff': 0.05
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 86.33%, Loss: 0.23204, Random accuracy: 84.77%
+Gate usage: [16. 21.  1.]
+Max fan-in: 21.0
+Total time for test: 603.8024673461914 seconds.
+'continuous_penalty_coeff': 0.1
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 71.48%, Loss: 0.38232, Random accuracy: 73.05%
+Gate usage: [16.  6.  0.  1.]
+Max fan-in: 7.0
+Total time for test: 605.2315320968628 seconds.
+'continuous_penalty_coeff': 0.1
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 84.38%, Loss: 0.27195, Random accuracy: 83.59%
+Gate usage: [16. 21.  1.]
+Max fan-in: 21.0
+Total time for test: 603.6245768070221 seconds.
+'continuous_penalty_coeff': 0.5
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 72.27%, Loss: 0.48869, Random accuracy: 58.2%
+Gate usage: [16.  8.  0.  1.]
+Max fan-in: 8.0
+Total time for test: 604.0752019882202 seconds.
+'continuous_penalty_coeff': 0.5
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 73.05%, Loss: 0.46787, Random accuracy: 71.09%
+Gate usage: [16. 11.  1.]
+Max fan-in: 11.0
+Total time for test: 603.8493328094482 seconds.
+'continuous_penalty_coeff': 1
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 61.72%, Loss: 0.59976, Random accuracy: 57.03%
+Gate usage: [10.  3.  0.  1.]
+Max fan-in: 5.0
+Total time for test: 605.3465156555176 seconds.
+'continuous_penalty_coeff': 1
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 70.7%, Loss: 0.512, Random accuracy: 68.75%
+Gate usage: [15.  7.  1.]
+Max fan-in: 7.0
+Total time for test: 603.7537162303925 seconds.
+'continuous_penalty_coeff': 0
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 70.31%, Loss: 0.29585, Random accuracy: 80.08%
+Gate usage: [15.  6.  0.  1.]
+Max fan-in: 8.0
+Total time for test: 604.9841811656952 seconds.
+'continuous_penalty_coeff': 0
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 99.22%, Loss: 0.01083, Random accuracy: 99.22%
+Gate usage: [16. 45.  1.]
+Max fan-in: 45.0
+Total time for test: 603.4856309890747 seconds.
+'continuous_penalty_coeff': 0.003
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 67.97%, Loss: 0.34661, Random accuracy: 76.95%
+Gate usage: [16.  9.  1.  1.]
+Max fan-in: 8.0
+Total time for test: 604.9239189624786 seconds.
+'continuous_penalty_coeff': 0.003
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 94.53%, Loss: 0.09243, Random accuracy: 93.75%
+Gate usage: [16. 44.  1.]
+Max fan-in: 44.0
+Total time for test: 604.2100596427917 seconds.
+'continuous_penalty_coeff': 0.01
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 62.11%, Loss: 0.35002, Random accuracy: 74.61%
+Gate usage: [14.  7.  1.  1.]
+Max fan-in: 8.0
+Total time for test: 604.667839050293 seconds.
+'continuous_penalty_coeff': 0.01
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 91.8%, Loss: 0.14209, Random accuracy: 89.84%
+Gate usage: [16. 34.  1.]
+Max fan-in: 34.0
+Total time for test: 604.0253014564514 seconds.
+'continuous_penalty_coeff': 0.05
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 65.23%, Loss: 0.40912, Random accuracy: 69.92%
+Gate usage: [16. 10.  1.  1.]
+Max fan-in: 7.0
+Total time for test: 604.4751183986664 seconds.
+'continuous_penalty_coeff': 0.05
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 86.72%, Loss: 0.22496, Random accuracy: 85.94%
+Gate usage: [16. 24.  1.]
+Max fan-in: 24.0
+Total time for test: 603.5980603694916 seconds.
+'continuous_penalty_coeff': 0.1
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 66.02%, Loss: 0.38225, Random accuracy: 72.66%
+Gate usage: [15. 11.  1.  1.]
+Max fan-in: 7.0
+Total time for test: 604.7632720470428 seconds.
+'continuous_penalty_coeff': 0.1
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 84.77%, Loss: 0.24928, Random accuracy: 80.86%
+Gate usage: [16. 24.  1.]
+Max fan-in: 24.0
+Total time for test: 604.03542304039 seconds.
+'continuous_penalty_coeff': 0.5
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 71.88%, Loss: 0.48574, Random accuracy: 63.28%
+Gate usage: [15.  7.  1.  1.]
+Max fan-in: 7.0
+Total time for test: 605.3323712348938 seconds.
+'continuous_penalty_coeff': 0.5
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 73.44%, Loss: 0.43436, Random accuracy: 62.11%
+Gate usage: [15. 10.  1.]
+Max fan-in: 10.0
+Total time for test: 603.96541929245 seconds.
+'continuous_penalty_coeff': 1
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 73.44%, Loss: 0.47924, Random accuracy: 61.72%
+Gate usage: [14.  6.  1.  1.]
+Max fan-in: 7.0
+Total time for test: 605.1531414985657 seconds.
+'continuous_penalty_coeff': 1
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 66.8%, Loss: 0.53604, Random accuracy: 68.75%
+Gate usage: [16.  5.  1.]
+Max fan-in: 6.0
+Total time for test: 603.6410436630249 seconds.
+'continuous_penalty_coeff': 0
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 70.31%, Loss: 0.28391, Random accuracy: 80.47%
+Gate usage: [15.  6.  0.  1.]
+Max fan-in: 8.0
+Total time for test: 604.7518582344055 seconds.
+'continuous_penalty_coeff': 0
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 96.88%, Loss: 0.04537, Random accuracy: 96.88%
+Gate usage: [16. 46.  1.]
+Max fan-in: 46.0
+Total time for test: 603.5526599884033 seconds.
+'continuous_penalty_coeff': 0.003
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 76.56%, Loss: 0.23443, Random accuracy: 85.16%
+Gate usage: [16. 18.  3.  1.]
+Max fan-in: 8.0
+Total time for test: 605.626592874527 seconds.
+'continuous_penalty_coeff': 0.003
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 94.92%, Loss: 0.08626, Random accuracy: 93.36%
+Gate usage: [16. 38.  1.]
+Max fan-in: 38.0
+Total time for test: 603.6813445091248 seconds.
+'continuous_penalty_coeff': 0.01
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 73.44%, Loss: 0.31212, Random accuracy: 82.81%
+Gate usage: [16. 11.  1.  1.]
+Max fan-in: 8.0
+Total time for test: 605.4603140354156 seconds.
+'continuous_penalty_coeff': 0.01
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 89.06%, Loss: 0.18592, Random accuracy: 86.72%
+Gate usage: [16. 31.  1.]
+Max fan-in: 31.0
+Total time for test: 603.7792103290558 seconds.
+'continuous_penalty_coeff': 0.05
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 64.06%, Loss: 0.41271, Random accuracy: 67.58%
+Gate usage: [16.  7.  1.  1.]
+Max fan-in: 8.0
+Total time for test: 604.3939819335938 seconds.
+'continuous_penalty_coeff': 0.05
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 86.72%, Loss: 0.20852, Random accuracy: 85.55%
+Gate usage: [16. 29.  1.]
+Max fan-in: 29.0
+Total time for test: 604.4046583175659 seconds.
+'continuous_penalty_coeff': 0.1
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 67.97%, Loss: 0.43933, Random accuracy: 71.88%
+Gate usage: [15.  7.  0.  1.]
+Max fan-in: 7.0
+Total time for test: 605.3515288829803 seconds.
+'continuous_penalty_coeff': 0.1
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 82.81%, Loss: 0.31115, Random accuracy: 79.3%
+Gate usage: [16. 20.  1.]
+Max fan-in: 20.0
+Total time for test: 603.8065991401672 seconds.
+'continuous_penalty_coeff': 0.5
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 71.48%, Loss: 0.45013, Random accuracy: 68.75%
+Gate usage: [16.  8.  0.  1.]
+Max fan-in: 8.0
+Total time for test: 604.7554974555969 seconds.
+'continuous_penalty_coeff': 0.5
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 69.92%, Loss: 0.49321, Random accuracy: 69.14%
+Gate usage: [15.  7.  1.]
+Max fan-in: 8.0
+Total time for test: 603.9773104190826 seconds.
+'continuous_penalty_coeff': 1
+'architecture': [64, 16]
+'max_fan_in_penalty_coeff': 1
+Accuracy: 71.09%, Loss: 0.5202, Random accuracy: 66.41%
+Gate usage: [12.  6.  2.  1.]
+Max fan-in: 5.0
+Total time for test: 604.7658770084381 seconds.
+'continuous_penalty_coeff': 1
+'architecture': [64]
+'max_fan_in_penalty_coeff': 0
+Accuracy: 67.58%, Loss: 0.49918, Random accuracy: 66.8%
+Gate usage: [16.  9.  1.]
+Max fan-in: 9.0
+Total time for test: 603.9959750175476 seconds.
