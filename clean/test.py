@@ -19,11 +19,11 @@ ALL_KS = [1.0, 1.0, 1.0, 0.995, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91,
 ks = {s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)}
 distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 
-for num_layers in range(6, 8):
+architectures = [[2048], [2048, 1024], [1536, 1280, 1024, 768, 512, 256]]
+min_gatess = [[0, 0, 0], [1312, 2046, 1022, 10], [1312, 1534, 1278, 1022, 766, 510, 254, 10]]
+
+for arch, min_gates in zip (architectures, min_gates):
     run_start = time.time()
-    arch = [256*layer_i for layer_i in range(num_layers, 0, -1)]
-    min_gates = [1568] + arch.copy() + [10]
-    min_gates = [layer-2 for layer in min_gates]
     main.run_test({"min_gates_used_penalty_coeff": 1,
             "min_gates": min_gates,
             "pool_filters": [],
