@@ -570,7 +570,6 @@ def run_test(variables: Dict[str, any], config_file: str):
                                     + ')')
                         if node in c2i.keys():
                             if layer_i == i_0-1:
-                        
                                 circuits.append(node)
                                 gates[-1].append(["=", index2gate[c2i[node]]])
                                 index2gate[added] = (gate_i1, gate_i2)

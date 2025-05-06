@@ -20,7 +20,7 @@ ks = {s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)}
 distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 
 architectures = [[2048], [2048, 1024], [1536, 1280, 1024, 768, 512, 256]]
-min_gatess = [[0, 0, 0], [1312, 2046, 1022, 10], [1312, 1534, 1278, 1022, 766, 510, 254, 10]]
+min_gatess = [[0, 0, 0], [1312, 2046, 1022, 10], [1312, 1534, 1278, 1022, 766, 510, 128, 10]]
 mgupcs = [0, 1, 1]
 
 for arch, min_gates, mgupc in zip (architectures, min_gatess, mgupcs):
