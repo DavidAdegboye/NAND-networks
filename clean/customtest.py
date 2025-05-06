@@ -24,9 +24,11 @@ for npn_class in npn_classes:
     try:
         main.run_test({"output": [[int(entry)] for entry in npn_class]},
                     "set-up-custom.yaml")
-    except:
+    except KeyboardInterrupt:
+        break
+    except Exception as e:
         with open(config["output_file"], "a") as f:
-            f.write(f"Error with following truth table:\n{npn_class}\n")
+            f.write(f"Error {e} with following truth table:\n{npn_class}\n")
     run_end = time.time()
     with open(config["output_file"], "a") as f:
         f.write(f"Total time for test: {run_end - run_start} seconds.\n")
@@ -34,9 +36,11 @@ for npn_class in npn_classes:
     try:
         main.run_test({"output": [[1-int(entry)] for entry in npn_class]},
                     "set-up-custom.yaml")
-    except:
+    except KeyboardInterrupt:
+        break
+    except Exception as e:
         with open(config["output_file"], "a") as f:
-            f.write(f"Error with following truth table:\n{[1-int(entry) for entry in npn_class]}\n")
+            f.write(f"Error {e} with following truth table:\n{[1-int(entry) for entry in npn_class]}\n")
     run_end = time.time()
     with open(config["output_file"], "a") as f:
         f.write(f"Total time for test: {run_end - run_start} seconds.\n")
