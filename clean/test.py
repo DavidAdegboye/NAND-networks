@@ -21,10 +21,11 @@ distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 
 architectures = [[2048], [2048, 1024], [1536, 1280, 1024, 768, 512, 256]]
 min_gatess = [[0, 0, 0], [1312, 2046, 1022, 10], [1312, 1534, 1278, 1022, 766, 510, 254, 10]]
+mgupcs = [0, 1, 1]
 
-for arch, min_gates in zip (architectures, min_gatess):
+for arch, min_gates, mgupc in zip (architectures, min_gatess, mgupcs):
     run_start = time.time()
-    main.run_test({"min_gates_used_penalty_coeff": 1,
+    main.run_test({"min_gates_used_penalty_coeff": mgupc,
             "min_gates": min_gates,
             "pool_filters": [],
             "architecture": arch})
