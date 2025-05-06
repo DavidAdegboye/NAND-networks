@@ -1690,7 +1690,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                         f.write(f"Final wire count disc: {wire_counts[1]}\n")
                         f.write(f"Final wire count disc: {wire_counts[2]}\n")
                         f.write(f"Final max fan-in: {max_fan}\n")
-                    return
+                    return True
                 else:
                     accuracy = acc(weights, inputs, output,
                                 use_surr, surr_arr, False)[0]
@@ -1735,7 +1735,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                             elif accuracy == 1:
                                 [print(circ) for circ in (output_circuit(weights, True, True))]
                         print("Timeout")
-                        return
+                        return False
         if add_img_or_custom != 'i':
             if test(weights, inputs, output, use_surr, surr_arr, max_fan_in_penalty_coeff, max_fan_in):
                 cont = False
@@ -1810,4 +1810,4 @@ def run_test(variables: Dict[str, any], config_file: str):
         else:
             print("Trying step discretisation")
             [print(circ) for circ in (output_circuit(weights, True, True))]
-    return
+    return True

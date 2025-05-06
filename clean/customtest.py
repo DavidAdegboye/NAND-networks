@@ -19,11 +19,18 @@ def generate_npn_classes():
 npn_classes = generate_npn_classes()
 print(f"Total unique NPN classes for 4-input functions: {len(npn_classes)}")
 
+with open(config["output_file"], "w") as f:
+    f.write(f"New test:\n")
+
 for npn_class in npn_classes:
     run_start = time.time()
     try:
-        main.run_test({"output": [[int(entry)] for entry in npn_class]},
-                    "set-up-custom.yaml")
+        if not main.run_test({"output": [[int(entry)] for entry in npn_class]},
+                              "set-up-custom.yaml"):
+            with open(config["output_file"], "a") as f:
+                f.write(f"Retrying\n")
+            main.run_test({"output": [[int(entry)] for entry in npn_class]},
+                           "set-up-custom.yaml")
     except KeyboardInterrupt:
         break
     except Exception as e:
@@ -34,8 +41,12 @@ for npn_class in npn_classes:
         f.write(f"Total time for test: {run_end - run_start} seconds.\n")
     run_start = time.time()
     try:
-        main.run_test({"output": [[1-int(entry)] for entry in npn_class]},
-                    "set-up-custom.yaml")
+        if not main.run_test({"output": [[1-int(entry)] for entry in npn_class]},
+                              "set-up-custom.yaml"):
+            with open(config["output_file"], "a") as f:
+                f.write(f"Retrying\n")
+            main.run_test({"output": [[1-int(entry)] for entry in npn_class]},
+                           "set-up-custom.yaml")
     except KeyboardInterrupt:
         break
     except Exception as e:
