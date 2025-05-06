@@ -40,7 +40,7 @@ for npn_class in npn_classes:
         break
     except Exception as e:
         with open(config["output_file"], "a") as f:
-            f.write(f"Error {e} with following truth table:\n{[1-int(entry) for entry in npn_class]}\n")
+            f.write(f"Error {e} with following truth table:\n{tuple([not entry for entry in npn_class])}\n")
     run_end = time.time()
     with open(config["output_file"], "a") as f:
         f.write(f"Total time for test: {run_end - run_start} seconds.\n")
