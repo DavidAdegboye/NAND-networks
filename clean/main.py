@@ -16,8 +16,8 @@ if os.name == 'nt':  # Windows
 else:  # Unix-like systems
     import select
 
-def run_test(variables: Dict[str, any]):
-    with open("set-up.yaml", "r") as f:
+def run_test(variables: Dict[str, any], config_file: str):
+    with open(config_file, "r") as f:
         config = yaml.safe_load(f)
 
     for k,v in variables.items():

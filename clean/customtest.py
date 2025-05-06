@@ -4,10 +4,8 @@ import yaml
 import time
 import main
 
-with open("set-up.yaml", "r") as f:
+with open("set-up-custom.yaml", "r") as f:
     config = yaml.safe_load(f)
-with open(config["output_file"], "w") as f:
-    f.write(f"New test:\n")
 
 true_start = time.time()
 
@@ -19,26 +17,21 @@ def generate_npn_classes():
     return seen
 
 npn_classes = generate_npn_classes()
-[[int(entry)] for entry in npn_class]
 print(f"Total unique NPN classes for 4-input functions: {len(npn_classes)}")
 
 for npn_class in npn_classes:
     run_start = time.time()
-    main.run_test({"output": [[int(entry)] for entry in npn_class]})
+    main.run_test({"output": [[int(entry)] for entry in npn_class]},
+                  "set-up-custom.yaml")
     run_end = time.time()
-    with open("set-up.yaml", "r") as f:
-        config = yaml.safe_load(f)
     with open(config["output_file"], "a") as f:
         f.write(f"Total time for test: {run_end - run_start} seconds.\n")
     run_start = time.time()
-    main.run_test({"output": [[1-int(entry)] for entry in npn_class]})
+    main.run_test({"output": [[1-int(entry)] for entry in npn_class]},
+                  "set-up-custom.yaml")
     run_end = time.time()
-    with open("set-up.yaml", "r") as f:
-        config = yaml.safe_load(f)
     with open(config["output_file"], "a") as f:
         f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
-with open("set-up.yaml", "r") as f:
-    config = yaml.safe_load(f)
 with open(config["output_file"], "a") as f:
     f.write(f"Total time for 444 tests: {true_end - true_start} seconds.\n")

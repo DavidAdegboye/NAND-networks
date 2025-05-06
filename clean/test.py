@@ -28,14 +28,10 @@ for arch, min_gates, mgupc in zip (architectures, min_gatess, mgupcs):
     main.run_test({"min_gates_used_penalty_coeff": mgupc,
             "min_gates": min_gates,
             "pool_filters": [],
-            "architecture": arch})
+            "architecture": arch}, "set-up.yaml")
     run_end = time.time()
-    with open("set-up.yaml", "r") as f:
-        config = yaml.safe_load(f)
     with open(config["output_file"], "a") as f:
         f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
-with open("set-up.yaml", "r") as f:
-    config = yaml.safe_load(f)
 with open(config["output_file"], "a") as f:
     f.write(f"Total time for 20 tests: {true_end - true_start} seconds.\n")
