@@ -34,6 +34,7 @@ for npn_class in npn_classes:
             success = main.run_test({"output": [[int(entry)] for entry in npn_class]},
                                 "set-up-custom.yaml")
         except KeyboardInterrupt:
+            success = True
             break
         except Exception as e:
             with open(config["output_file"], "a") as f:
@@ -52,6 +53,7 @@ for npn_class in npn_classes:
             success = main.run_test({"output": [[1-int(entry)] for entry in npn_class]},
                                 "set-up-custom.yaml")
         except KeyboardInterrupt:
+            success = True
             break
         except Exception as e:
             with open(config["output_file"], "a") as f:
