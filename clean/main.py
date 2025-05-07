@@ -647,6 +647,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                             for prev_node in sorted_connected:
                                 used.add(prev_node[0])
                             used.add(added)
+                    print(circuits[-1])
         queue = list(used)
         nodes = []
         while len(queue):
