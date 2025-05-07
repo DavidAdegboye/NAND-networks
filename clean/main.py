@@ -1817,9 +1817,6 @@ def run_test(variables: Dict[str, any], config_file: str):
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
     if add_img_or_custom != 'i':
-        [print(layer) for layer in weights]
-        print(test(weights, inputs, output, use_surr, surr_arr, max_fan_in_penalty_coeff, max_fan_in))
-        print(test_rand(weights, inputs, output, use_surr, surr_arr, max_fan_in_penalty_coeff, max_fan_in))
         accuracy = acc(weights, inputs, output,
                     use_surr, surr_arr, False)[0]
         rand_accuracy = rand_acc(weights, inputs, output,
