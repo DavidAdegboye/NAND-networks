@@ -1316,7 +1316,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                     * jnp.all(pred==output))
         return jnp.all(pred==output)
 
-    @partial(jax.jit, static_argnames=("skew_towards_falses", "use_surr"))
+    # @partial(jax.jit, static_argnames=("skew_towards_falses", "use_surr"))
     def acc(weights: Network,
             inputs: jnp.ndarray,
             output: jnp.ndarray,
@@ -1344,6 +1344,7 @@ def run_test(variables: Dict[str, any], config_file: str):
         """
         pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
             inputs, weights, "disc", use_surr, surr_arr)
+        print(pred)
         pred = (pred == output)
         pred = jnp.sum(pred, axis=1)
         if skew_towards_falses:
