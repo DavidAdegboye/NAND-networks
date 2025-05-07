@@ -33,7 +33,7 @@ min_gates: [0, 0, 1, 1]
 continuous_penalty_coeff: 0.0
 decimal_places: 5
 batches: 5000 #Should be a factor of the number of samples
-timeout: 10 # in minutes
+timeout: 60 # in minutes
 bits: 2 # only for adders
 specific: True
 first_i: 1
