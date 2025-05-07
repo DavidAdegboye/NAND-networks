@@ -612,6 +612,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                 if super_verbose:
                     print(i, connecteds[i])
                 if not sorted_connected:
+                    # no connections is a 0 out (¬1)
                     node = '0'
                 elif len(sorted_connected) == 1:
                     if sorted_connected[0][1] == '0':
@@ -625,12 +626,15 @@ def run_test(variables: Dict[str, any], config_file: str):
                                 node = node[2:]
                 else:
                     node = '¬('
-                    for _, circuit in sorted_connected:
+                    for index, circuit in sorted_connected:
                         if circuit == '0':
                             node = '1'
+                            connecteds[-1] = [index]
                             break
-                        elif circuit != 1:
+                        elif circuit != '1':
                             node += circuit + '.'
+                        else:
+                            connecteds[-1].remove(index)
                     if node != '1':
                         node = node[:-1] + ')'
                 if super_verbose:
