@@ -24,12 +24,13 @@ min_gatess = [[0, 0, 0], [1312, 2046, 512, 10], [1312, 1534, 1278, 1022, 766, 51
 timeouts = [120, 240, 960]
 mgupcs = [0, 1, 1]
 
-for arch, min_gates, mgupc in zip (architectures, min_gatess, mgupcs):
+for arch, min_gates, mgupc, timeout in zip (architectures, min_gatess, mgupcs, timeouts):
     run_start = time.time()
     main.run_test({"min_gates_used_penalty_coeff": mgupc,
             "min_gates": min_gates,
             "pool_filters": [],
-            "architecture": arch}, "set-up.yaml")
+            "architecture": arch}, "set-up.yaml",
+            "timeout": timeout)
     run_end = time.time()
     with open(config["output_file"], "a") as f:
         f.write(f"Total time for test: {run_end - run_start} seconds.\n")
