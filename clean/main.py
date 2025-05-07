@@ -635,6 +635,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                             elif circuit != 1:
                                 node += circuit + '.'
                         node = node[:-1] + ')'
+                        print(node)
                     if node in c2i.keys():
                         if layer_i == i_0-1:
                             circuits.append(node)
