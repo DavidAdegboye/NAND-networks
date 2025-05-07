@@ -53,3 +53,5 @@ outs: 1 # only for custom circuits
 output: [[1], [0], [0], [0], [0], [1], [0], [0], [1], [0], [1], [1], [1], [1], [1], [1]] # should be 2^ins lists, each with outs elements (so look like a truth table)
 traceback: "auto" #should be in: ['off', 'tracebackhide', 'remove_frames', 'quiet_remove_frames', 'auto']
 output_file: "core_test.txt"
+verbose: False
+super_verbose: False

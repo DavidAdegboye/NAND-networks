@@ -1270,7 +1270,7 @@ def run_test(variables: Dict[str, any], config_file: str):
 
         grad_conv = jax.jit(jax.grad(loss_conv))
 
-    # @partial(jax.jit, static_argnames=("use_surr", "max_fan_in_penalty_coeff"))
+    @partial(jax.jit, static_argnames=("use_surr", "max_fan_in_penalty_coeff"))
     def test(weights: Network,
             inputs: jnp.ndarray,
             output: jnp.ndarray,
@@ -1293,8 +1293,6 @@ def run_test(variables: Dict[str, any], config_file: str):
         """
         pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
             inputs, weights, "disc", use_surr, surr_arr)
-        print("In test")
-        print(pred)
         if max_fan_in_penalty_coeff:
             return ((1 - max_fan_in_penalty_disc(weights, max_fan_in))
                     * jnp.all(pred==output))
@@ -1328,7 +1326,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                     * jnp.all(pred==output))
         return jnp.all(pred==output)
 
-    # @partial(jax.jit, static_argnames=("skew_towards_falses", "use_surr"))
+    @partial(jax.jit, static_argnames=("skew_towards_falses", "use_surr"))
     def acc(weights: Network,
             inputs: jnp.ndarray,
             output: jnp.ndarray,
@@ -1356,8 +1354,6 @@ def run_test(variables: Dict[str, any], config_file: str):
         """
         pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
             inputs, weights, "disc", use_surr, surr_arr)
-        print("In acc")
-        print(pred)
         pred = (pred == output)
         pred = jnp.sum(pred, axis=1)
         if skew_towards_falses:
@@ -1742,10 +1738,10 @@ def run_test(variables: Dict[str, any], config_file: str):
                         if (accuracy >= 0.998 and 
                             max_fan_in_penalty_disc(weights, max_fan_in) == 0):
                             print("Trying step discretisation")
-                            [print(circ) for circ in (output_circuit(weights, True, True))]
+                            [print(circ) for circ in (output_circuit(weights, config["verbose"], config["super_verbose"]))]
                         else:
                             print("Trying random discretisation")
-                            [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
+                            [print(circ) for circ in (output_circuit(weights, config["verbose"], config["super_verbose"], "rand"))]
                     else:
                         with open(config["output_file"], "a") as f:
                             for pair in variables.items():
@@ -1753,9 +1749,9 @@ def run_test(variables: Dict[str, any], config_file: str):
                             f.write(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%\n")
                             f.write("Circuit output for at the final stage\n")
                             if rand_accuracy == 1:
-                                [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
+                                [print(circ) for circ in (output_circuit(weights, config["verbose"], config["super_verbose"], "rand"))]
                             elif accuracy == 1:
-                                [print(circ) for circ in (output_circuit(weights, True, True))]
+                                [print(circ) for circ in (output_circuit(weights, config["verbose"], config["super_verbose"]))]
                         print("Timeout")
                         return False
         if add_img_or_custom != 'i':
@@ -1837,8 +1833,8 @@ def run_test(variables: Dict[str, any], config_file: str):
                 max_fan_in_penalty_rand(weights, max_fan_in))
         if cont is 0:
             print("Trying random discretisation")
-            [print(circ) for circ in (output_circuit(weights, True, True, "rand"))]
+            [print(circ) for circ in (output_circuit(weights, config["verbose"], config["super_verbose"], "rand"))]
         else:
             print("Trying step discretisation")
-            [print(circ) for circ in (output_circuit(weights, True, True))]
+            [print(circ) for circ in (output_circuit(weights, config["verbose"], config["super_verbose"]))]
     return True
