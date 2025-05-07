@@ -1806,6 +1806,7 @@ def run_test(variables: Dict[str, any], config_file: str):
     end_time = time.time()
     print("Took", end_time-start_run_time, "seconds to train.")
     if add_img_or_custom != 'i':
+        print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
         print(max_fan_in_penalty(weights, 0, temperature),
                 max_fan_in_penalty_disc(weights, 0),
                 max_fan_in_penalty(weights, max_fan_in, temperature),
