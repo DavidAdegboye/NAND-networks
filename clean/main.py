@@ -614,16 +614,27 @@ def run_test(variables: Dict[str, any], config_file: str):
                 if not sorted_connected:
                     empties.append(added)
                     indices[added] = added
-                    circuits.append('_')
+                    circuits.append('0')
                 else:
                     if len(sorted_connected) == 1:
-                        node = '¬' + sorted_connected[0][1]
-                        if len(node) > 2:
-                            if node[:2] == "¬¬" and node[2] != '(':
-                                node = node[2:]
+                        if sorted_connected[0][1] == '0':
+                            node = '1'
+                        elif sorted_connected[0][1] == '1':
+                            node = '0'
+                        else:
+                            node = '¬' + sorted_connected[0][1]
+                            if len(node) > 2:
+                                if node[:2] == "¬¬" and node[2] != '(':
+                                    node = node[2:]
                     else:
-                        node = '¬(' + '.'.join(
-                            [element[1] for element in sorted_connected]) + ')'
+                        node = '¬('
+                        for _, circuit in sorted_connected:
+                            if circuit == '0':
+                                node = '1'
+                                break
+                            elif circuit != 1:
+                                node += circuit + '.'
+                        node = node[:-1] + ')'
                     if node in c2i.keys():
                         if layer_i == i_0-1:
                             circuits.append(node)
