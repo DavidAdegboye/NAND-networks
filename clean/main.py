@@ -1282,6 +1282,7 @@ def run_test(variables: Dict[str, any], config_file: str):
         """
         pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
             inputs, weights, "disc", use_surr, surr_arr)
+        print("In test")
         print(pred)
         if max_fan_in_penalty_coeff:
             return ((1 - max_fan_in_penalty_disc(weights, max_fan_in))
@@ -1344,6 +1345,7 @@ def run_test(variables: Dict[str, any], config_file: str):
         """
         pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
             inputs, weights, "disc", use_surr, surr_arr)
+        print("In acc")
         print(pred)
         pred = (pred == output)
         pred = jnp.sum(pred, axis=1)
@@ -1810,6 +1812,11 @@ def run_test(variables: Dict[str, any], config_file: str):
     if add_img_or_custom != 'i':
         print(test(weights, inputs, output, use_surr, surr_arr, max_fan_in_penalty_coeff, max_fan_in))
         print(test_rand(weights, inputs, output, use_surr, surr_arr, max_fan_in_penalty_coeff, max_fan_in))
+        accuracy = acc(weights, inputs, output,
+                    use_surr, surr_arr, False)[0]
+        rand_accuracy = rand_acc(weights, inputs, output,
+                                use_surr, surr_arr, False)
+        new_loss = loss(weights, inputs, output, **loss_kwargs)
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
         print(max_fan_in_penalty(weights, 0, temperature),
                 max_fan_in_penalty_disc(weights, 0),
