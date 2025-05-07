@@ -666,10 +666,16 @@ def run_test(variables: Dict[str, any], config_file: str):
             if node_index >= learnt_arch[0]:
                 fan_ins.append(len(connecteds[node_index]))
         print("used:\n", learnt_arch, "\nout of:\n", true_arch)
-        print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
+        try:
+            print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
+        except ValueError:
+            print(f"No nodes used")
         with open(config["output_file"], "a") as f:
             f.write(f"used:\n{learnt_arch}\nout of:\n{true_arch}\n")
-            f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}\n")
+            try:
+                f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}\n")
+            except ValueError:
+                f.write("No fan-in data\n")
             f.write(f"Used {weight_activation}\n")
             for circ in circuits[-true_arch[-1]:]:
                 f.write(f"{circ}\n")
