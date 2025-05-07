@@ -1282,6 +1282,7 @@ def run_test(variables: Dict[str, any], config_file: str):
         """
         pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
             inputs, weights, "disc", use_surr, surr_arr)
+        jax.debug.print({pred}, pred=pred)
         if max_fan_in_penalty_coeff:
             return ((1 - max_fan_in_penalty_disc(weights, max_fan_in))
                     * jnp.all(pred==output))
