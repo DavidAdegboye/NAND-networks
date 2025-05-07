@@ -631,7 +631,8 @@ def run_test(variables: Dict[str, any], config_file: str):
                             break
                         elif circuit != 1:
                             node += circuit + '.'
-                    node = node[:-1] + ')'
+                    if node != '1':
+                        node = node[:-1] + ')'
                 if super_verbose:
                     print(node)
                 if node in c2i.keys():
