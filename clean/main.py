@@ -1259,7 +1259,7 @@ def run_test(variables: Dict[str, any], config_file: str):
 
         grad_conv = jax.jit(jax.grad(loss_conv))
 
-    @partial(jax.jit, static_argnames=("use_surr", "max_fan_in_penalty_coeff"))
+    # @partial(jax.jit, static_argnames=("use_surr", "max_fan_in_penalty_coeff"))
     def test(weights: Network,
             inputs: jnp.ndarray,
             output: jnp.ndarray,
@@ -1282,7 +1282,7 @@ def run_test(variables: Dict[str, any], config_file: str):
         """
         pred = jax.vmap(feed_forward, in_axes=(0, None, None, None, None))(
             inputs, weights, "disc", use_surr, surr_arr)
-        jax.debug.print({pred}, pred=pred)
+        print(pred)
         if max_fan_in_penalty_coeff:
             return ((1 - max_fan_in_penalty_disc(weights, max_fan_in))
                     * jnp.all(pred==output))
