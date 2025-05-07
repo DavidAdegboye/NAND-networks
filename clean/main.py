@@ -601,7 +601,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                         if (weight_activation_dict[weight_activation](
                             weights[layer_i][neuron_i,inner_layer_i,weight_i])
                             and indices[i] not in empties):
-                            print(f"wire to{len(connecteds)} from {i}")
+                            print(f"wire to {len(connecteds)} from {i}")
                             connected.add((indices[i], circuits[indices[i]]))
                         i += 1
                 added += 1
