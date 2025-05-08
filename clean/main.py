@@ -1841,9 +1841,10 @@ def run_test(variables: Dict[str, any], config_file: str):
         accs.append(float(accuracy))
         rand_accs.append(float(rand_accuracy))
         losses.append(float(new_loss))
-        f.write(f"Accuracies: {accs}\n")
-        f.write(f"Random accuracies: {rand_accs}\n")
-        f.write(f"Losses: {losses}\n")
+        with open(config["output_file"], "a") as f:
+            f.write(f"Accuracies: {accs}\n")
+            f.write(f"Random accuracies: {rand_accs}\n")
+            f.write(f"Losses: {losses}\n")
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
         print(max_fan_in_penalty(weights, 0, temperature),
                 max_fan_in_penalty_disc(weights, 0),
