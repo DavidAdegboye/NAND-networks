@@ -19,10 +19,10 @@ ALL_KS = [1.0, 1.0, 1.0, 0.995, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91,
 ks = {s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)}
 distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 
-architectures = [[1536, 1280, 1024, 768, 512, 256]]
-min_gatess = [[1312, 1534, 1278, 1022, 766, 510, 254, 10]]
-timeouts = [960]
-mgupcs = [1]
+architectures = [[2048], [2048, 1024]]
+min_gatess = [[0, 0, 0], [1312, 2046, 512, 10]]
+timeouts = [120, 240]
+mgupcs = [0, 1]
 
 for arch, min_gates, mgupc, timeout in zip (architectures, min_gatess, mgupcs, timeouts):
     run_start = time.time()
