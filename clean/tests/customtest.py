@@ -1,3 +1,10 @@
+import sys
+import os
+
+test_dir = os.path.dirname(__file__)  
+project_root = os.path.abspath(os.path.join(test_dir, '..'))
+sys.path.insert(0, project_root)
+
 import npn
 from itertools import product
 import yaml
