@@ -9,9 +9,9 @@ import yaml
 import time
 import main
 
-with open("set-up.yaml", "r") as f:
+with open("../configs/set-up.yaml", "r") as f:
     config = yaml.safe_load(f)
-with open(config["output_file"], "w") as f:
+with open("../test_results/"+config["output_file"], "w") as f:
     f.write(f"New test:\n")
 true_start = time.time()
 sigmas = {"beta_sampler": [0.005, 0.01, 0.03, 0.05, 0.1, 0.2],
@@ -37,10 +37,10 @@ for arch, min_gates, mgupc, timeout in zip (architectures, min_gatess, mgupcs, t
             "min_gates": min_gates,
             "pool_filters": [],
             "architecture": arch,
-            "timeout": timeout}, "set-up.yaml")
+            "timeout": timeout}, "../configs/set-up.yaml")
     run_end = time.time()
-    with open(config["output_file"], "a") as f:
+    with open("../test_results/"+config["output_file"], "a") as f:
         f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
-with open(config["output_file"], "a") as f:
+with open("../test_results/"+config["output_file"], "a") as f:
     f.write(f"Total time for 20 tests: {true_end - true_start} seconds.\n")

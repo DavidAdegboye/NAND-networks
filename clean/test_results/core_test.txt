@@ -1,0 +1,1174 @@
+New test:
+Attempt 1
+Accuracies: [0.5625, 0.5625, 0.5625, 0.6875, 0.6875, 0.6875, 0.6875, 0.6875, 0.8125, 0.8125, 0.8125, 0.8125, 0.8125, 0.8125, 0.8125, 0.8125, 0.9375, 0.9375, 0.9375, 0.9375, 0.9375, 0.9375, 1.0]
+Random accuracies: [0.5625, 0.5625, 0.5625, 0.5, 0.5, 0.6875, 0.5625, 0.6875, 0.6875, 0.625, 0.5, 0.8125, 0.875, 0.5625, 0.625, 0.8125, 0.75, 0.9375, 0.9375, 0.6875, 0.6875, 1.0, 1.0]
+Losses: [2.1108078956604004, 1.6050724983215332, 1.238088846206665, 0.9941051006317139, 0.8387947082519531, 0.7376701831817627, 0.666486918926239, 0.6110851168632507, 0.5642505884170532, 0.5224665403366089, 0.48390674591064453, 0.4475319981575012, 0.41247934103012085, 0.37766793370246887, 0.3425403833389282, 0.3078402876853943, 0.2749834656715393, 0.2459542453289032, 0.21987581253051758, 0.19336530566215515, 0.16919049620628357, 0.14964573085308075, 0.13294976949691772]
+used:
+[8, 4, 1]
+out of:
+[8, 16, 1]
+Max fan-in: 4
+Average fan-in: 2.8
+Used disc
+¬(¬(A.B.C).¬(¬A.¬C).¬(¬A.¬B).¬(C.¬B.¬D))
+Total time for test: 11.850687742233276 seconds.
+Attempt 1
+Accuracies: [0.4375, 0.4375, 0.4375, 0.5625, 0.5625, 0.5625, 0.5625, 0.625, 0.6875, 0.8125, 0.8125, 0.8125, 0.8125, 0.8125, 0.8125, 0.8125, 0.8125, 0.8125, 0.8125, 0.9375, 0.9375, 1.0]
+Random accuracies: [0.4375, 0.5625, 0.4375, 0.4375, 0.5625, 0.4375, 0.5625, 0.6875, 0.5625, 0.6875, 0.75, 0.5625, 0.6875, 0.8125, 0.8125, 0.8125, 0.8125, 0.8125, 0.6875, 0.875, 0.9375, 0.9375]
+Losses: [1.289966344833374, 1.01327383518219, 0.8372339010238647, 0.7442796230316162, 0.7009810209274292, 0.67121422290802, 0.6303019523620605, 0.5736455321311951, 0.5134024620056152, 0.46149539947509766, 0.42176246643066406, 0.3928196430206299, 0.37166815996170044, 0.35599958896636963, 0.34413403272628784, 0.3342016339302063, 0.3227042555809021, 0.3023006319999695, 0.26339268684387207, 0.2080513834953308, 0.15099598467350006, 0.10413423180580139]
+used:
+[7, 3, 1]
+out of:
+[8, 16, 1]
+Max fan-in: 3
+Average fan-in: 2.75
+Used disc
+¬(¬(B.C.¬A).¬(A.D.¬B).¬(A.¬C))
+Total time for test: 4.860265731811523 seconds.
+Attempt 1
+Total time for test: 2.7790589332580566 seconds.
+Attempt 1
+Total time for test: 1.733243465423584 seconds.
+Attempt 1
+Total time for test: 0.4857163429260254 seconds.
+Attempt 1
+Total time for test: 0.03259730339050293 seconds.
+Attempt 1
+Total time for test: 0.013282060623168945 seconds.
+Attempt 1
+Total time for test: 0.03205108642578125 seconds.
+Attempt 1
+Total time for test: 0.035742998123168945 seconds.
+Attempt 1
+Total time for test: 0.03273296356201172 seconds.
+Attempt 1
+Total time for test: 0.02171635627746582 seconds.
+Attempt 1
+Total time for test: 0.03216743469238281 seconds.
+Attempt 1
+Total time for test: 0.02589106559753418 seconds.
+Attempt 1
+Total time for test: 0.0333406925201416 seconds.
+Attempt 1
+Total time for test: 0.026963233947753906 seconds.
+Attempt 1
+Error "Cannot determine dtype of Traced<ShapedArray(int32[1])>with<BatchTrace(level=1/0)> with
+  val = Array([[0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1]], dtype=int32)
+  batch_dim = 0" with following truth table:
+[False, False, False, False, False, True, True, False, True, False, True, True, False, False, False, False]
+Attempt 2
+Total time for test: 0.06748676300048828 seconds.
+Attempt 1
+Total time for test: 0.029433250427246094 seconds.
+Attempt 1
+Total time for test: 0.03027939796447754 seconds.
+Attempt 1
+Total time for test: 0.0351407527923584 seconds.
+Attempt 1
+Total time for test: 0.023320913314819336 seconds.
+Attempt 1
+Total time for test: 0.034731388092041016 seconds.
+Attempt 1
+Total time for test: 0.033925771713256836 seconds.
+Attempt 1
+Error "Cannot determine dtype of Traced<ShapedArray(int32[])>with<BatchTrace(level=1/0)> with
+  val = Array([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], dtype=int32)
+  batch_dim = 0" with following truth table:
+(True, True, True, True, True, True, True, True, True, True, True, True, True, False, False, True)
+Attempt 2
+Total time for test: 0.05210113525390625 seconds.
+Attempt 1
+Total time for test: 0.03332877159118652 seconds.
+Attempt 1
+Total time for test: 0.032732486724853516 seconds.
+Attempt 1
+Total time for test: 0.033811330795288086 seconds.
+Attempt 1
+Total time for test: 0.021550655364990234 seconds.
+Attempt 1
+Total time for test: 0.026782989501953125 seconds.
+Attempt 1
+Total time for test: 0.03612804412841797 seconds.
+Attempt 1
+Total time for test: 0.02366185188293457 seconds.
+Attempt 1
+Total time for test: 0.029031991958618164 seconds.
+Attempt 1
+Total time for test: 0.044328927993774414 seconds.
+Attempt 1
+Total time for test: 0.02644801139831543 seconds.
+Attempt 1
+Total time for test: 0.029668807983398438 seconds.
+Attempt 1
+Total time for test: 0.030947446823120117 seconds.
+Attempt 1
+Total time for test: 0.018867015838623047 seconds.
+Attempt 1
+Total time for test: 0.03579902648925781 seconds.
+Attempt 1
+Total time for test: 0.025647640228271484 seconds.
+Attempt 1
+Total time for test: 0.0436100959777832 seconds.
+Attempt 1
+Total time for test: 0.026398897171020508 seconds.
+Attempt 1
+Total time for test: 0.01930713653564453 seconds.
+Attempt 1
+Total time for test: 0.030701875686645508 seconds.
+Attempt 1
+Total time for test: 0.029285907745361328 seconds.
+Attempt 1
+Total time for test: 0.03293585777282715 seconds.
+Attempt 1
+Total time for test: 0.039733171463012695 seconds.
+Attempt 1
+Total time for test: 0.014495372772216797 seconds.
+Attempt 1
+Total time for test: 0.03544211387634277 seconds.
+Attempt 1
+Total time for test: 0.030441999435424805 seconds.
+Attempt 1
+Total time for test: 0.027615070343017578 seconds.
+Attempt 1
+Total time for test: 0.032366275787353516 seconds.
+Attempt 1
+Total time for test: 0.03732013702392578 seconds.
+Attempt 1
+Total time for test: 0.01930975914001465 seconds.
+Attempt 1
+Total time for test: 0.02446722984313965 seconds.
+Attempt 1
+Total time for test: 0.03347277641296387 seconds.
+Attempt 1
+Total time for test: 0.029886960983276367 seconds.
+Attempt 1
+Total time for test: 0.0363469123840332 seconds.
+Attempt 1
+Total time for test: 0.018654584884643555 seconds.
+Attempt 1
+Total time for test: 0.037345170974731445 seconds.
+Attempt 1
+Total time for test: 0.03729987144470215 seconds.
+Attempt 1
+Total time for test: 0.023108959197998047 seconds.
+Attempt 1
+Total time for test: 0.029756546020507812 seconds.
+Attempt 1
+Total time for test: 0.03150510787963867 seconds.
+Attempt 1
+Total time for test: 0.031202077865600586 seconds.
+Attempt 1
+Total time for test: 0.022281408309936523 seconds.
+Attempt 1
+Total time for test: 0.03229212760925293 seconds.
+Attempt 1
+Total time for test: 0.029854536056518555 seconds.
+Attempt 1
+Total time for test: 0.03583192825317383 seconds.
+Attempt 1
+Total time for test: 0.05725860595703125 seconds.
+Attempt 1
+Total time for test: 0.02815556526184082 seconds.
+Attempt 1
+Total time for test: 0.03757166862487793 seconds.
+Attempt 1
+Total time for test: 0.026799678802490234 seconds.
+Attempt 1
+Total time for test: 0.028739213943481445 seconds.
+Attempt 1
+Total time for test: 0.03494095802307129 seconds.
+Attempt 1
+Total time for test: 0.01947188377380371 seconds.
+Attempt 1
+Total time for test: 0.03251075744628906 seconds.
+Attempt 1
+Total time for test: 0.03261923789978027 seconds.
+Attempt 1
+Total time for test: 0.021711111068725586 seconds.
+Attempt 1
+Total time for test: 0.037952423095703125 seconds.
+Attempt 1
+Total time for test: 0.028912782669067383 seconds.
+Attempt 1
+Total time for test: 0.039086341857910156 seconds.
+Attempt 1
+Total time for test: 0.021599769592285156 seconds.
+Attempt 1
+Total time for test: 0.033460378646850586 seconds.
+Attempt 1
+Error "Cannot determine dtype of Traced<ShapedArray(int32[1])>with<BatchTrace(level=1/0)> with
+  val = Array([[0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1]], dtype=int32)
+  batch_dim = 0" with following truth table:
+(True, True, True, False, True, False, False, True, False, True, True, True, False, True, False, False)
+Attempt 2
+Total time for test: 0.06171059608459473 seconds.
+Attempt 1
+Total time for test: 0.024056673049926758 seconds.
+Attempt 1
+Total time for test: 0.03183245658874512 seconds.
+Attempt 1
+Total time for test: 0.026171207427978516 seconds.
+Attempt 1
+Total time for test: 0.03675723075866699 seconds.
+Attempt 1
+Total time for test: 0.021816492080688477 seconds.
+Attempt 1
+Total time for test: 0.03019118309020996 seconds.
+Attempt 1
+Total time for test: 0.03197526931762695 seconds.
+Attempt 1
+Total time for test: 0.036958932876586914 seconds.
+Attempt 1
+Total time for test: 0.01778578758239746 seconds.
+Attempt 1
+Total time for test: 0.03200960159301758 seconds.
+Attempt 1
+Total time for test: 0.03672027587890625 seconds.
+Attempt 1
+Total time for test: 0.031983375549316406 seconds.
+Attempt 1
+Total time for test: 0.023262977600097656 seconds.
+Attempt 1
+Total time for test: 0.028673410415649414 seconds.
+Attempt 1
+Total time for test: 0.027628660202026367 seconds.
+Attempt 1
+Total time for test: 0.03260207176208496 seconds.
+Attempt 1
+Total time for test: 0.03395557403564453 seconds.
+Attempt 1
+Total time for test: 0.03550434112548828 seconds.
+Attempt 1
+Total time for test: 0.024624347686767578 seconds.
+Attempt 1
+Total time for test: 0.039699554443359375 seconds.
+Attempt 1
+Total time for test: 0.014189481735229492 seconds.
+Attempt 1
+Total time for test: 0.03247523307800293 seconds.
+Attempt 1
+Total time for test: 0.03522229194641113 seconds.
+Attempt 1
+Total time for test: 0.022106170654296875 seconds.
+Attempt 1
+Error "Cannot determine dtype of Traced<ShapedArray(int32[1])>with<BatchTrace(level=1/0)> with
+  val = Array([[0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1]], dtype=int32)
+  batch_dim = 0" with following truth table:
+[False, False, False, False, False, False, True, True, False, True, True, True, True, True, True, False]
+Attempt 2
+Total time for test: 0.07409930229187012 seconds.
+Attempt 1
+Total time for test: 0.018780946731567383 seconds.
+Attempt 1
+Total time for test: 0.03849506378173828 seconds.
+Attempt 1
+Total time for test: 0.022301912307739258 seconds.
+Attempt 1
+Total time for test: 0.0288541316986084 seconds.
+Attempt 1
+Total time for test: 0.02804732322692871 seconds.
+Attempt 1
+Total time for test: 0.035447120666503906 seconds.
+Attempt 1
+Total time for test: 0.02494072914123535 seconds.
+Attempt 1
+Total time for test: 0.03286862373352051 seconds.
+Attempt 1
+Total time for test: 0.06692981719970703 seconds.
+Attempt 1
+Total time for test: 0.02596879005432129 seconds.
+Attempt 1
+Total time for test: 0.029312849044799805 seconds.
+Attempt 1
+Total time for test: 0.0361783504486084 seconds.
+Attempt 1
+Total time for test: 0.03426837921142578 seconds.
+Attempt 1
+Total time for test: 0.023571252822875977 seconds.
+Attempt 1
+Total time for test: 0.024309396743774414 seconds.
+Attempt 1
+Total time for test: 0.04272294044494629 seconds.
+Attempt 1
+Total time for test: 0.02461862564086914 seconds.
+Attempt 1
+Total time for test: 0.03050684928894043 seconds.
+Attempt 1
+Total time for test: 0.0215909481048584 seconds.
+Attempt 1
+Total time for test: 0.033054351806640625 seconds.
+Attempt 1
+Total time for test: 0.03349161148071289 seconds.
+Attempt 1
+Total time for test: 0.021891355514526367 seconds.
+Attempt 1
+Total time for test: 0.036075592041015625 seconds.
+Attempt 1
+Total time for test: 0.03271484375 seconds.
+Attempt 1
+Total time for test: 0.027053356170654297 seconds.
+Attempt 1
+Total time for test: 0.031646013259887695 seconds.
+Attempt 1
+Total time for test: 0.02665257453918457 seconds.
+Attempt 1
+Total time for test: 0.0316619873046875 seconds.
+Attempt 1
+Total time for test: 0.03881382942199707 seconds.
+Attempt 1
+Total time for test: 0.022304534912109375 seconds.
+Attempt 1
+Total time for test: 0.028512954711914062 seconds.
+Attempt 1
+Total time for test: 0.07073783874511719 seconds.
+Attempt 1
+Total time for test: 0.006604433059692383 seconds.
+Attempt 1
+Total time for test: 0.021426916122436523 seconds.
+Attempt 1
+Total time for test: 0.018664836883544922 seconds.
+Attempt 1
+Total time for test: 0.02625298500061035 seconds.
+Attempt 1
+Total time for test: 0.036052703857421875 seconds.
+Attempt 1
+Total time for test: 0.021474838256835938 seconds.
+Attempt 1
+Total time for test: 0.0348048210144043 seconds.
+Attempt 1
+Total time for test: 0.02740764617919922 seconds.
+Attempt 1
+Total time for test: 0.029479265213012695 seconds.
+Attempt 1
+Total time for test: 0.03622007369995117 seconds.
+Attempt 1
+Total time for test: 0.023733854293823242 seconds.
+Attempt 1
+Total time for test: 0.03202176094055176 seconds.
+Attempt 1
+Total time for test: 0.022089004516601562 seconds.
+Attempt 1
+Total time for test: 0.038269758224487305 seconds.
+Attempt 1
+Total time for test: 0.02084183692932129 seconds.
+Attempt 1
+Total time for test: 0.03276777267456055 seconds.
+Attempt 1
+Total time for test: 0.03251838684082031 seconds.
+Attempt 1
+Total time for test: 0.034024715423583984 seconds.
+Attempt 1
+Total time for test: 0.033774375915527344 seconds.
+Attempt 1
+Total time for test: 0.02327728271484375 seconds.
+Attempt 1
+Total time for test: 0.036504507064819336 seconds.
+Attempt 1
+Total time for test: 0.0237882137298584 seconds.
+Attempt 1
+Total time for test: 0.02529764175415039 seconds.
+Attempt 1
+Total time for test: 0.02799201011657715 seconds.
+Attempt 1
+Total time for test: 0.03417634963989258 seconds.
+Attempt 1
+Total time for test: 0.03609108924865723 seconds.
+Attempt 1
+Total time for test: 0.0335078239440918 seconds.
+Attempt 1
+Total time for test: 0.022292375564575195 seconds.
+Attempt 1
+Total time for test: 0.027608871459960938 seconds.
+Attempt 1
+Total time for test: 0.026678800582885742 seconds.
+Attempt 1
+Total time for test: 0.033657073974609375 seconds.
+Attempt 1
+Total time for test: 0.03669452667236328 seconds.
+Attempt 1
+Total time for test: 0.030409574508666992 seconds.
+Attempt 1
+Total time for test: 0.05860161781311035 seconds.
+Attempt 1
+Total time for test: 0.032698631286621094 seconds.
+Attempt 1
+Total time for test: 0.02218341827392578 seconds.
+Attempt 1
+Total time for test: 0.031334877014160156 seconds.
+Attempt 1
+Total time for test: 0.02756524085998535 seconds.
+Attempt 1
+Total time for test: 0.034470319747924805 seconds.
+Attempt 1
+Total time for test: 0.03920555114746094 seconds.
+Attempt 1
+Total time for test: 0.019492626190185547 seconds.
+Attempt 1
+Total time for test: 0.030402183532714844 seconds.
+Attempt 1
+Total time for test: 0.03699922561645508 seconds.
+Attempt 1
+Total time for test: 0.0266568660736084 seconds.
+Attempt 1
+Total time for test: 0.02240443229675293 seconds.
+Attempt 1
+Total time for test: 0.02833700180053711 seconds.
+Attempt 1
+Total time for test: 0.04364633560180664 seconds.
+Attempt 1
+Total time for test: 0.019583702087402344 seconds.
+Attempt 1
+Total time for test: 0.027449607849121094 seconds.
+Attempt 1
+Total time for test: 0.03873586654663086 seconds.
+Attempt 1
+Total time for test: 0.019464969635009766 seconds.
+Attempt 1
+Total time for test: 0.03368830680847168 seconds.
+Attempt 1
+Total time for test: 0.024758577346801758 seconds.
+Attempt 1
+Total time for test: 0.03744196891784668 seconds.
+Attempt 1
+Total time for test: 0.03190350532531738 seconds.
+Attempt 1
+Total time for test: 0.023120403289794922 seconds.
+Attempt 1
+Total time for test: 0.03219461441040039 seconds.
+Attempt 1
+Total time for test: 0.03473258018493652 seconds.
+Attempt 1
+Total time for test: 0.032866716384887695 seconds.
+Attempt 1
+Total time for test: 0.02269911766052246 seconds.
+Attempt 1
+Total time for test: 0.027607440948486328 seconds.
+Attempt 1
+Total time for test: 0.040250301361083984 seconds.
+Attempt 1
+Total time for test: 0.01874709129333496 seconds.
+Attempt 1
+Total time for test: 0.030438661575317383 seconds.
+Attempt 1
+Total time for test: 0.03243589401245117 seconds.
+Attempt 1
+Total time for test: 0.0334932804107666 seconds.
+Attempt 1
+Total time for test: 0.020535707473754883 seconds.
+Attempt 1
+Total time for test: 0.03525972366333008 seconds.
+Attempt 1
+Total time for test: 0.027389049530029297 seconds.
+Attempt 1
+Total time for test: 0.03286266326904297 seconds.
+Attempt 1
+Total time for test: 0.030477285385131836 seconds.
+Attempt 1
+Total time for test: 0.02987384796142578 seconds.
+Attempt 1
+Total time for test: 0.039342641830444336 seconds.
+Attempt 1
+Total time for test: 0.014886617660522461 seconds.
+Attempt 1
+Total time for test: 0.028778076171875 seconds.
+Attempt 1
+Total time for test: 0.03158974647521973 seconds.
+Attempt 1
+Total time for test: 0.03386282920837402 seconds.
+Attempt 1
+Total time for test: 0.026212453842163086 seconds.
+Attempt 1
+Total time for test: 0.03133392333984375 seconds.
+Attempt 1
+Total time for test: 0.03458237648010254 seconds.
+Attempt 1
+Total time for test: 0.03442788124084473 seconds.
+Attempt 1
+Total time for test: 0.02124643325805664 seconds.
+Attempt 1
+Total time for test: 0.03332924842834473 seconds.
+Attempt 1
+Total time for test: 0.025256633758544922 seconds.
+Attempt 1
+Total time for test: 0.03586220741271973 seconds.
+Attempt 1
+Total time for test: 0.031193971633911133 seconds.
+Attempt 1
+Total time for test: 0.029477596282958984 seconds.
+Attempt 1
+Total time for test: 0.019792556762695312 seconds.
+Attempt 1
+Total time for test: 0.03300809860229492 seconds.
+Attempt 1
+Error "Cannot determine dtype of 0.15066656470298767" with following truth table:
+[False, False, False, False, False, True, True, True, True, True, True, False, False, False, False, True]
+Attempt 2
+Total time for test: 0.07623982429504395 seconds.
+Attempt 1
+Total time for test: 0.015868663787841797 seconds.
+Attempt 1
+Total time for test: 0.03294992446899414 seconds.
+Attempt 1
+Total time for test: 0.03534698486328125 seconds.
+Attempt 1
+Total time for test: 0.019824981689453125 seconds.
+Attempt 1
+Total time for test: 0.0306551456451416 seconds.
+Attempt 1
+Total time for test: 0.034369468688964844 seconds.
+Attempt 1
+Total time for test: 0.02789926528930664 seconds.
+Attempt 1
+Total time for test: 0.03200817108154297 seconds.
+Attempt 1
+Error "Cannot determine dtype of Traced<ShapedArray(int32[1])>with<BatchTrace(level=1/0)> with
+  val = Array([[0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1]], dtype=int32)
+  batch_dim = 0" with following truth table:
+(True, True, True, True, True, True, True, True, True, False, False, True, False, False, False, False)
+Attempt 2
+Total time for test: 0.05946707725524902 seconds.
+Attempt 1
+Total time for test: 0.034073591232299805 seconds.
+Attempt 1
+Total time for test: 0.03879523277282715 seconds.
+Attempt 1
+Total time for test: 0.018366098403930664 seconds.
+Attempt 1
+Error "Cannot interpret 'Array([[0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1]], dtype=int32)' as a data type" with following truth table:
+(True, True, True, True, True, True, False, False, True, False, False, True, False, False, False, False)
+Attempt 2
+Total time for test: 0.06449675559997559 seconds.
+Attempt 1
+Total time for test: 0.0252072811126709 seconds.
+Attempt 1
+Total time for test: 0.031139135360717773 seconds.
+Attempt 1
+Total time for test: 0.03231549263000488 seconds.
+Attempt 1
+Total time for test: 0.031035661697387695 seconds.
+Attempt 1
+Total time for test: 0.03594851493835449 seconds.
+Attempt 1
+Total time for test: 0.021022796630859375 seconds.
+Attempt 1
+Total time for test: 0.032033443450927734 seconds.
+Attempt 1
+Total time for test: 0.03663325309753418 seconds.
+Attempt 1
+Total time for test: 0.0303952693939209 seconds.
+Attempt 1
+Error "Cannot interpret 'Array([1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0], dtype=int32)' as a data type" with following truth table:
+(True, True, True, False, False, True, True, True, False, False, False, True, True, False, False, False)
+Attempt 2
+Total time for test: 0.06267905235290527 seconds.
+Attempt 1
+Total time for test: 0.026269197463989258 seconds.
+Attempt 1
+Total time for test: 0.029384136199951172 seconds.
+Attempt 1
+Total time for test: 0.03076004981994629 seconds.
+Attempt 1
+Error "Cannot determine dtype of Traced<ShapedArray(int32[1])>with<BatchTrace(level=1/0)> with
+  val = Array([[0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1]], dtype=int32)
+  batch_dim = 0" with following truth table:
+(True, True, True, True, True, True, True, False, False, True, False, True, False, False, False, False)
+Attempt 2
+Total time for test: 0.06446051597595215 seconds.
+Attempt 1
+Total time for test: 0.033403873443603516 seconds.
+Attempt 1
+Total time for test: 0.01553964614868164 seconds.
+Attempt 1
+Total time for test: 0.03855490684509277 seconds.
+Attempt 1
+Total time for test: 0.03320670127868652 seconds.
+Attempt 1
+Total time for test: 0.02162027359008789 seconds.
+Attempt 1
+Total time for test: 0.027689456939697266 seconds.
+Attempt 1
+Total time for test: 0.03632664680480957 seconds.
+Attempt 1
+Total time for test: 0.02910470962524414 seconds.
+Attempt 1
+Total time for test: 0.058164119720458984 seconds.
+Attempt 1
+Total time for test: 0.041259050369262695 seconds.
+Attempt 1
+Total time for test: 0.027872085571289062 seconds.
+Attempt 1
+Total time for test: 0.03078293800354004 seconds.
+Attempt 1
+Total time for test: 0.018100738525390625 seconds.
+Attempt 1
+Total time for test: 0.03226447105407715 seconds.
+Attempt 1
+Total time for test: 0.03149104118347168 seconds.
+Attempt 1
+Total time for test: 0.0396265983581543 seconds.
+Attempt 1
+Total time for test: 0.015473604202270508 seconds.
+Attempt 1
+Total time for test: 0.033095598220825195 seconds.
+Attempt 1
+Total time for test: 0.031212806701660156 seconds.
+Attempt 1
+Total time for test: 0.02978229522705078 seconds.
+Attempt 1
+Total time for test: 0.0388333797454834 seconds.
+Attempt 1
+Total time for test: 0.022390365600585938 seconds.
+Attempt 1
+Total time for test: 0.03391528129577637 seconds.
+Attempt 1
+Total time for test: 0.025688886642456055 seconds.
+Attempt 1
+Total time for test: 0.03244304656982422 seconds.
+Attempt 1
+Total time for test: 0.07061243057250977 seconds.
+Attempt 1
+Total time for test: 0.019424915313720703 seconds.
+Attempt 1
+Total time for test: 0.03712916374206543 seconds.
+Attempt 1
+Total time for test: 0.030484676361083984 seconds.
+Attempt 1
+Total time for test: 0.030513525009155273 seconds.
+Attempt 1
+Total time for test: 0.01796722412109375 seconds.
+Attempt 1
+Total time for test: 0.030911684036254883 seconds.
+Attempt 1
+Error "Cannot interpret 'Array([[1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0]], dtype=int32)' as a data type" with following truth table:
+[False, False, False, False, False, False, False, False, False, False, False, False, False, True, True, True]
+Attempt 2
+Total time for test: 0.06565713882446289 seconds.
+Attempt 1
+Total time for test: 0.02362513542175293 seconds.
+Attempt 1
+Total time for test: 0.03734183311462402 seconds.
+Attempt 1
+Total time for test: 0.02713608741760254 seconds.
+Attempt 1
+Total time for test: 0.026043415069580078 seconds.
+Attempt 1
+Total time for test: 0.04137301445007324 seconds.
+Attempt 1
+Total time for test: 0.03139829635620117 seconds.
+Attempt 1
+Error "Cannot interpret 'Array([[0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1]], dtype=int32)' as a data type" with following truth table:
+(True, True, True, True, True, True, True, False, False, True, False, True, False, False, True, False)
+Attempt 2
+Total time for test: 0.06421136856079102 seconds.
+Attempt 1
+Total time for test: 0.017988204956054688 seconds.
+Attempt 1
+Total time for test: 0.036486148834228516 seconds.
+Attempt 1
+Total time for test: 0.03388047218322754 seconds.
+Attempt 1
+Total time for test: 0.03195953369140625 seconds.
+Attempt 1
+Total time for test: 0.028345346450805664 seconds.
+Attempt 1
+Total time for test: 0.01613473892211914 seconds.
+Attempt 1
+Total time for test: 0.029982566833496094 seconds.
+Attempt 1
+Total time for test: 0.032462358474731445 seconds.
+Attempt 1
+Total time for test: 0.03374838829040527 seconds.
+Attempt 1
+Total time for test: 0.02819347381591797 seconds.
+Attempt 1
+Total time for test: 0.02633833885192871 seconds.
+Attempt 1
+Total time for test: 0.03695368766784668 seconds.
+Attempt 1
+Total time for test: 0.03337812423706055 seconds.
+Attempt 1
+Total time for test: 0.0238039493560791 seconds.
+Attempt 1
+Total time for test: 0.036496877670288086 seconds.
+Attempt 1
+Total time for test: 0.02860093116760254 seconds.
+Attempt 1
+Total time for test: 0.020325899124145508 seconds.
+Attempt 1
+Total time for test: 0.032959699630737305 seconds.
+Attempt 1
+Total time for test: 0.03446316719055176 seconds.
+Attempt 1
+Total time for test: 0.02485036849975586 seconds.
+Attempt 1
+Total time for test: 0.02146434783935547 seconds.
+Attempt 1
+Total time for test: 0.03090691566467285 seconds.
+Attempt 1
+Total time for test: 0.04262852668762207 seconds.
+Attempt 1
+Error "Cannot interpret 'Array([[1],
+       [1],
+       [1],
+       [1],
+       [1],
+       [1],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0]], dtype=int32)' as a data type" with following truth table:
+(True, True, True, False, True, False, False, True, False, True, False, False, False, False, True, True)
+Attempt 2
+Total time for test: 0.054437875747680664 seconds.
+Attempt 1
+Total time for test: 0.04090142250061035 seconds.
+Attempt 1
+Total time for test: 0.015362739562988281 seconds.
+Attempt 1
+Total time for test: 0.028730392456054688 seconds.
+Attempt 1
+Total time for test: 0.030444622039794922 seconds.
+Attempt 1
+Total time for test: 0.037566184997558594 seconds.
+Attempt 1
+Total time for test: 0.024459123611450195 seconds.
+Attempt 1
+Total time for test: 0.03838992118835449 seconds.
+Attempt 1
+Total time for test: 0.022378206253051758 seconds.
+Attempt 1
+Total time for test: 0.03315591812133789 seconds.
+Attempt 1
+Total time for test: 0.028048038482666016 seconds.
+Attempt 1
+Total time for test: 0.03390359878540039 seconds.
+Attempt 1
+Total time for test: 0.032128095626831055 seconds.
+Attempt 1
+Total time for test: 0.029329538345336914 seconds.
+Attempt 1
+Total time for test: 0.03202080726623535 seconds.
+Attempt 1
+Total time for test: 0.031587839126586914 seconds.
+Attempt 1
+Total time for test: 0.02337193489074707 seconds.
+Attempt 1
+Total time for test: 0.027164936065673828 seconds.
+Attempt 1
+Total time for test: 0.027226924896240234 seconds.
+Attempt 1
+Total time for test: 0.07217168807983398 seconds.
+Attempt 1
+Total time for test: 0.03318071365356445 seconds.
+Attempt 1
+Total time for test: 0.015925168991088867 seconds.
+Attempt 1
+Total time for test: 0.034776926040649414 seconds.
+Attempt 1
+Total time for test: 0.03536820411682129 seconds.
+Attempt 1
+Total time for test: 0.030819177627563477 seconds.
+Attempt 1
+Total time for test: 0.02869415283203125 seconds.
+Attempt 1
+Total time for test: 0.02018427848815918 seconds.
+Attempt 1
+Total time for test: 0.02939581871032715 seconds.
+Attempt 1
+Total time for test: 0.03046727180480957 seconds.
+Attempt 1
+Total time for test: 0.03802919387817383 seconds.
+Attempt 1
+Total time for test: 0.03420877456665039 seconds.
+Attempt 1
+Total time for test: 0.02748703956604004 seconds.
+Attempt 1
+Total time for test: 0.022697925567626953 seconds.
+Attempt 1
+Total time for test: 0.03745532035827637 seconds.
+Attempt 1
+Total time for test: 0.021263837814331055 seconds.
+Attempt 1
+Total time for test: 0.032093048095703125 seconds.
+Attempt 1
+Total time for test: 0.023323774337768555 seconds.
+Attempt 1
+Total time for test: 0.03511762619018555 seconds.
+Attempt 1
+Total time for test: 0.05885577201843262 seconds.
+Attempt 1
+Total time for test: 0.03977799415588379 seconds.
+Attempt 1
+Total time for test: 0.021942615509033203 seconds.
+Attempt 1
+Total time for test: 0.03241229057312012 seconds.
+Attempt 1
+Total time for test: 0.03703045845031738 seconds.
+Attempt 1
+Total time for test: 0.029166698455810547 seconds.
+Attempt 1
+Total time for test: 0.02831578254699707 seconds.
+Attempt 1
+Total time for test: 0.021353721618652344 seconds.
+Attempt 1
+Total time for test: 0.031102895736694336 seconds.
+Attempt 1
+Total time for test: 0.035895586013793945 seconds.
+Attempt 1
+Total time for test: 0.029601335525512695 seconds.
+Attempt 1
+Total time for test: 0.03632307052612305 seconds.
+Attempt 1
+Total time for test: 0.031010150909423828 seconds.
+Attempt 1
+Total time for test: 0.01946544647216797 seconds.
+Attempt 1
+Total time for test: 0.02646803855895996 seconds.
+Attempt 1
+Total time for test: 0.03260445594787598 seconds.
+Attempt 1
+Total time for test: 0.029103755950927734 seconds.
+Attempt 1
+Total time for test: 0.031995534896850586 seconds.
+Attempt 1
+Total time for test: 0.037637948989868164 seconds.
+Attempt 1
+Error "Cannot interpret 'Array([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3], dtype=int32)' as a data type" with following truth table:
+[False, False, False, False, False, True, True, True, True, True, True, False, False, False, True, False]
+Attempt 2
+Total time for test: 0.07576465606689453 seconds.
+Attempt 1
+Total time for test: 0.00937342643737793 seconds.
+Attempt 1
+Total time for test: 0.03360104560852051 seconds.
+Attempt 1
+Total time for test: 0.02947092056274414 seconds.
+Attempt 1
+Total time for test: 0.02333855628967285 seconds.
+Attempt 1
+Total time for test: 0.027946949005126953 seconds.
+Attempt 1
+Total time for test: 0.03427910804748535 seconds.
+Attempt 1
+Total time for test: 0.0390162467956543 seconds.
+Attempt 1
+Total time for test: 0.020213603973388672 seconds.
+Attempt 1
+Total time for test: 0.034021615982055664 seconds.
+Attempt 1
+Total time for test: 0.029001235961914062 seconds.
+Attempt 1
+Total time for test: 0.0296633243560791 seconds.
+Attempt 1
+Total time for test: 0.02116847038269043 seconds.
+Attempt 1
+Error "Cannot interpret 'Array([[0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1],
+       [1],
+       [1],
+       [1],
+       [1]], dtype=int32)' as a data type" with following truth table:
+(True, True, True, False, False, True, False, False, False, False, False, True, True, False, True, True)
+Attempt 2
+Total time for test: 0.07079672813415527 seconds.
+Attempt 1
+Total time for test: 0.02405095100402832 seconds.
+Attempt 1
+Total time for test: 0.030268430709838867 seconds.
+Attempt 1
+Total time for test: 0.035744428634643555 seconds.
+Attempt 1
+Total time for test: 0.034258365631103516 seconds.
+Attempt 1
+Total time for test: 0.02334880828857422 seconds.
+Attempt 1
+Total time for test: 0.030807971954345703 seconds.
+Attempt 1
+Total time for test: 0.029227018356323242 seconds.
+Attempt 1
+Error "Cannot determine dtype of Traced<ShapedArray(int32[1])>with<BatchTrace(level=1/0)> with
+  val = Array([[0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1]], dtype=int32)
+  batch_dim = 0" with following truth table:
+(True, True, True, False, True, False, False, False, False, True, True, True, False, False, False, True)
+Attempt 2
+Total time for test: 0.06475973129272461 seconds.
+Attempt 1
+Total time for test: 0.03490185737609863 seconds.
+Attempt 1
+Total time for test: 0.01855158805847168 seconds.
+Attempt 1
+Total time for test: 0.028455495834350586 seconds.
+Attempt 1
+Total time for test: 0.031475067138671875 seconds.
+Attempt 1
+Total time for test: 0.039109230041503906 seconds.
+Attempt 1
+Total time for test: 0.034377098083496094 seconds.
+Attempt 1
+Total time for test: 0.0225832462310791 seconds.
+Attempt 1
+Total time for test: 0.021677017211914062 seconds.
+Attempt 1
+Total time for test: 0.04409003257751465 seconds.
+Attempt 1
+Total time for test: 0.01822042465209961 seconds.
+Attempt 1
+Total time for test: 0.03489494323730469 seconds.
+Attempt 1
+Total time for test: 0.02557229995727539 seconds.
+Attempt 1
+Total time for test: 0.02807164192199707 seconds.
+Attempt 1
+Total time for test: 0.03865408897399902 seconds.
+Attempt 1
+Total time for test: 0.020087242126464844 seconds.
+Attempt 1
+Total time for test: 0.03559756278991699 seconds.
+Attempt 1
+Total time for test: 0.028868436813354492 seconds.
+Attempt 1
+Total time for test: 0.03470182418823242 seconds.
+Attempt 1
+Total time for test: 0.02044844627380371 seconds.
+Attempt 1
+Total time for test: 0.03720426559448242 seconds.
+Attempt 1
+Total time for test: 0.03283071517944336 seconds.
+Attempt 1
+Total time for test: 0.02107405662536621 seconds.
+Attempt 1
+Total time for test: 0.03127312660217285 seconds.
+Attempt 1
+Total time for test: 0.03343558311462402 seconds.
+Attempt 1
+Total time for test: 0.03397393226623535 seconds.
+Attempt 1
+Total time for test: 0.02715754508972168 seconds.
+Attempt 1
+Total time for test: 0.021292924880981445 seconds.
+Attempt 1
+Error "Cannot interpret 'Array([[1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0],
+       [1],
+       [0]], dtype=int32)' as a data type" with following truth table:
+(True, True, True, True, True, True, False, False, True, False, True, False, False, False, False, False)
+Attempt 2
+Total time for test: 0.07077670097351074 seconds.
+Attempt 1
+Total time for test: 0.026442289352416992 seconds.
+Attempt 1
+Total time for test: 0.03376269340515137 seconds.
+Attempt 1
+Total time for test: 0.02117466926574707 seconds.
+Attempt 1
+Error "Cannot determine dtype of Traced<ShapedArray(int32[1])>with<BatchTrace(level=1/0)> with
+  val = Array([[1],
+       [1],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0],
+       [0],
+       [1],
+       [1],
+       [1],
+       [1],
+       [0],
+       [0],
+       [0],
+       [0]], dtype=int32)
+  batch_dim = 0" with following truth table:
+(True, True, True, True, True, True, True, False, True, True, True, False, False, True, True, True)
+Attempt 2
+Total time for test: 0.0706930160522461 seconds.
+Attempt 1
+Total time for test: 0.031792640686035156 seconds.
+Attempt 1
+Total time for test: 0.02841353416442871 seconds.
+Attempt 1
+Total time for test: 0.03235197067260742 seconds.
+Attempt 1
+Total time for test: 0.024422407150268555 seconds.
+Attempt 1
+Total time for test: 0.034966468811035156 seconds.
+Attempt 1
+Total time for test: 0.029201269149780273 seconds.
+Attempt 1
+Total time for test: 0.023444175720214844 seconds.
+Attempt 1
+Total time for test: 0.031290292739868164 seconds.
+Attempt 1
+Total time for test: 0.02942824363708496 seconds.
+Attempt 1
+Total time for test: 0.027433156967163086 seconds.
+Attempt 1
+Total time for test: 0.03613400459289551 seconds.
+Attempt 1
+Total time for test: 0.02944326400756836 seconds.
+Attempt 1
+Total time for test: 0.02683234214782715 seconds.
+Total time for 444 tests: 37.380295515060425 seconds.

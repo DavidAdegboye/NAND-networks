@@ -687,7 +687,7 @@ def run_test(variables: Dict[str, any], config_file: str):
             print(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}")
         except ValueError:
             print(f"No nodes used")
-        with open(config["output_file"], "a") as f:
+        with open("../test_results/"+config["output_file"], "a") as f:
             f.write(f"used:\n{learnt_arch}\nout of:\n{true_arch}\n")
             try:
                 f.write(f"Max fan-in: {max(fan_ins)}\nAverage fan-in: {round(sum(fan_ins)/len(fan_ins), 2)}\n")
@@ -1704,7 +1704,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                           max_fan_in_penalty(weights, max_fan_in, temperature),
                           max_fan_in_penalty_disc(weights, max_fan_in))
                     print(mean_fan_in_penalty(weights, 0, temperature))
-                    with open(config["output_file"], "a") as f:
+                    with open("../test_results/"+config["output_file"], "a") as f:
                         for pair in variables.items():
                             f.write(str(pair)+'\n')
                         f.write(f"Accuracies: {accs}\n")
@@ -1753,7 +1753,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                             print("Trying random discretisation")
                             [print(circ) for circ in (output_circuit(weights, config["verbose"], config["super_verbose"], "rand"))]
                     else:
-                        with open(config["output_file"], "a") as f:
+                        with open("../test_results/"+config["output_file"], "a") as f:
                             for pair in variables.items():
                                 f.write(str(pair)+'\n')
                             f.write(f"Accuracies: {accs}\n")
@@ -1841,7 +1841,7 @@ def run_test(variables: Dict[str, any], config_file: str):
         accs.append(float(accuracy))
         rand_accs.append(float(rand_accuracy))
         losses.append(float(new_loss))
-        with open(config["output_file"], "a") as f:
+        with open("../test_results/"+config["output_file"], "a") as f:
             f.write(f"Accuracies: {accs}\n")
             f.write(f"Random accuracies: {rand_accs}\n")
             f.write(f"Losses: {losses}\n")
