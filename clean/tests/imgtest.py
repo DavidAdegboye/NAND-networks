@@ -28,7 +28,7 @@ distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 
 architectures = [[2048], [2048, 1024], [1536, 1280, 1024, 768, 512, 256]]
 min_gatess = [[0, 0, 0], [round(0.9*i) for i in [1568, 2048, 1024]] + [10], [round(0.9*i) for i in [1568, 1536, 1280, 1024, 768, 512, 256]] + [10]]
-timeouts = [24*60, 24*60, 24*60]
+timeouts = [2*60, 2*60, 2*60]
 mgupcs = [0, 1, 1]
 
 for arch, min_gates, mgupc, timeout in zip (architectures, min_gatess, mgupcs, timeouts):
