@@ -1274,6 +1274,31 @@ def run_test(variables: Dict[str, any], config_file: str):
 
         grad_conv = jax.jit(jax.grad(loss_conv))
 
+        @jax.jit
+        def bce_loss_conv(
+            network: List[Network],
+            inputs: jnp.ndarray,
+            output: jnp.ndarray,
+            scaled: List[jnp.ndarray]=None) -> float:
+            """
+            calculates the loss including convolutional layers
+
+            Parameters
+            network - [weights, weights_conv], where weights are the dense layers,
+            and weights_conv are the convolutional
+            inputs - all of the inputs (training xs)
+            output - all of the outputs (training labels or ys)
+            
+            Returns
+            loss
+            """
+            pred = jax.vmap(feed_forward_conv, in_axes=(0, None, 0))(
+                inputs, network[1], scaled)
+            pred = pred.reshape(pred.shape[0], -1)
+            return bce_loss(network[0], pred, output)
+
+        grad_conv = jax.jit(jax.grad(loss_conv))
+
     @partial(jax.jit, static_argnames=("use_surr", "max_fan_in_penalty_coeff"))
     def test(weights: Network,
             inputs: jnp.ndarray,
@@ -1584,6 +1609,7 @@ def run_test(variables: Dict[str, any], config_file: str):
     accs = []
     losses = []
     rand_accs = []
+    bce_losses = []
     if add_img_or_custom == 'i':
         accuracy = batch_comp(
             partial(acc_conv, network=[weights, weights_conv]),
@@ -1597,10 +1623,15 @@ def run_test(variables: Dict[str, any], config_file: str):
             partial(loss_conv, network=[weights, weights_conv], **loss_conv_kwargs),
             batch_size, batches,
             inputs=inputs, output=output, scaled=scaled_train_imgs)
+        new_bce = batch_comp(
+            partial(bce_loss_conv, network=[weights, weights_conv]),
+            batch_size, batches,
+            inputs=inputs, output=output, scaled=scaled_train_imgs)
         accs.append(float(accuracy))
         rand_accs.append(float(rand_accuracy))
         losses.append(float(new_loss))
-        print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
+        bce_losses.append(float(new_bce))
+        print(f"Accuracy: {round(100*float(accuracy),2)}%, Random accuracy: {round(100*float(rand_accuracy),2)}%, Loss: {round(float(new_loss),dps)}, BCE: {round(float(new_bce),dps)}")
         print(gate_usage_by_layer(weights, "cont"))
         print(gate_usage_by_layer(weights, "disc"))
         print(gate_usage_by_layer(weights, "rand"))
@@ -1619,6 +1650,7 @@ def run_test(variables: Dict[str, any], config_file: str):
         accs.append(float(accuracy))
         rand_accs.append(float(rand_accuracy))
         losses.append(float(new_loss))
+        bce_losses.append(float(bce_loss))
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
         print(gate_usage_by_layer(weights, "cont"))
         print(gate_usage_by_layer(weights, "disc"))
@@ -1688,6 +1720,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                     accs.append(float(accuracy))
                     rand_accs.append(float(rand_accuracy))
                     losses.append(float(new_loss))
+                    bce_losses.append(float(bce_loss))
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
                     print(gate_usage_by_layer(weights, "cont"))
                     gate_usage_disc = gate_usage_by_layer(weights, "disc")
@@ -1710,6 +1743,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                         f.write(f"Accuracies: {accs}\n")
                         f.write(f"Random accuracies: {rand_accs}\n")
                         f.write(f"Losses: {losses}\n")
+                        f.write(f"BCE Losses: {bce_losses}\n")
                         f.write(f"Final gate usage disc: {gate_usage_disc}\n")
                         f.write(f"Final gate usage rand: {gate_usage_rand}\n")
                         f.write(f"Final wire count disc: {wire_counts[1]}\n")
@@ -1722,10 +1756,12 @@ def run_test(variables: Dict[str, any], config_file: str):
                     rand_accuracy = rand_acc(weights, inputs, output,
                                             use_surr, surr_arr, False)
                     new_loss = loss(weights, inputs, output, **loss_kwargs)
+                    new_bce = bce_loss(weights, inputs, output, use_surr=use_surr, surr_arr=surr_arr)
                     accs.append(float(accuracy))
                     rand_accs.append(float(rand_accuracy))
                     losses.append(float(new_loss))
-                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
+                    bce_losses.append(float(new_bce))
+                    print(f"Accuracy: {round(100*float(accuracy),2)}%, Random accuracy: {round(100*float(rand_accuracy),2)}%, Loss: {round(float(new_loss),dps)}, BCE: {round(float(new_bce),dps)}")
                     print(gate_usage_by_layer(weights, "cont"))
                     gate_usage_disc = gate_usage_by_layer(weights, "disc")
                     print(gate_usage_disc)
@@ -1759,6 +1795,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                             f.write(f"Accuracies: {accs}\n")
                             f.write(f"Random accuracies: {rand_accs}\n")
                             f.write(f"Losses: {losses}\n")
+                            f.write(f"BCE Losses: {bce_losses}\n")
                             f.write("Circuit output for at the final stage\n")
                             if rand_accuracy == 1:
                                 [print(circ) for circ in (output_circuit(weights, config["verbose"], config["super_verbose"], "rand"))]
@@ -1785,18 +1822,25 @@ def run_test(variables: Dict[str, any], config_file: str):
                     partial(loss_conv, network=[weights, weights_conv], **loss_conv_kwargs),
                     batch_size, batches,
                     inputs=inputs, output=output, scaled=scaled_train_imgs)
+                new_bce = batch_comp(
+                    partial(bce_loss_conv, network=[weights, weights_conv], **loss_conv_kwargs),
+                    batch_size, batches,
+                    inputs=inputs, output=output, scaled=scaled_train_imgs)
                 accs.append(float(accuracy))
                 rand_accs.append(float(rand_accuracy))
                 losses.append(float(new_loss))
+                bce_losses.append(float(new_bce))
             else:
                 accuracy = acc(weights, inputs, output,
                             use_surr, surr_arr, False)[0]
                 rand_accuracy = rand_acc(weights, inputs, output,
                                         use_surr, surr_arr, False)
                 new_loss = loss(weights, inputs, output, **loss_kwargs)
+                new_bce = bce_loss(weights, inputs, output, use_surr=use_surr, surr_arr=surr_arr)
                 accs.append(float(accuracy))
                 rand_accs.append(float(rand_accuracy))
                 losses.append(float(new_loss))
+                bce_losses.append(float(new_bce))
             if iters == max(10//batches, 1):
                 if add_img_or_custom == 'i':
                     print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
@@ -1838,13 +1882,16 @@ def run_test(variables: Dict[str, any], config_file: str):
         rand_accuracy = rand_acc(weights, inputs, output,
                                 use_surr, surr_arr, False)
         new_loss = loss(weights, inputs, output, **loss_kwargs)
+        new_bce = bce_loss(weights, inputs, output, use_surr=use_surr, surr_arr=surr_arr)
         accs.append(float(accuracy))
         rand_accs.append(float(rand_accuracy))
         losses.append(float(new_loss))
+        bce_losses.append(float(new_bce))
         with open("../test_results/"+config["output_file"], "a") as f:
             f.write(f"Accuracies: {accs}\n")
             f.write(f"Random accuracies: {rand_accs}\n")
             f.write(f"Losses: {losses}\n")
+            f.write(f"BCE Losses: {bce_losses}\n")
         print(f"Accuracy: {round(100*float(accuracy),2)}%, Loss: {round(float(new_loss),dps)}, Random accuracy: {round(100*float(rand_accuracy),2)}%")
         print(max_fan_in_penalty(weights, 0, temperature),
                 max_fan_in_penalty_disc(weights, 0),
