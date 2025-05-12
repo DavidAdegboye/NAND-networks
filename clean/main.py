@@ -1719,7 +1719,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                         batch_size, batches,
                         inputs=inputs, output=output, scaled=scaled_train_imgs)
                     new_bce = batch_comp(
-                        partial(loss_conv, network=[weights, weights_conv]),
+                        partial(bce_loss_conv, network=[weights, weights_conv]),
                         batch_size, batches,
                         inputs=inputs, output=output, scaled=scaled_train_imgs)
                     accs.append(float(accuracy))
