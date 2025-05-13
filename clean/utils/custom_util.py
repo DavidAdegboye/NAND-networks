@@ -1,6 +1,6 @@
 import jax
 import jax.numpy as jnp
-from typing import Tuple
+from typing import Tuple, Dict, Any
 import yaml
 
 # function to convert a denary number to a a jnp array of bits
@@ -18,7 +18,7 @@ def denary_to_binary_array(number: int, bits: int) -> jnp.ndarray:
     return jnp.array([(jnp.right_shift(number, bits - 1 - i) & 1) for i in range(bits)], dtype=jnp.int32)
 
 # gets parameters for learning a custom combinational logic circuit
-def set_up_custom(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]:
+def set_up_custom(config_dict: Dict[str, Any]) -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]:
     """
     Takes some user input and sets up a run to learn a custom combinational logic circuit
 
@@ -29,7 +29,6 @@ def set_up_custom(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]
     outs - the number of bits in the output
     2**ins - the number of samples we have (this would be both inputs.shape[0] and output.shape[0])
     """
-    global config
     config = config_dict
     # number of input bits
     ins = config["ins"]

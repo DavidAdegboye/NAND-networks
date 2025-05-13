@@ -4,14 +4,13 @@ import jax.numpy as jnp
 import os
 import numpy as np
 from skimage.transform import resize
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 from functools import partial
 import yaml
 
 Conv = Tuple[int, int, bool]
 
-def set_up_img(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, int]:
-    global config, size, x_train, x_test, train_n, test_n
+def set_up_img(config_dict: Dict[str, Any]) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, int, jnp.ndarray, jnp.ndarray, int, int]:
     config = config_dict
     size = config["size"]
     n = config["n"]
@@ -25,7 +24,7 @@ def set_up_img(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.
     y_train = jnp.array(y_train[:train_n])
     y_test = jnp.array(y_test[:test_n])
     y_train_new = jax.vmap(lambda x: preprocess_test(x, n=n))(y_train)
-    return x_train_resized, x_test_resized, y_train_new, y_test, train_n
+    return x_train_resized, x_test_resized, y_train_new, y_test, train_n, x_train, x_test, train_n, test_n
 
 # resizing the image from 28*28 to size*size, and from x∈[0,1] to x∈{0,1}
 def preprocess_image(image: np.ndarray, s: Tuple[int, int], threshold: float=0.5) -> jnp.ndarray:
@@ -78,7 +77,11 @@ def preprocess_test(value: int, n: int) -> jnp.ndarray:
 # plt.show()
 
 # @jax.jit
-def get_imgs(convs: List[Tuple[int, int, int, int]]) -> List[jnp.ndarray]:
+def get_imgs(convs: List[Tuple[int, int, int, int]],
+             x_train: jnp.ndarray,
+             x_test: jnp.ndarray,
+             train_n: int,
+             test_n: int) -> Tuple[Tuple[jnp.ndarray, ...], Tuple[jnp.ndarray, ...]]:
     imgs_list = tuple(jnp.expand_dims(jnp.array([preprocess_image(img, (ns,ns)) for img in x_train[:train_n]]), axis=1) for _,_,_,ns in convs)
     test_list = tuple(jnp.expand_dims(jnp.array([preprocess_image(img, (ns,ns)) for img in x_test[:test_n]]), axis=1) for _,_,_,ns in convs)
     # imgs_list = [jnp.concatenate([inputs, 1-inputs], axis=1) for inputs in imgs_list]
@@ -92,7 +95,11 @@ def apply_pooling(image: jnp.ndarray, pooling: Tuple[int, int, str]) -> jnp.ndar
     else:
         return jax.lax.reduce_window(image, 1.0, jax.lax.min, window_dimensions=(width, width), window_strides=(stride, stride), padding='VALID')
 
-def get_pools(pool_filters: List[Tuple[int, int, str]]) -> List[jnp.ndarray]:
+def get_pools(pool_filters: List[Tuple[int, int, str]],
+              x_train: jnp.ndarray,
+              x_test: jnp.ndarray,
+              train_n: int,
+              test_n: int) -> Tuple[List[jnp.ndarray], List[jnp.ndarray]]:
     pools_list = [x_train[:train_n]] + [1-x_train[:train_n]] + [jax.vmap(apply_pooling, in_axes=(0, None))(x_train[:train_n], pool_filter) for pool_filter in pool_filters] + [jax.vmap(apply_pooling, in_axes=(0, None))(1-x_train[:train_n], pool_filter) for pool_filter in pool_filters]
     pools_test = [x_test[:test_n]] + [1-x_test[:test_n]] + [jax.vmap(apply_pooling, in_axes=(0, None))(x_test[:test_n], pool_filter) for pool_filter in pool_filters] + [jax.vmap(apply_pooling, in_axes=(0, None))(1-x_test[:test_n], pool_filter) for pool_filter in pool_filters]
     return pools_list, pools_test
@@ -114,7 +121,7 @@ def evaluate(output: jnp.ndarray, answer: int) -> bool:
     pred = jnp.argmax(jnp.sum(new_output, axis=1))
     return pred == answer
 
-def save(arch: List[int], neurons_conv: List[jnp.ndarray], neurons: List[jnp.ndarray], convs: List[Conv], acc: str, i: int=-1) -> int:
+def save(arch: List[int], neurons_conv: List[jnp.ndarray], neurons: List[jnp.ndarray], convs: List[Conv], size: int, acc: str, i: int=-1) -> int:
     """
     Creates or overwrites a file with the information learnt by the network
 

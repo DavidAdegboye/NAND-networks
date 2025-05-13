@@ -1,6 +1,6 @@
 import jax
 import jax.numpy as jnp
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 import yaml
 
 # sets up parameters for learning an n-bit adder
@@ -15,7 +15,6 @@ def set_up_adders(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]
     outs - the number of bits in the output
     num_ins - the number of samples we have (this would be both inputs.shape[0] and output.shape[0])
     """
-    global config, bits
     config = config_dict
     bits = config["bits"]
     # if it's a n-bit adder, we need 2n inputs, n for each number 
@@ -24,12 +23,12 @@ def set_up_adders(config_dict) -> Tuple[jnp.ndarray, jnp.ndarray, int, int, int]
     inputs = jax.vmap(denary_to_binary_array, in_axes=(0, None))(
         jnp.arange(num_ins), bits*2)
     if config["specific"]:
-        output = jax.vmap(get_output)(jnp.arange(num_ins))[:,config["first_i"]:config["last_i"]]
+        output = jax.vmap(get_output, in_axes=(0, None))(jnp.arange(num_ins), bits)[:,config["first_i"]:config["last_i"]]
         print(output.shape)
         return inputs, output, ins, config["last_i"]-config["first_i"], num_ins
     else:
         out_bits = config["out_bits"]
-        output = jax.vmap(get_output)(jnp.arange(num_ins))[:,:out_bits]
+        output = jax.vmap(get_output, in_axes=(0, None))(jnp.arange(num_ins), bits)[:,:out_bits]
         print(output.shape)
         return inputs, output, ins, out_bits, num_ins
 
@@ -48,7 +47,7 @@ def denary_to_binary_array(number: int, bits: int) -> jnp.ndarray:
     return jnp.array([(jnp.right_shift(number, bits - 1 - i) & 1) for i in range(bits)], dtype=jnp.int32)
 
 # the number it gets as input is two numbers, and so it does binary addition by doing denary addition on those numbers
-def get_output(number: jnp.ndarray) -> jnp.ndarray:
+def get_output(number: jnp.ndarray, bits: int) -> jnp.ndarray:
     """
     Converts a denary number which encodes to numbers, to the binary representation of the sum of those numbers
 
@@ -61,7 +60,7 @@ def get_output(number: jnp.ndarray) -> jnp.ndarray:
     return denary_to_binary_array(number//(2**bits) + number%(2**bits), bits=bits+1)
 
 # adding some extra bits to the inputs that may be more helpful for learning an adder
-def help_adder(input: jnp.ndarray, nots: bool) -> jnp.ndarray:
+def help_adder(input: jnp.ndarray, nots: bool, bits: int) -> jnp.ndarray:
     """
     Returns the result of adding some extra helping bits for an adder
 
@@ -81,11 +80,11 @@ def help_adder(input: jnp.ndarray, nots: bool) -> jnp.ndarray:
             new_input.append(1-new_input[i]*new_input[i+3*bits])
             new_input.append(1-new_input[i+bits]*new_input[i+2*bits])
             new_input.append(1-new_input[i+2*bits]*new_input[i+3*bits])
-    new_input = jnp.array(new_input)
-    print(new_input.shape)
-    return new_input
+    augmented = jnp.array(new_input)
+    print(augmented.shape)
+    return augmented
 
-def adder_help(inputs: jnp.ndarray, true_arch: List[int]) -> Tuple[jnp.ndarray, List[int], str, str|None]:
+def adder_help(config: Dict[str, Any], inputs: jnp.ndarray, true_arch: List[int]) -> Tuple[jnp.ndarray, List[int], str, str|None]:
     """
     Function to wrap taking user input, and adding the adder help
 
@@ -104,13 +103,13 @@ def adder_help(inputs: jnp.ndarray, true_arch: List[int]) -> Tuple[jnp.ndarray, 
     if add_adder_help:
         with_nots = config["with_nots"]
         old_ins = inputs.shape[1]
-        inputs = jax.vmap(help_adder, in_axes=(0, None))(inputs, with_nots)
+        inputs = jax.vmap(help_adder, in_axes=(0, None, None))(inputs, with_nots, config["bits"])
         new_ins = inputs.shape[1]
         true_arch.append(new_ins - old_ins)
     return inputs, true_arch, add_adder_help, with_nots
 
 # ensuring those extra bits are reflected in the output circuits function in main
-def update_circuits(add_adder_help: str, circuits: List[str], with_nots: str|None, connecteds: List[List[int]]) -> Tuple[List[str], List[List[int]]]:
+def update_circuits(add_adder_help: str, bits: int, circuits: List[str], with_nots: str|None, connecteds: List[List[int]]) -> Tuple[List[str], List[List[int]]]:
     """
     Function to update and ensure the extra adder bits are represented when we output the circuit
 
@@ -138,7 +137,7 @@ def update_circuits(add_adder_help: str, circuits: List[str], with_nots: str|Non
                 connecteds.append([i+2*bits,i+3*bits])
     return circuits, connecteds
 
-def surr_trans_dict(with_nots: bool, add_help: bool) -> Dict[int, int]:
+def surr_trans_dict(config: Dict[str, Any]) -> Dict[int, int]:
     trans_dict = dict()
     surr_bits = config["surr_bits"]
     diff = config["bits"] - surr_bits
@@ -146,21 +145,21 @@ def surr_trans_dict(with_nots: bool, add_help: bool) -> Dict[int, int]:
         trans_dict[i] = diff + i
     for i in range(surr_bits, 2*surr_bits):
         trans_dict[i] = 2 * diff + i
-    if with_nots:
+    if config["with_nots"]:
         for i in range(2*surr_bits, 3*surr_bits):
             trans_dict[i] = 3 * diff + i
         for i in range(3*surr_bits, 4*surr_bits):
             trans_dict[i] = 4 * diff + i
-        if add_help:
+        if config["add_adder_help"]:
             for i in range(4*surr_bits, 8*surr_bits):
                 trans_dict[i] = 8 * diff + i
-    elif add_help:
+    elif config["add_adder_help"]:
         for i in range(2*surr_bits, 3*surr_bits):
             trans_dict[i] = 3 * diff + i
     return trans_dict
 
-def update_surr_arr() -> List[List[jnp.array]]:
-    trans_dict = surr_trans_dict(config["with_nots"], config["add_adder_help"])
+def update_surr_arr(config: Dict[str, Any]) -> List[List[jnp.ndarray]]:
+    trans_dict = surr_trans_dict(config)
     out_arr = []
     for old_layer in config["surr_arr"]:
         new_layer = []
@@ -171,7 +170,7 @@ def update_surr_arr() -> List[List[jnp.array]]:
                     new_node.append(jnp.array([layer_i, trans_dict[node_i]]))
                 else:
                     new_node.append(jnp.array([layer_i, node_i]))
-            new_node = jnp.stack(new_node)
-            new_layer.append(new_node)
+            new_node_arr = jnp.stack(new_node)
+            new_layer.append(new_node_arr)
         out_arr.append(new_layer.copy())
     return out_arr

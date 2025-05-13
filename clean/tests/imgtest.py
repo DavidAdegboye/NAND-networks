@@ -27,7 +27,7 @@ ks = {s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)}
 distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 
 architectures = [[1536, 1280, 1024, 768, 512, 256], [2048, 1024], [2048]]
-min_gatess = [[round(0.9*i) for i in [1568, 1536, 1280, 1024, 768, 512, 256]] + [10], [round(0.9*i) for i in [1568, 2048, 1024]] + [10], [0,0,0]]
+min_gatess = [[round(0.75*i) for i in [1568, 1536, 1280, 1024, 768, 512, 256]] + [10], [round(0.9*i) for i in [1568, 2048, 1024]] + [10], [0,0,0]]
 timeouts = [8*60, 8*60, 8*60]
 mgupcs = [1, 1, 0]
 

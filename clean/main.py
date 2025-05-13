@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import optax
 import random
 import itertools
-from typing import List, Tuple, Set, Dict, Callable
+from typing import List, Tuple, Set, Dict, Callable, Any
 import time
 import yaml
 import jax.scipy.special as jsp_special
@@ -16,7 +16,7 @@ if os.name == 'nt':  # Windows
 else:  # Unix-like systems
     import select
 
-def run_test(variables: Dict[str, any], config_file: str):
+def run_test(variables: Dict[str, Any], config_file: str):
     with open(config_file, "r") as f:
         config = yaml.safe_load(f)
 
@@ -42,7 +42,7 @@ def run_test(variables: Dict[str, any], config_file: str):
         inputs, output, ins, outs, num_ins = adders_util.set_up_adders(config)
     else:
         import utils.image_util as image_util
-        inputs, x_test, output, y_test, num_ins = image_util.set_up_img(config)
+        inputs, x_test, output, y_test, num_ins, x_trainog, x_testog, train_n, test_n = image_util.set_up_img(config)
         inputs = jnp.expand_dims(inputs, axis=1)
         x_test = jnp.expand_dims(x_test, axis=1)
         outs = output.shape[1]
@@ -85,10 +85,10 @@ def run_test(variables: Dict[str, any], config_file: str):
         inputs = jnp.concatenate([inputs, 1-inputs], axis=1)
         x_test = jnp.concatenate([x_test, 1-x_test], axis=1)
         if convs:
-            scaled_train_imgs, scaled_test_imgs = image_util.get_imgs(convs)
+            scaled_train_imgs, scaled_test_imgs = image_util.get_imgs(convs, x_trainog, x_testog, train_n, test_n)
             new_ins = convs[-1][2] * convs[-1][3]**2 + 2*config["size"]**2
         else:
-            pools, pool_tests = image_util.get_pools(config["pool_filters"])
+            pools, pool_tests = image_util.get_pools(config["pool_filters"], x_trainog, x_testog, train_n, test_n)
             inputs = jnp.concatenate(
                 [arr.reshape(arr.shape[0], -1) for arr in pools], axis=1)
             x_test = jnp.concatenate(
@@ -114,10 +114,10 @@ def run_test(variables: Dict[str, any], config_file: str):
         # and then if it's an adder, we're also adding extra help for adders
         if add_img_or_custom == 'a':
             inputs, true_arch, add_adder_help, with_nots = adders_util.adder_help(
-                inputs, true_arch)
+                config, inputs, true_arch)
             use_surr = config["use_surr"]
             if use_surr:
-                surr_arr = adders_util.update_surr_arr()
+                surr_arr = adders_util.update_surr_arr(config)
             else:
                 surr_arr = None
         else:
@@ -459,13 +459,13 @@ def run_test(variables: Dict[str, any], config_file: str):
         """
         upper_bounds = []
         node_count = 0
-        for layer in arch:
-            node_count += layer
+        for layer_width in arch:
+            node_count += layer_width
             upper_bounds.append(node_count)
         node_to_true_index = dict()
         layer_index = 0
         current_layer = 0
-        layer = []
+        layer: List[List[List[int]]] = []
         net = []
         for node in used_list:
             if node < upper_bounds[current_layer]:
@@ -524,7 +524,7 @@ def run_test(variables: Dict[str, any], config_file: str):
                 circuits += extras
             if add_img_or_custom == 'a':
                 circuits, connecteds = adders_util.update_circuits(
-                    add_adder_help, circuits, with_nots, connecteds)
+                    add_adder_help, config["bits"], circuits, with_nots, connecteds)
         else:
             circuits = [chr(ord('A')+i) for i in range(arch[0])]
         gates = [[[] for _ in range(arch[0])]]
