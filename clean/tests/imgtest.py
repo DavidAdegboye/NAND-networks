@@ -26,6 +26,7 @@ ALL_KS = [1.0, 1.0, 1.0, 0.995, 0.99, 0.98, 0.97, 0.955, 0.94, 0.92, 0.91,
 ks = {s:k for (s,k) in zip(ALL_SIGMAS, ALL_KS)}
 distributions = ["beta_sampler", "normal_sampler1", "normal_sampler2"]
 
+"""
 lrs = [0.1, 0.03, 0.01, 0.003, 0.001]
 batchess = [1000, 2000, 5000, 10000]
 min_gatess = [[round(0.75*i) for i in [1568, 1536, 1280, 1024, 768, 512, 256]] + [10],
@@ -50,10 +51,11 @@ for lr in lrs:
 true_end = time.time()
 with open("../test_results/"+config["output_file"], "a") as f:
     f.write(f"Total time for all tests: {true_end - true_start} seconds.\n")
-
 """
+
+
 architectures = [[1536, 1280, 1024, 768, 512, 256], [2048, 1024], [2048]]
-min_gatess = [[round(0.75*i) for i in [1568, 1536, 1280, 1024, 768, 512, 256]] + [10], [round(0.9*i) for i in [1568, 2048, 1024]] + [10], [0,0,0]]
+min_gatess = [[0, 0, 0, 0, 0, 0, round(0.75*256), 0], [0, 0, round(0.75*1024), 0], [0,0,0]]
 timeouts = [8*60, 8*60, 8*60]
 mgupcs = [1, 1, 0]
 
@@ -70,4 +72,3 @@ for arch, min_gates, mgupc, timeout in zip (architectures, min_gatess, mgupcs, t
 true_end = time.time()
 with open("../test_results/"+config["output_file"], "a") as f:
     f.write(f"Total time for all tests: {true_end - true_start} seconds.\n")
-"""
