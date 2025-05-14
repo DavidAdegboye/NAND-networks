@@ -31,23 +31,25 @@ batchess = [1000, 2000, 5000, 10000]
 min_gatess = [[round(0.75*i) for i in [1568, 1536, 1280, 1024, 768, 512, 256]] + [10],
               [0, 0, 0, 0, 0, 0, round(0.75*256), 0]]
 
-for lr, batches, min_gates in zip (lrs, batchess, min_gatess):
-    run_start = time.time()
-    try:
-        main.run_test({"lr_dense": [lr],
-                    "batches": batches,
-                    "min_gates": min_gates,
-                    "architecture": [1536, 1280, 1024, 768, 512, 256],
-                    "timeout": 0,}, "../configs/set-up.yaml")
-    except:
-        with open("../test_results/"+config["output_file"], "a") as f:
-            f.write(f"Memory overflow with {batches} batches.")
-    run_end = time.time()
-    with open("../test_results/"+config["output_file"], "a") as f:
-        f.write(f"Total time for test: {run_end - run_start} seconds.\n")
+for lr in lrs:
+    for batches in batchess:
+        for min_gates in min_gatess:
+            run_start = time.time()
+            try:
+                main.run_test({"lr_dense": [lr],
+                            "batches": batches,
+                            "min_gates": min_gates,
+                            "architecture": [1536, 1280, 1024, 768, 512, 256],
+                            "timeout": 0,}, "../configs/set-up.yaml")
+            except:
+                with open("../test_results/"+config["output_file"], "a") as f:
+                    f.write(f"Memory overflow with {batches} batches.")
+            run_end = time.time()
+            with open("../test_results/"+config["output_file"], "a") as f:
+                f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
 with open("../test_results/"+config["output_file"], "a") as f:
-    f.write(f"Total time for 20 tests: {true_end - true_start} seconds.\n")
+    f.write(f"Total time for all tests: {true_end - true_start} seconds.\n")
 
 """
 architectures = [[1536, 1280, 1024, 768, 512, 256], [2048, 1024], [2048]]
@@ -67,5 +69,5 @@ for arch, min_gates, mgupc, timeout in zip (architectures, min_gatess, mgupcs, t
         f.write(f"Total time for test: {run_end - run_start} seconds.\n")
 true_end = time.time()
 with open("../test_results/"+config["output_file"], "a") as f:
-    f.write(f"Total time for 20 tests: {true_end - true_start} seconds.\n")
+    f.write(f"Total time for all tests: {true_end - true_start} seconds.\n")
 """
